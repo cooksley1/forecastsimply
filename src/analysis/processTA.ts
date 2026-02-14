@@ -88,7 +88,7 @@ export function processTA(
 
   const currentPrice = closes[closes.length - 1];
   const signal = computeSignal(indicators, currentPrice);
-  const { forecast, target } = generateForecast(closes, timestamps, forecastPercent);
+  const { forecast, target } = generateForecast(closes, timestamps, forecastPercent, assetType);
   const recommendations = generateRecommendations(signal, currentPrice, support, resistance, target, assetType, currentRsi);
   const tradeSetups = generateTradeSetups(support, resistance, signal);
   const marketPhase = detectMarketPhase(closes, sma20, sma50);
