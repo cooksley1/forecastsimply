@@ -3,11 +3,13 @@ import { getCached, setCache } from '../cache';
 const CACHE_TTL = 10 * 60 * 1000; // 10 min
 
 const CORS_PROXIES = [
-  'https://corsproxy.io/?',
   'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+  'https://api.codetabs.com/v1/proxy?quest=',
 ];
 
 function daysToRange(days: number): { range: string; interval: string } {
+  if (days <= 7) return { range: '5d', interval: '1h' };
   if (days <= 30) return { range: '1mo', interval: '1d' };
   if (days <= 90) return { range: '3mo', interval: '1d' };
   if (days <= 180) return { range: '6mo', interval: '1d' };
@@ -17,21 +19,55 @@ function daysToRange(days: number): { range: string; interval: string } {
 }
 
 async function fetchWithProxy(url: string): Promise<any> {
-  // Try each proxy in order
+  const errors: string[] = [];
+
   for (const proxy of CORS_PROXIES) {
     try {
-      const res = await fetch(proxy + encodeURIComponent(url));
-      if (!res.ok) continue;
+      const fullUrl = proxy + encodeURIComponent(url);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
+      const res = await fetch(fullUrl, { signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        errors.push(`${proxy}: HTTP ${res.status}`);
+        continue;
+      }
+
       const text = await res.text();
-      return JSON.parse(text);
-    } catch {
+
+      // Check for HTML error pages
+      if (text.trim().startsWith('<!') || text.trim().startsWith('<html')) {
+        errors.push(`${proxy}: returned HTML instead of JSON`);
+        continue;
+      }
+
+      const parsed = JSON.parse(text);
+
+      // Validate it's actual Yahoo data
+      if (parsed?.chart?.result || parsed?.chart?.error) {
+        return parsed;
+      }
+
+      errors.push(`${proxy}: unexpected JSON structure`);
+    } catch (e: any) {
+      errors.push(`${proxy}: ${e.message}`);
       continue;
     }
   }
+
   // Final attempt: direct (might work in some environments)
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Yahoo Finance API error: ${res.status}`);
-  return res.json();
+  try {
+    const res = await fetch(url);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch {
+    // ignore
+  }
+
+  throw new Error(`All proxies failed for ${url}. Tried: ${errors.join('; ')}`);
 }
 
 export interface YahooChartResult {
@@ -59,32 +95,33 @@ export async function getStockChart(symbol: string, days: number): Promise<Yahoo
 
   const data = await fetchWithProxy(url);
 
+  if (data?.chart?.error) {
+    throw new Error(data.chart.error.description || `Yahoo API error for ${symbol}`);
+  }
+
   const result = data?.chart?.result?.[0];
-  if (!result) throw new Error(`No data found for ${symbol}`);
+  if (!result) throw new Error(`No data found for ${symbol}. The ticker may be invalid.`);
 
   const meta = result.meta || {};
   const quote = result.indicators?.quote?.[0] || {};
-  const timestamps = (result.timestamp || []).map((t: number) => t * 1000); // to ms
+  const rawTimestamps = (result.timestamp || []).map((t: number) => t * 1000);
 
   const closes: number[] = [];
   const volumes: number[] = [];
   const highs: number[] = [];
   const lows: number[] = [];
   const opens: number[] = [];
+  const timestamps: number[] = [];
 
-  // Filter out null values
-  for (let i = 0; i < timestamps.length; i++) {
+  for (let i = 0; i < rawTimestamps.length; i++) {
     const c = quote.close?.[i];
     if (c != null && !isNaN(c)) {
+      timestamps.push(rawTimestamps[i]);
       closes.push(c);
       volumes.push(quote.volume?.[i] || 0);
       highs.push(quote.high?.[i] || c);
       lows.push(quote.low?.[i] || c);
       opens.push(quote.open?.[i] || c);
-    } else {
-      // Skip this data point — also remove timestamp
-      timestamps.splice(i, 1);
-      i--;
     }
   }
 
@@ -97,7 +134,7 @@ export async function getStockChart(symbol: string, days: number): Promise<Yahoo
     exchange: meta.exchangeName || '',
     regularMarketPrice: meta.regularMarketPrice || closes[closes.length - 1],
     previousClose: meta.chartPreviousClose || meta.previousClose || closes[0],
-    timestamps: timestamps.slice(0, closes.length),
+    timestamps,
     closes,
     volumes,
     highs,
