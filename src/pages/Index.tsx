@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import Header from '@/components/layout/Header';
 import WatchlistBar from '@/components/layout/WatchlistBar';
 import SearchBar from '@/components/search/SearchBar';
@@ -15,6 +15,7 @@ import { getCoinData, getCoinChart, searchCoins } from '@/services/api/coingecko
 import { getStockChart } from '@/services/api/yahoo';
 import { getForexChart } from '@/services/api/frankfurter';
 import { processTA } from '@/analysis/processTA';
+import { getForecastMethodology } from '@/analysis/forecast';
 import {
   CRYPTO_PICKS, STOCK_PICKS_US, STOCK_PICKS_ASX,
   ETF_PICKS_US, ETF_PICKS_ASX, FOREX_PICKS,
@@ -242,6 +243,7 @@ export default function Index() {
   };
 
   const timeframes = assetType === 'crypto' ? CRYPTO_TIMEFRAMES : STOCK_TIMEFRAMES;
+  const methodology = useMemo(() => getForecastMethodology(assetType), [assetType]);
 
   const resultTabs: { key: ResultTab; label: string; icon: string }[] = [
     { key: 'charts', label: 'Charts', icon: '📈' },
@@ -353,6 +355,17 @@ export default function Index() {
                   <VolumeChart data={technicalData} />
                   <RSIChart data={technicalData} />
                 </div>
+                {/* Forecast methodology */}
+                <details className="bg-sf-card border border-border rounded-xl p-3 sm:p-4">
+                  <summary className="text-xs sm:text-sm font-semibold text-foreground cursor-pointer">
+                    📐 Forecast Methodology — <span className="text-primary font-normal">{methodology.name}</span>
+                  </summary>
+                  <div className="mt-3 space-y-2 text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
+                    <p>{methodology.description}</p>
+                    <p><span className="text-foreground font-medium">Expected accuracy:</span> {methodology.accuracy}</p>
+                    <p><span className="text-amber-400 font-medium">⚠️ Limitations:</span> {methodology.limitations}</p>
+                  </div>
+                </details>
               </div>
             )}
 
