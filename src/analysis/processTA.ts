@@ -1,6 +1,7 @@
 import { sma, rsi, bollingerBands, macd, stochastic, findSupportResistance } from './indicators';
 import { computeSignal } from './signals';
 import { generateForecast } from './forecast';
+import type { ForecastMethodId } from './forecast';
 import { generateRecommendations } from './recommendations';
 import { generateTradeSetups } from './tradeSetup';
 import type { TechnicalData, Indicators } from '@/types/analysis';
@@ -50,7 +51,8 @@ export function processTA(
   rawTimestamps: number[],
   rawVolumes: number[],
   forecastPercent: number,
-  assetType: AssetType
+  assetType: AssetType,
+  forecastMethod: ForecastMethodId = 'holt'
 ): TechnicalData {
   // Downsample
   const maxPoints = 200;
@@ -88,7 +90,7 @@ export function processTA(
 
   const currentPrice = closes[closes.length - 1];
   const signal = computeSignal(indicators, currentPrice);
-  const { forecast, target } = generateForecast(closes, timestamps, forecastPercent, assetType);
+  const { forecast, target } = generateForecast(closes, timestamps, forecastPercent, assetType, forecastMethod);
   const recommendations = generateRecommendations(signal, currentPrice, support, resistance, target, assetType, currentRsi);
   const tradeSetups = generateTradeSetups(support, resistance, signal);
   const marketPhase = detectMarketPhase(closes, sma20, sma50);

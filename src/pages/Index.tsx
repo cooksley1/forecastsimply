@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import WatchlistBar from '@/components/layout/WatchlistBar';
 import SearchBar from '@/components/search/SearchBar';
@@ -15,7 +15,8 @@ import { getCoinData, getCoinChart, searchCoins } from '@/services/api/coingecko
 import { getStockChart } from '@/services/api/yahoo';
 import { getForexChart } from '@/services/api/frankfurter';
 import { processTA } from '@/analysis/processTA';
-import { getForecastMethodology } from '@/analysis/forecast';
+import { FORECAST_METHODS } from '@/analysis/forecast';
+import type { ForecastMethodId } from '@/analysis/forecast';
 import {
   CRYPTO_PICKS, STOCK_PICKS_US, STOCK_PICKS_ASX,
   ETF_PICKS_US, ETF_PICKS_ASX, FOREX_PICKS,
@@ -34,6 +35,7 @@ export default function Index() {
   const [technicalData, setTechnicalData] = useState<TechnicalData | null>(null);
   const [timeframeDays, setTimeframeDays] = useState(90);
   const [forecastPercent, setForecastPercent] = useState(30);
+  const [forecastMethod, setForecastMethod] = useState<ForecastMethodId>('holt');
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>(() => {
     try { return JSON.parse(localStorage.getItem('sf_watchlist') || '[]'); } catch { return []; }
   });
@@ -88,7 +90,7 @@ export default function Index() {
       const timestamps = prices.map((p: number[]) => p[0]);
       const vols = volumes.map((v: number[]) => v[1]);
 
-      const ta = processTA(closes, timestamps, vols, forecastPercent, 'crypto');
+      const ta = processTA(closes, timestamps, vols, forecastPercent, 'crypto', forecastMethod);
       currentAssetRef.current = { id: coinId, type: 'crypto' };
       setAssetInfo(info);
       setTechnicalData(ta);
@@ -99,7 +101,7 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, addToWatchlist]);
+  }, [timeframeDays, forecastPercent, forecastMethod, addToWatchlist]);
 
   /* ── Stocks / ETFs ── */
   const analyseStock = useCallback(async (symbol: string, type: 'stocks' | 'etfs') => {
@@ -122,7 +124,7 @@ export default function Index() {
         exchange: chart.exchange,
       };
 
-      const ta = processTA(chart.closes, chart.timestamps, chart.volumes, forecastPercent, type);
+      const ta = processTA(chart.closes, chart.timestamps, chart.volumes, forecastPercent, type, forecastMethod);
       currentAssetRef.current = { id: symbol, type };
       setAssetInfo(info);
       setTechnicalData(ta);
@@ -133,7 +135,7 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, addToWatchlist]);
+  }, [timeframeDays, forecastPercent, forecastMethod, addToWatchlist]);
 
   /* ── Forex ── */
   const analyseForex = useCallback(async (pairId: string) => {
@@ -159,7 +161,7 @@ export default function Index() {
       };
 
       const emptyVols = new Array(chart.closes.length).fill(0);
-      const ta = processTA(chart.closes, chart.timestamps, emptyVols, forecastPercent, 'forex');
+      const ta = processTA(chart.closes, chart.timestamps, emptyVols, forecastPercent, 'forex', forecastMethod);
       currentAssetRef.current = { id: pairId, type: 'forex' };
       setAssetInfo(info);
       setTechnicalData(ta);
@@ -170,7 +172,7 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, addToWatchlist]);
+  }, [timeframeDays, forecastPercent, forecastMethod, addToWatchlist]);
 
   /* ── Auto-reanalyse when timeframe or forecast % changes ── */
   useEffect(() => {
@@ -189,7 +191,7 @@ export default function Index() {
     }, 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeframeDays, forecastPercent]);
+  }, [timeframeDays, forecastPercent, forecastMethod]);
 
   /* ── Unified handlers ── */
   const handleSearch = useCallback(async (query: string) => {
@@ -243,7 +245,7 @@ export default function Index() {
   };
 
   const timeframes = assetType === 'crypto' ? CRYPTO_TIMEFRAMES : STOCK_TIMEFRAMES;
-  const methodology = useMemo(() => getForecastMethodology(assetType), [assetType]);
+  const activeMethodInfo = FORECAST_METHODS.find(m => m.id === forecastMethod) || FORECAST_METHODS[0];
 
   const resultTabs: { key: ResultTab; label: string; icon: string }[] = [
     { key: 'charts', label: 'Charts', icon: '📈' },
@@ -307,8 +309,29 @@ export default function Index() {
               />
               <span className="text-[10px] sm:text-xs font-mono text-foreground">{forecastPercent}%</span>
               <span className="text-[10px] text-muted-foreground/80 ml-1">
-                — How far ahead to predict ({forecastPercent}% of the chart data is used to project future prices)
+                — Projects {forecastPercent}% of chart length into the future
               </span>
+            </div>
+
+            {/* Forecast method selector */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[10px] sm:text-xs text-muted-foreground font-mono">FORECAST METHOD</span>
+              <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2">
+                {FORECAST_METHODS.map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => setForecastMethod(m.id)}
+                    className={`text-left px-2.5 py-1.5 rounded-lg border text-[10px] sm:text-xs transition-all ${
+                      forecastMethod === m.id
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground'
+                    }`}
+                  >
+                    <span className="font-medium">{m.shortName}</span>
+                    <span className="text-muted-foreground/70 ml-1">— {m.bestFor.split('.')[0]}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -356,16 +379,17 @@ export default function Index() {
                   <RSIChart data={technicalData} />
                 </div>
                 {/* Forecast methodology */}
-                <details className="bg-sf-card border border-border rounded-xl p-3 sm:p-4">
-                  <summary className="text-xs sm:text-sm font-semibold text-foreground cursor-pointer">
-                    📐 Forecast Methodology — <span className="text-primary font-normal">{methodology.name}</span>
-                  </summary>
-                  <div className="mt-3 space-y-2 text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
-                    <p>{methodology.description}</p>
-                    <p><span className="text-foreground font-medium">Expected accuracy:</span> {methodology.accuracy}</p>
-                    <p><span className="text-amber-400 font-medium">⚠️ Limitations:</span> {methodology.limitations}</p>
+                <div className="bg-sf-card border border-border rounded-xl p-3 sm:p-4 space-y-2">
+                  <h4 className="text-xs sm:text-sm font-semibold text-foreground">
+                    📐 Active: <span className="text-primary">{activeMethodInfo.name}</span>
+                  </h4>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">{activeMethodInfo.description}</p>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-[10px] sm:text-[11px]">
+                    <div><span className="text-foreground font-medium">Accuracy:</span> <span className="text-muted-foreground">{activeMethodInfo.accuracy}</span></div>
+                    <div><span className="text-foreground font-medium">Best for:</span> <span className="text-muted-foreground">{activeMethodInfo.bestFor}</span></div>
                   </div>
-                </details>
+                  <p className="text-[10px] sm:text-[11px] text-warning/80">⚠️ {activeMethodInfo.limitations}</p>
+                </div>
               </div>
             )}
 
