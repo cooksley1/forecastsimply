@@ -20,7 +20,10 @@ export default function VolumeChart({ data }: Props) {
 
   return (
     <div className="bg-sf-card border border-border rounded-xl p-3 sm:p-4">
-      <h3 className="text-foreground font-semibold text-xs sm:text-sm mb-2 sm:mb-3">Volume</h3>
+      <div className="mb-2 sm:mb-3">
+        <h3 className="text-foreground font-semibold text-xs sm:text-sm">Volume</h3>
+        <p className="text-[10px] text-muted-foreground/70 mt-0.5">How much was traded each period. High volume on a price move = strong conviction. Low volume = weak move that may reverse.</p>
+      </div>
       <ResponsiveContainer width="100%" height={100}>
         <BarChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(216 30% 18% / 0.3)" />
