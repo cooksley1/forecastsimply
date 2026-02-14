@@ -21,21 +21,21 @@ export default function SignalPanel({ signal, price, name, symbol }: Props) {
   };
 
   return (
-    <div className={`border rounded-xl p-5 ${colorMap[signal.color]} ${glowMap[signal.color]}`}>
-      <div className="flex items-center justify-between mb-3">
+    <div className={`border rounded-xl p-3 sm:p-5 ${colorMap[signal.color]} ${glowMap[signal.color]}`}>
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div>
-          <h2 className="text-foreground text-lg font-bold">{name}</h2>
-          <span className="text-muted-foreground text-xs font-mono">{symbol}</span>
+          <h2 className="text-foreground text-base sm:text-lg font-bold">{name}</h2>
+          <span className="text-muted-foreground text-[10px] sm:text-xs font-mono">{symbol}</span>
         </div>
         <div className="text-right">
-          <div className="text-foreground text-xl font-mono font-bold">
+          <div className="text-foreground text-lg sm:text-xl font-mono font-bold">
             ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className={`text-2xl font-bold font-mono ${signal.color === 'green' ? 'text-positive' : signal.color === 'red' ? 'text-negative' : 'text-neutral-signal'}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+        <div className={`text-xl sm:text-2xl font-bold font-mono ${signal.color === 'green' ? 'text-positive' : signal.color === 'red' ? 'text-negative' : 'text-neutral-signal'}`}>
           {signal.label}
         </div>
         <div className="flex-1">
@@ -52,9 +52,9 @@ export default function SignalPanel({ signal, price, name, symbol }: Props) {
             />
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-xs text-muted-foreground">Score</div>
-          <div className="font-mono font-bold text-foreground">{signal.score > 0 ? '+' : ''}{signal.score}</div>
+        <div className="flex sm:flex-col items-center sm:items-end gap-1 sm:gap-0 sm:text-right">
+          <span className="text-xs text-muted-foreground">Score</span>
+          <span className="font-mono font-bold text-foreground">{signal.score > 0 ? '+' : ''}{signal.score}</span>
         </div>
       </div>
     </div>

@@ -16,15 +16,15 @@ export default function RSIChart({ data }: Props) {
     .filter(d => d.rsi !== undefined);
 
   return (
-    <div className="bg-sf-card border border-border rounded-xl p-4">
-      <h3 className="text-foreground font-semibold text-sm mb-3">
+    <div className="bg-sf-card border border-border rounded-xl p-3 sm:p-4">
+      <h3 className="text-foreground font-semibold text-xs sm:text-sm mb-2 sm:mb-3">
         RSI (14) — <span className="font-mono text-primary">{data.indicators.currentRsi.toFixed(1)}</span>
       </h3>
-      <ResponsiveContainer width="100%" height={120}>
+      <ResponsiveContainer width="100%" height={100}>
         <LineChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(216 30% 18% / 0.3)" />
           <XAxis dataKey="time" tick={false} axisLine={{ stroke: 'hsl(216 30% 18%)' }} />
-          <YAxis domain={[0, 100]} ticks={[30, 50, 70]} tick={{ fill: 'hsl(213 20% 55%)', fontSize: 9, fontFamily: 'JetBrains Mono' }} axisLine={false} />
+          <YAxis domain={[0, 100]} ticks={[30, 50, 70]} tick={{ fill: 'hsl(213 20% 55%)', fontSize: 9, fontFamily: 'JetBrains Mono' }} axisLine={false} width={30} />
           <ReferenceArea y1={70} y2={100} fill="hsl(0 84% 60% / 0.08)" />
           <ReferenceArea y1={0} y2={30} fill="hsl(142 71% 45% / 0.08)" />
           <ReferenceLine y={30} stroke="hsl(142 71% 45% / 0.3)" strokeDasharray="4 4" />
