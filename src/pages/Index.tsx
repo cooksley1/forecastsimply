@@ -6,16 +6,19 @@ import QuickPicks from '@/components/search/QuickPicks';
 import MainChart from '@/components/charts/MainChart';
 import VolumeChart from '@/components/charts/VolumeChart';
 import RSIChart from '@/components/charts/RSIChart';
+import ChartControls from '@/components/charts/ChartControls';
+import type { RiskProfile } from '@/components/charts/ChartControls';
 import SignalPanel from '@/components/analysis/SignalPanel';
 import RecommendationPanel from '@/components/analysis/RecommendationPanel';
 import TradeSetupPanel from '@/components/analysis/TradeSetupPanel';
 import AnalysisTextPanel from '@/components/analysis/AnalysisTextPanel';
 import IndicatorsPanel from '@/components/analysis/IndicatorsPanel';
+import PortfolioBuilder from '@/components/analysis/PortfolioBuilder';
+import TopPicks from '@/components/analysis/TopPicks';
 import { getCoinData, getCoinChart, searchCoins } from '@/services/api/coingecko';
 import { getStockChart } from '@/services/api/yahoo';
 import { getForexChart } from '@/services/api/frankfurter';
 import { processTA } from '@/analysis/processTA';
-import { FORECAST_METHODS } from '@/analysis/forecast';
 import type { ForecastMethodId } from '@/analysis/forecast';
 import {
   CRYPTO_PICKS, STOCK_PICKS_US, STOCK_PICKS_ASX,
@@ -36,11 +39,11 @@ export default function Index() {
   const [timeframeDays, setTimeframeDays] = useState(90);
   const [forecastPercent, setForecastPercent] = useState(30);
   const [forecastMethod, setForecastMethod] = useState<ForecastMethodId>('holt');
+  const [riskProfile, setRiskProfile] = useState<RiskProfile>('moderate');
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>(() => {
     try { return JSON.parse(localStorage.getItem('sf_watchlist') || '[]'); } catch { return []; }
   });
 
-  // Track current analysed asset for re-analysis on settings change
   const currentAssetRef = useRef<{ id: string; type: AssetType } | null>(null);
   const isFirstRender = useRef(true);
 
@@ -174,7 +177,7 @@ export default function Index() {
     }
   }, [timeframeDays, forecastPercent, forecastMethod, addToWatchlist]);
 
-  /* ── Auto-reanalyse when timeframe or forecast % changes ── */
+  /* ── Auto-reanalyse when settings change ── */
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -245,7 +248,6 @@ export default function Index() {
   };
 
   const timeframes = assetType === 'crypto' ? CRYPTO_TIMEFRAMES : STOCK_TIMEFRAMES;
-  const activeMethodInfo = FORECAST_METHODS.find(m => m.id === forecastMethod) || FORECAST_METHODS[0];
 
   const resultTabs: { key: ResultTab; label: string; icon: string }[] = [
     { key: 'charts', label: 'Charts', icon: '📈' },
@@ -274,66 +276,6 @@ export default function Index() {
             loading={loading}
           />
           <QuickPicks picks={getQuickPicks()} onSelect={handleQuickPick} loading={loading} />
-
-          {/* Timeframe + Forecast controls */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto">
-              <span className="text-[10px] sm:text-xs text-muted-foreground font-mono shrink-0">TIMEFRAME</span>
-              {timeframes.map(tf => (
-                <button
-                  key={tf.days}
-                  onClick={() => setTimeframeDays(tf.days)}
-                  className={`px-2 sm:px-3 py-1 rounded text-[10px] sm:text-xs font-mono transition-all whitespace-nowrap ${
-                    timeframeDays === tf.days
-                      ? 'bg-primary/15 text-primary'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {tf.label}
-                </button>
-              ))}
-              {currentAssetRef.current && (
-                <span className="text-[10px] text-muted-foreground/60 ml-1 italic shrink-0">← changes chart period</span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] sm:text-xs text-muted-foreground font-mono shrink-0">FORECAST</span>
-              <input
-                type="range"
-                min={10}
-                max={80}
-                value={forecastPercent}
-                onChange={e => setForecastPercent(Number(e.target.value))}
-                className="w-20 sm:w-24 accent-primary"
-              />
-              <span className="text-[10px] sm:text-xs font-mono text-foreground">{forecastPercent}%</span>
-              <span className="text-[10px] text-muted-foreground/80 ml-1">
-                — Projects {forecastPercent}% of chart length into the future
-              </span>
-            </div>
-
-            {/* Forecast method selector */}
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] sm:text-xs text-muted-foreground font-mono">FORECAST METHOD</span>
-              <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2">
-                {FORECAST_METHODS.map(m => (
-                  <button
-                    key={m.id}
-                    onClick={() => setForecastMethod(m.id)}
-                    className={`text-left px-2.5 py-1.5 rounded-lg border text-[10px] sm:text-xs transition-all ${
-                      forecastMethod === m.id
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground'
-                    }`}
-                  >
-                    <span className="font-medium">{m.shortName}</span>
-                    <span className="text-muted-foreground/70 ml-1">— {m.bestFor.split('.')[0]}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Loading */}
@@ -372,23 +314,29 @@ export default function Index() {
             </div>
 
             {activeTab === 'charts' && (
-              <div className="space-y-4">
-                <MainChart data={technicalData} />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <VolumeChart data={technicalData} />
-                  <RSIChart data={technicalData} />
-                </div>
-                {/* Forecast methodology */}
-                <div className="bg-sf-card border border-border rounded-xl p-3 sm:p-4 space-y-2">
-                  <h4 className="text-xs sm:text-sm font-semibold text-foreground">
-                    📐 Active: <span className="text-primary">{activeMethodInfo.name}</span>
-                  </h4>
-                  <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">{activeMethodInfo.description}</p>
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-[10px] sm:text-[11px]">
-                    <div><span className="text-foreground font-medium">Accuracy:</span> <span className="text-muted-foreground">{activeMethodInfo.accuracy}</span></div>
-                    <div><span className="text-foreground font-medium">Best for:</span> <span className="text-muted-foreground">{activeMethodInfo.bestFor}</span></div>
+              <div className="flex flex-col lg:flex-row gap-4">
+                {/* Charts — main area */}
+                <div className="flex-1 min-w-0 space-y-4">
+                  <MainChart data={technicalData} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <VolumeChart data={technicalData} />
+                    <RSIChart data={technicalData} />
                   </div>
-                  <p className="text-[10px] sm:text-[11px] text-warning/80">⚠️ {activeMethodInfo.limitations}</p>
+                </div>
+
+                {/* Controls — sidebar on desktop, stacked on mobile */}
+                <div className="w-full lg:w-64 xl:w-72 shrink-0">
+                  <ChartControls
+                    timeframes={timeframes}
+                    timeframeDays={timeframeDays}
+                    setTimeframeDays={setTimeframeDays}
+                    forecastPercent={forecastPercent}
+                    setForecastPercent={setForecastPercent}
+                    forecastMethod={forecastMethod}
+                    setForecastMethod={setForecastMethod}
+                    riskProfile={riskProfile}
+                    setRiskProfile={setRiskProfile}
+                  />
                 </div>
               </div>
             )}
@@ -411,14 +359,40 @@ export default function Index() {
           </>
         )}
 
-        {/* Empty state */}
+        {/* Empty state — show Top Picks + Portfolio Builder */}
         {!technicalData && !loading && !error && (
-          <div className="text-center py-12 sm:py-20 space-y-3 sm:space-y-4">
-            <div className="text-3xl sm:text-4xl">🔍</div>
-            <h2 className="text-foreground text-lg sm:text-xl font-semibold">Select an asset to analyse</h2>
-            <p className="text-muted-foreground text-xs sm:text-sm max-w-md mx-auto px-4">
-              Search or tap a quick pick above to get real-time technical analysis, signals, forecasts, and trade setups.
-            </p>
+          <div className="space-y-6">
+            <div className="text-center py-6 sm:py-10 space-y-3">
+              <div className="text-3xl sm:text-4xl">🔍</div>
+              <h2 className="text-foreground text-lg sm:text-xl font-semibold">Select an asset to analyse</h2>
+              <p className="text-muted-foreground text-xs sm:text-sm max-w-md mx-auto px-4">
+                Search or tap a quick pick above, or explore the top picks and portfolio suggestions below.
+              </p>
+            </div>
+
+            {assetType === 'crypto' && (
+              <TopPicks onSelect={(id) => analyseCrypto(id)} />
+            )}
+
+            <PortfolioBuilder riskProfile={riskProfile} />
+
+            {/* Risk profile selector for home screen */}
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-[10px] text-muted-foreground font-mono">RISK:</span>
+              {(['conservative', 'moderate', 'aggressive'] as RiskProfile[]).map(r => (
+                <button
+                  key={r}
+                  onClick={() => setRiskProfile(r)}
+                  className={`px-3 py-1 rounded-lg text-[10px] sm:text-xs font-medium transition-all ${
+                    riskProfile === r
+                      ? 'bg-primary/15 text-primary border border-primary/30'
+                      : 'text-muted-foreground hover:text-foreground border border-transparent'
+                  }`}
+                >
+                  {r === 'conservative' ? '🛡️' : r === 'moderate' ? '⚖️' : '🔥'} {r.charAt(0).toUpperCase() + r.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </main>
