@@ -378,9 +378,7 @@ export default function Index() {
               </>
             )}
 
-            <PortfolioBuilder riskProfile={riskProfile} />
-
-            {/* Risk profile selector for home screen */}
+            {/* Risk profile selector + Portfolio Builder */}
             <div className="flex items-center justify-center gap-2">
               <span className="text-[10px] text-muted-foreground font-mono">RISK:</span>
               {(['conservative', 'moderate', 'aggressive'] as RiskProfile[]).map(r => (
@@ -397,6 +395,7 @@ export default function Index() {
                 </button>
               ))}
             </div>
+            <PortfolioBuilder riskProfile={riskProfile} />
           </div>
         )}
       </main>
