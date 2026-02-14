@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getCoinData } from '@/services/api/coingecko';
+import { getTopTickers, coinloreSymbolToGeckoId } from '@/services/api/coinlore';
+import type { CoinLoreTicker } from '@/services/api/coinlore';
 
 interface TopPick {
   id: string;
@@ -18,8 +19,6 @@ interface Props {
   onSelect: (id: string) => void;
 }
 
-const TOP_COIN_IDS = ['bitcoin', 'ethereum', 'solana', 'cardano', 'chainlink', 'avalanche-2'];
-
 function getVerdict(change24h: number, change7d: number): { verdict: TopPick['verdict']; reason: string } {
   if (change7d > 5 && change24h > 0) return { verdict: 'Buy', reason: 'Strong momentum — rising on both daily and weekly timeframes.' };
   if (change7d < -10) return { verdict: 'Avoid', reason: 'Heavy selling pressure — wait for stabilisation before entering.' };
@@ -37,30 +36,27 @@ export default function TopPicks({ onSelect }: Props) {
     async function load() {
       setLoading(true);
       try {
-        const results = await Promise.allSettled(
-          TOP_COIN_IDS.map(id => getCoinData(id))
-        );
+        // Use CoinLore — single fast call, no rate limits
+        const tickers = await getTopTickers(20);
         if (cancelled) return;
-        const items: TopPick[] = [];
-        for (const r of results) {
-          if (r.status !== 'fulfilled') continue;
-          const d = r.value;
-          const c24 = d.market_data?.price_change_percentage_24h || 0;
-          const c7d = d.market_data?.price_change_percentage_7d || 0;
+
+        const items: TopPick[] = tickers.slice(0, 12).map((t: CoinLoreTicker) => {
+          const c24 = parseFloat(t.percent_change_24h) || 0;
+          const c7d = parseFloat(t.percent_change_7d) || 0;
           const { verdict, reason } = getVerdict(c24, c7d);
-          items.push({
-            id: d.id,
-            name: d.name,
-            symbol: d.symbol?.toUpperCase(),
-            price: d.market_data?.current_price?.usd || 0,
+          return {
+            id: coinloreSymbolToGeckoId(t.symbol, t.name), // CoinGecko ID for full analysis
+            name: t.name,
+            symbol: t.symbol.toUpperCase(),
+            price: parseFloat(t.price_usd) || 0,
             change24h: c24,
             change7d: c7d,
-            marketCap: d.market_data?.market_cap?.usd || 0,
-            image: d.image?.small || '',
+            marketCap: parseFloat(t.market_cap_usd) || 0,
+            image: '', // CoinLore doesn't provide images
             verdict,
             reason,
-          });
-        }
+          };
+        });
         setPicks(items);
       } catch {
         // silent fail
@@ -91,7 +87,7 @@ export default function TopPicks({ onSelect }: Props) {
       <div>
         <h3 className="text-sm sm:text-base font-semibold text-foreground">🏆 Top Picks — Right Now</h3>
         <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
-          Live signals based on 24h and 7d momentum. Tap any asset to run a full analysis.
+          Live signals via CoinLore (no rate limits). Tap any asset to run full technical analysis.
         </p>
       </div>
 
@@ -104,7 +100,9 @@ export default function TopPicks({ onSelect }: Props) {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {p.image && <img src={p.image} alt={p.name} className="w-5 h-5 rounded-full" />}
+                <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[8px] font-bold text-primary">
+                  {p.symbol.slice(0, 2)}
+                </div>
                 <div>
                   <span className="text-xs font-medium text-foreground">{p.name}</span>
                   <span className="text-[9px] text-muted-foreground ml-1">{p.symbol}</span>
@@ -137,7 +135,7 @@ export default function TopPicks({ onSelect }: Props) {
       </div>
 
       <p className="text-[9px] text-muted-foreground/60 italic text-center">
-        Signals are based on short-term momentum only. Always check the full analysis before investing.
+        Powered by CoinLore (free, no rate limits). Full analysis uses CoinGecko for chart data.
       </p>
     </div>
   );

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getCoinChart, getCoinData, getTopCoins, getTrendingCoins } from '@/services/api/coingecko';
+import { getTopTickers, coinloreSymbolToGeckoId } from '@/services/api/coinlore';
+import type { CoinLoreTicker } from '@/services/api/coinlore';
+import { getCoinChart, getCoinData } from '@/services/api/coingecko';
 import { processTA } from '@/analysis/processTA';
 import { fmtPrice } from '@/utils/format';
 
@@ -18,6 +20,28 @@ const STORAGE_KEY = 'sf_breakout_custom';
 
 interface Props {
   onSelect: (id: string) => void;
+}
+
+/** Quick pre-screen using CoinLore data only (no API cost) */
+function preScreenScore(t: CoinLoreTicker): number {
+  let s = 0;
+  const c24 = parseFloat(t.percent_change_24h) || 0;
+  const c7d = parseFloat(t.percent_change_7d) || 0;
+  const c1h = parseFloat(t.percent_change_1h) || 0;
+
+  // Positive but not overextended
+  if (c24 > 0 && c24 < 8) s += 20;
+  if (c7d > 0 && c7d < 15) s += 15;
+  if (c1h > 0 && c1h < 3) s += 10;
+
+  // Not dumping
+  if (c24 > -2) s += 5;
+  if (c7d > -5) s += 5;
+
+  // Good volume (top coins tend to have high volume anyway)
+  if (t.volume24 > 50_000_000) s += 10;
+
+  return s;
 }
 
 export default function BreakoutFinder({ onSelect }: Props) {
@@ -47,41 +71,41 @@ export default function BreakoutFinder({ onSelect }: Props) {
   const scan = async () => {
     setScanning(true);
     setResult(null);
-    setScanStatus('Building scan list...');
     setScannedCount(0);
 
     try {
-      // 1. Gather IDs from all three sources
-      const allIds = new Set<string>();
-
-      // Top by market cap
+      // Step 1: Fetch top 100 coins from CoinLore (single fast call, no rate limits)
+      setScanStatus('Fetching top 100 coins from CoinLore...');
+      let tickers: CoinLoreTicker[] = [];
       try {
-        setScanStatus('Fetching top coins by market cap...');
-        const topCoins = await getTopCoins(15);
-        for (const c of topCoins) allIds.add(c.id);
-      } catch { /* silent */ }
+        tickers = await getTopTickers(100);
+      } catch { /* fallback to empty */ }
 
-      // Trending
-      try {
-        setScanStatus('Fetching trending coins...');
-        const trending = await getTrendingCoins();
-        for (const c of trending) allIds.add(c.id);
-      } catch { /* silent */ }
+      // Step 2: Pre-screen — score each coin using CoinLore data only
+      setScanStatus(`Pre-screening ${tickers.length} coins...`);
+      const scored = tickers
+        .map(t => ({ ticker: t, preScore: preScreenScore(t) }))
+        .sort((a, b) => b.preScore - a.preScore);
 
-      // User custom list
-      for (const id of customCoins) allIds.add(id);
+      // Take top 10 candidates + custom coins for deep analysis
+      const topCandidateIds = new Set<string>();
+      for (const { ticker } of scored.slice(0, 10)) {
+        topCandidateIds.add(coinloreSymbolToGeckoId(ticker.symbol, ticker.name));
+      }
+      for (const id of customCoins) topCandidateIds.add(id);
 
-      const scanList = Array.from(allIds);
-      setTotalToScan(scanList.length);
-      setScanStatus(`Scanning ${scanList.length} assets...`);
+      const deepList = Array.from(topCandidateIds);
+      setTotalToScan(deepList.length);
+      setScanStatus(`Deep analysing top ${deepList.length} candidates via CoinGecko charts...`);
 
+      // Step 3: Deep analysis — only these few coins hit CoinGecko
       let best: BreakoutResult | null = null;
       let count = 0;
 
-      for (const coinId of scanList) {
+      for (const coinId of deepList) {
         count++;
         setScannedCount(count);
-        setScanStatus(`Analysing ${coinId} (${count}/${scanList.length})...`);
+        setScanStatus(`Analysing ${coinId} (${count}/${deepList.length})...`);
 
         try {
           const [coinData, chartData] = await Promise.all([
@@ -218,7 +242,7 @@ export default function BreakoutFinder({ onSelect }: Props) {
         <div>
           <h3 className="text-sm sm:text-base font-semibold text-foreground">🚀 Breakout Finder</h3>
           <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-            Scans trending + top market cap + your custom picks using RSI, Bollinger Bands, MACD & volume
+            Pre-screens 100 coins via CoinLore (instant), then deep-analyses top candidates with full TA
           </p>
         </div>
         <div className="flex gap-2">
@@ -241,7 +265,7 @@ export default function BreakoutFinder({ onSelect }: Props) {
       {/* Custom coin list editor */}
       {showCustom && (
         <div className="border border-border rounded-lg p-3 space-y-2 bg-background/50">
-          <p className="text-[10px] text-muted-foreground">Add CoinGecko IDs (e.g. "bitcoin", "solana", "pepe"). These get scanned alongside trending & top coins.</p>
+          <p className="text-[10px] text-muted-foreground">Add CoinGecko IDs (e.g. "bitcoin", "solana", "pepe"). These get deep-analysed alongside the top pre-screened coins.</p>
           <div className="flex gap-2">
             <input
               value={customInput}
@@ -276,7 +300,7 @@ export default function BreakoutFinder({ onSelect }: Props) {
               <div className="h-1.5 bg-border rounded-full overflow-hidden">
                 <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${(scannedCount / totalToScan) * 100}%` }} />
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">{scannedCount} / {totalToScan} analysed</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{scannedCount} / {totalToScan} deep analysed</p>
             </div>
           )}
         </div>
@@ -343,7 +367,7 @@ export default function BreakoutFinder({ onSelect }: Props) {
 
       {result === null && !scanning && (
         <p className="text-[10px] text-muted-foreground/60 text-center py-2">
-          Hit the button to scan trending, top market cap, and your custom coins for breakout setups
+          Screens 100 coins via CoinLore instantly, then deep-analyses the best candidates with full TA
         </p>
       )}
     </div>
