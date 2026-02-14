@@ -41,11 +41,25 @@ export async function getCoinChart(coinId: string, days: number) {
   return data;
 }
 
-export async function getTopCoins() {
-  const key = 'cg_top';
+export async function getTopCoins(perPage = 15) {
+  const key = `cg_top_${perPage}`;
   const cached = getCached<any>(key, CACHE_TTL);
   if (cached) return cached;
-  const data = await throttledFetch(`${BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=12&page=1&sparkline=false`);
+  const data = await throttledFetch(`${BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=false`);
   setCache(key, data);
   return data;
+}
+
+export async function getTrendingCoins(): Promise<{ id: string; name: string; symbol: string }[]> {
+  const key = 'cg_trending';
+  const cached = getCached<any>(key, CACHE_TTL);
+  if (cached) return cached;
+  const data = await throttledFetch(`${BASE}/search/trending`);
+  const coins = (data.coins || []).map((c: any) => ({
+    id: c.item?.id,
+    name: c.item?.name,
+    symbol: c.item?.symbol,
+  })).filter((c: any) => c.id);
+  setCache(key, coins);
+  return coins;
 }
