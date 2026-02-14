@@ -17,9 +17,14 @@ export default function RSIChart({ data }: Props) {
 
   return (
     <div className="bg-sf-card border border-border rounded-xl p-3 sm:p-4">
-      <h3 className="text-foreground font-semibold text-xs sm:text-sm mb-2 sm:mb-3">
-        RSI (14) — <span className="font-mono text-primary">{data.indicators.currentRsi.toFixed(1)}</span>
-      </h3>
+      <div className="mb-2 sm:mb-3">
+        <h3 className="text-foreground font-semibold text-xs sm:text-sm">
+          RSI (14) — <span className="font-mono text-primary">{data.indicators.currentRsi.toFixed(1)}</span>
+        </h3>
+        <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+          Relative Strength Index: measures if the asset is overbought (&gt;70, <span className="text-negative">red zone</span>) or oversold (&lt;30, <span className="text-positive">green zone</span>).
+        </p>
+      </div>
       <ResponsiveContainer width="100%" height={100}>
         <LineChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(216 30% 18% / 0.3)" />

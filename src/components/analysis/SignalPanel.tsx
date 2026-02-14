@@ -7,6 +7,14 @@ interface Props {
   symbol: string;
 }
 
+const signalExplanations: Record<string, string> = {
+  'Strong Buy': 'Multiple indicators suggest this is a great time to buy. The price is showing strong upward momentum.',
+  'Buy': 'More indicators point up than down. Conditions look favourable for buying.',
+  'Hold': 'Signals are mixed — no clear direction. Best to wait for a stronger signal before acting.',
+  'Sell': 'More indicators point down than up. Consider reducing your position or waiting.',
+  'Strong Sell': 'Multiple indicators suggest downward pressure. Caution is advised.',
+};
+
 export default function SignalPanel({ signal, price, name, symbol }: Props) {
   const colorMap = {
     green: 'text-positive border-sf-green/30 bg-sf-green/5',
@@ -56,6 +64,15 @@ export default function SignalPanel({ signal, price, name, symbol }: Props) {
           <span className="text-xs text-muted-foreground">Score</span>
           <span className="font-mono font-bold text-foreground">{signal.score > 0 ? '+' : ''}{signal.score}</span>
         </div>
+      </div>
+
+      {/* Beginner explanation */}
+      <div className="mt-3 pt-3 border-t border-border/50">
+        <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
+          <span className="font-semibold text-foreground/80">What does this mean? </span>
+          {signalExplanations[signal.label]}
+          {' '}The <strong>confidence</strong> shows how certain the algorithm is (higher = more indicators agree). The <strong>score</strong> ranges from -10 to +10 based on combined indicator readings.
+        </p>
       </div>
     </div>
   );

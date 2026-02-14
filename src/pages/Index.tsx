@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import WatchlistBar from '@/components/layout/WatchlistBar';
 import SearchBar from '@/components/search/SearchBar';
@@ -36,6 +36,10 @@ export default function Index() {
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>(() => {
     try { return JSON.parse(localStorage.getItem('sf_watchlist') || '[]'); } catch { return []; }
   });
+
+  // Track current analysed asset for re-analysis on settings change
+  const currentAssetRef = useRef<{ id: string; type: AssetType } | null>(null);
+  const isFirstRender = useRef(true);
 
   const addToWatchlist = useCallback((info: AssetInfo) => {
     setWatchlist(prev => {
@@ -84,6 +88,7 @@ export default function Index() {
       const vols = volumes.map((v: number[]) => v[1]);
 
       const ta = processTA(closes, timestamps, vols, forecastPercent, 'crypto');
+      currentAssetRef.current = { id: coinId, type: 'crypto' };
       setAssetInfo(info);
       setTechnicalData(ta);
       addToWatchlist(info);
@@ -117,6 +122,7 @@ export default function Index() {
       };
 
       const ta = processTA(chart.closes, chart.timestamps, chart.volumes, forecastPercent, type);
+      currentAssetRef.current = { id: symbol, type };
       setAssetInfo(info);
       setTechnicalData(ta);
       addToWatchlist(info);
@@ -133,7 +139,6 @@ export default function Index() {
     setLoading(true);
     setError(null);
     try {
-      // pairId is like "AUDUSD" — split into from/to (3 chars each)
       const from = pairId.slice(0, 3);
       const to = pairId.slice(3, 6);
 
@@ -152,9 +157,9 @@ export default function Index() {
         currency: to,
       };
 
-      // Forex has no volume data — pass empty array
       const emptyVols = new Array(chart.closes.length).fill(0);
       const ta = processTA(chart.closes, chart.timestamps, emptyVols, forecastPercent, 'forex');
+      currentAssetRef.current = { id: pairId, type: 'forex' };
       setAssetInfo(info);
       setTechnicalData(ta);
       addToWatchlist(info);
@@ -165,6 +170,25 @@ export default function Index() {
       setLoading(false);
     }
   }, [timeframeDays, forecastPercent, addToWatchlist]);
+
+  /* ── Auto-reanalyse when timeframe or forecast % changes ── */
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const asset = currentAssetRef.current;
+    if (!asset) return;
+
+    const timer = setTimeout(() => {
+      if (asset.type === 'crypto') analyseCrypto(asset.id);
+      else if (asset.type === 'stocks') analyseStock(asset.id, 'stocks');
+      else if (asset.type === 'etfs') analyseStock(asset.id, 'etfs');
+      else if (asset.type === 'forex') analyseForex(asset.id);
+    }, 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeframeDays, forecastPercent]);
 
   /* ── Unified handlers ── */
   const handleSearch = useCallback(async (query: string) => {
@@ -187,7 +211,6 @@ export default function Index() {
     } else if (assetType === 'etfs') {
       await analyseStock(query.toUpperCase().trim(), 'etfs');
     } else if (assetType === 'forex') {
-      // Try to parse "AUD/USD" or "AUDUSD"
       const clean = query.toUpperCase().replace(/[^A-Z]/g, '');
       if (clean.length === 6) {
         await analyseForex(clean);
@@ -230,7 +253,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header active={assetType} onSelect={(t) => { setAssetType(t); setActiveTab('home'); setTechnicalData(null); setAssetInfo(null); setError(null); }} />
+      <Header active={assetType} onSelect={(t) => { setAssetType(t); setActiveTab('home'); setTechnicalData(null); setAssetInfo(null); setError(null); currentAssetRef.current = null; }} />
       <WatchlistBar items={watchlist} onSelect={handleWatchlistSelect} onClear={() => { setWatchlist([]); localStorage.removeItem('sf_watchlist'); }} />
 
       <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
@@ -249,7 +272,7 @@ export default function Index() {
           <QuickPicks picks={getQuickPicks()} onSelect={handleQuickPick} loading={loading} />
 
           {/* Timeframe + Forecast controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <div className="flex flex-col gap-2">
             <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto">
               <span className="text-[10px] sm:text-xs text-muted-foreground font-mono shrink-0">TIMEFRAME</span>
               {timeframes.map(tf => (
@@ -265,9 +288,12 @@ export default function Index() {
                   {tf.label}
                 </button>
               ))}
+              {currentAssetRef.current && (
+                <span className="text-[10px] text-muted-foreground/60 ml-1 italic shrink-0">← changes chart period</span>
+              )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] sm:text-xs text-muted-foreground font-mono shrink-0">FORECAST</span>
               <input
                 type="range"
@@ -278,6 +304,9 @@ export default function Index() {
                 className="w-20 sm:w-24 accent-primary"
               />
               <span className="text-[10px] sm:text-xs font-mono text-foreground">{forecastPercent}%</span>
+              <span className="text-[10px] text-muted-foreground/80 ml-1">
+                — How far ahead to predict ({forecastPercent}% of the chart data is used to project future prices)
+              </span>
             </div>
           </div>
         </div>
@@ -299,10 +328,8 @@ export default function Index() {
         {/* Results */}
         {technicalData && assetInfo && !loading && (
           <>
-            {/* Signal banner */}
             <SignalPanel signal={technicalData.signal} price={assetInfo.price} name={assetInfo.name} symbol={assetInfo.symbol} />
 
-            {/* Result tabs */}
             <div className="flex gap-0.5 sm:gap-1 overflow-x-auto border-b border-border pb-0 -mx-3 px-3 sm:mx-0 sm:px-0">
               {resultTabs.map(t => (
                 <button
@@ -319,7 +346,6 @@ export default function Index() {
               ))}
             </div>
 
-            {/* Tab content */}
             {activeTab === 'charts' && (
               <div className="space-y-4">
                 <MainChart data={technicalData} />
@@ -360,7 +386,6 @@ export default function Index() {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-border mt-8 sm:mt-12 py-4 sm:py-6 px-3 sm:px-4">
         <div className="max-w-7xl mx-auto text-center space-y-1.5 sm:space-y-2">
           <p className="text-xs text-muted-foreground font-mono">Signal Forge v6.0 — Multi-Asset Investment Analysis</p>
