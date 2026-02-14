@@ -141,44 +141,46 @@ export default function Index() {
       <Header active={assetType} onSelect={(t) => { setAssetType(t); setActiveTab('home'); setTechnicalData(null); setAssetInfo(null); setError(null); }} />
       <WatchlistBar items={watchlist} onSelect={handleWatchlistSelect} onClear={() => { setWatchlist([]); localStorage.removeItem('sf_watchlist'); }} />
 
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Search section */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <SearchBar
             onSearch={handleSearch}
-            placeholder={assetType === 'crypto' ? 'Search coins (e.g., bitcoin, ethereum)...' : assetType === 'forex' ? 'Search currency pairs...' : 'Search by ticker or name...'}
+            placeholder={assetType === 'crypto' ? 'Search coins (e.g., bitcoin)...' : assetType === 'forex' ? 'Search currency pairs...' : 'Search by ticker...'}
             loading={loading}
           />
           <QuickPicks picks={getQuickPicks()} onSelect={handleQuickPick} loading={loading} />
 
-          {/* Timeframe selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground font-mono">TIMEFRAME</span>
-            {timeframes.map(tf => (
-              <button
-                key={tf.days}
-                onClick={() => setTimeframeDays(tf.days)}
-                className={`px-3 py-1 rounded text-xs font-mono transition-all ${
-                  timeframeDays === tf.days
-                    ? 'bg-primary/15 text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {tf.label}
-              </button>
-            ))}
+          {/* Timeframe + Forecast controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto">
+              <span className="text-[10px] sm:text-xs text-muted-foreground font-mono shrink-0">TIMEFRAME</span>
+              {timeframes.map(tf => (
+                <button
+                  key={tf.days}
+                  onClick={() => setTimeframeDays(tf.days)}
+                  className={`px-2 sm:px-3 py-1 rounded text-[10px] sm:text-xs font-mono transition-all whitespace-nowrap ${
+                    timeframeDays === tf.days
+                      ? 'bg-primary/15 text-primary'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {tf.label}
+                </button>
+              ))}
+            </div>
 
-            <div className="ml-4 flex items-center gap-2">
-              <span className="text-xs text-muted-foreground font-mono">FORECAST</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] sm:text-xs text-muted-foreground font-mono shrink-0">FORECAST</span>
               <input
                 type="range"
                 min={10}
                 max={80}
                 value={forecastPercent}
                 onChange={e => setForecastPercent(Number(e.target.value))}
-                className="w-24 accent-primary"
+                className="w-20 sm:w-24 accent-primary"
               />
-              <span className="text-xs font-mono text-foreground">{forecastPercent}%</span>
+              <span className="text-[10px] sm:text-xs font-mono text-foreground">{forecastPercent}%</span>
             </div>
           </div>
         </div>
@@ -204,12 +206,12 @@ export default function Index() {
             <SignalPanel signal={technicalData.signal} price={assetInfo.price} name={assetInfo.name} symbol={assetInfo.symbol} />
 
             {/* Result tabs */}
-            <div className="flex gap-1 overflow-x-auto border-b border-border pb-0">
+            <div className="flex gap-0.5 sm:gap-1 overflow-x-auto border-b border-border pb-0 -mx-3 px-3 sm:mx-0 sm:px-0">
               {resultTabs.map(t => (
                 <button
                   key={t.key}
                   onClick={() => setActiveTab(t.key)}
-                  className={`px-4 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition-all ${
+                  className={`px-2.5 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-xs font-medium whitespace-nowrap border-b-2 transition-all ${
                     activeTab === t.key
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -251,19 +253,19 @@ export default function Index() {
 
         {/* Empty state */}
         {!technicalData && !loading && !error && (
-          <div className="text-center py-20 space-y-4">
-            <div className="text-4xl">🔍</div>
-            <h2 className="text-foreground text-xl font-semibold">Select an asset to analyse</h2>
-            <p className="text-muted-foreground text-sm max-w-md mx-auto">
-              Search or click a quick pick above to get real-time technical analysis, signals, forecasts, and trade setups.
+          <div className="text-center py-12 sm:py-20 space-y-3 sm:space-y-4">
+            <div className="text-3xl sm:text-4xl">🔍</div>
+            <h2 className="text-foreground text-lg sm:text-xl font-semibold">Select an asset to analyse</h2>
+            <p className="text-muted-foreground text-xs sm:text-sm max-w-md mx-auto px-4">
+              Search or tap a quick pick above to get real-time technical analysis, signals, forecasts, and trade setups.
             </p>
           </div>
         )}
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border mt-12 py-6 px-4">
-        <div className="max-w-7xl mx-auto text-center space-y-2">
+      <footer className="border-t border-border mt-8 sm:mt-12 py-4 sm:py-6 px-3 sm:px-4">
+        <div className="max-w-7xl mx-auto text-center space-y-1.5 sm:space-y-2">
           <p className="text-xs text-muted-foreground font-mono">Signal Forge v6.0 — Multi-Asset Investment Analysis</p>
           <p className="text-[10px] text-muted-foreground">
             CoinGecko (crypto) • Yahoo Finance (stocks/ETFs) • Frankfurter (forex) • Alpha Vantage (fallback)
