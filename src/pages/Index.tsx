@@ -12,6 +12,8 @@ import TradeSetupPanel from '@/components/analysis/TradeSetupPanel';
 import AnalysisTextPanel from '@/components/analysis/AnalysisTextPanel';
 import IndicatorsPanel from '@/components/analysis/IndicatorsPanel';
 import { getCoinData, getCoinChart, searchCoins } from '@/services/api/coingecko';
+import { getStockChart } from '@/services/api/yahoo';
+import { getForexChart } from '@/services/api/frankfurter';
 import { processTA } from '@/analysis/processTA';
 import {
   CRYPTO_PICKS, STOCK_PICKS_US, STOCK_PICKS_ASX,
@@ -44,6 +46,7 @@ export default function Index() {
     });
   }, []);
 
+  /* ── Crypto ── */
   const analyseCrypto = useCallback(async (coinId: string) => {
     setLoading(true);
     setError(null);
@@ -81,7 +84,6 @@ export default function Index() {
       const vols = volumes.map((v: number[]) => v[1]);
 
       const ta = processTA(closes, timestamps, vols, forecastPercent, 'crypto');
-
       setAssetInfo(info);
       setTechnicalData(ta);
       addToWatchlist(info);
@@ -93,6 +95,78 @@ export default function Index() {
     }
   }, [timeframeDays, forecastPercent, addToWatchlist]);
 
+  /* ── Stocks / ETFs ── */
+  const analyseStock = useCallback(async (symbol: string, type: 'stocks' | 'etfs') => {
+    setLoading(true);
+    setError(null);
+    try {
+      const chart = await getStockChart(symbol, timeframeDays);
+      const change24h = chart.closes.length >= 2
+        ? ((chart.closes[chart.closes.length - 1] - chart.closes[chart.closes.length - 2]) / chart.closes[chart.closes.length - 2]) * 100
+        : undefined;
+
+      const info: AssetInfo = {
+        id: symbol,
+        symbol: chart.symbol || symbol,
+        name: chart.name || symbol,
+        assetType: type,
+        price: chart.regularMarketPrice,
+        change24h,
+        currency: chart.currency,
+        exchange: chart.exchange,
+      };
+
+      const ta = processTA(chart.closes, chart.timestamps, chart.volumes, forecastPercent, type);
+      setAssetInfo(info);
+      setTechnicalData(ta);
+      addToWatchlist(info);
+      setActiveTab('charts');
+    } catch (e: any) {
+      setError(e.message || `Failed to fetch ${symbol}. The CORS proxy may be temporarily unavailable — try again.`);
+    } finally {
+      setLoading(false);
+    }
+  }, [timeframeDays, forecastPercent, addToWatchlist]);
+
+  /* ── Forex ── */
+  const analyseForex = useCallback(async (pairId: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // pairId is like "AUDUSD" — split into from/to (3 chars each)
+      const from = pairId.slice(0, 3);
+      const to = pairId.slice(3, 6);
+
+      const chart = await getForexChart(from, to, timeframeDays);
+      const change24h = chart.closes.length >= 2
+        ? ((chart.closes[chart.closes.length - 1] - chart.closes[chart.closes.length - 2]) / chart.closes[chart.closes.length - 2]) * 100
+        : undefined;
+
+      const info: AssetInfo = {
+        id: pairId,
+        symbol: `${from}/${to}`,
+        name: `${from}/${to}`,
+        assetType: 'forex',
+        price: chart.currentRate,
+        change24h,
+        currency: to,
+      };
+
+      // Forex has no volume data — pass empty array
+      const emptyVols = new Array(chart.closes.length).fill(0);
+      const ta = processTA(chart.closes, chart.timestamps, emptyVols, forecastPercent, 'forex');
+      setAssetInfo(info);
+      setTechnicalData(ta);
+      addToWatchlist(info);
+      setActiveTab('charts');
+    } catch (e: any) {
+      setError(e.message || 'Failed to fetch forex data. Try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [timeframeDays, forecastPercent, addToWatchlist]);
+
+  /* ── Unified handlers ── */
   const handleSearch = useCallback(async (query: string) => {
     if (assetType === 'crypto') {
       setLoading(true);
@@ -108,16 +182,34 @@ export default function Index() {
         setError(e.message);
         setLoading(false);
       }
+    } else if (assetType === 'stocks') {
+      await analyseStock(query.toUpperCase().trim(), 'stocks');
+    } else if (assetType === 'etfs') {
+      await analyseStock(query.toUpperCase().trim(), 'etfs');
+    } else if (assetType === 'forex') {
+      // Try to parse "AUD/USD" or "AUDUSD"
+      const clean = query.toUpperCase().replace(/[^A-Z]/g, '');
+      if (clean.length === 6) {
+        await analyseForex(clean);
+      } else {
+        setError('Enter a 6-character pair like AUDUSD or AUD/USD');
+      }
     }
-  }, [assetType, analyseCrypto]);
+  }, [assetType, analyseCrypto, analyseStock, analyseForex]);
 
   const handleQuickPick = useCallback((id: string) => {
     if (assetType === 'crypto') analyseCrypto(id);
-  }, [assetType, analyseCrypto]);
+    else if (assetType === 'stocks') analyseStock(id, 'stocks');
+    else if (assetType === 'etfs') analyseStock(id, 'etfs');
+    else if (assetType === 'forex') analyseForex(id);
+  }, [assetType, analyseCrypto, analyseStock, analyseForex]);
 
   const handleWatchlistSelect = useCallback((item: WatchlistItem) => {
     if (item.assetType === 'crypto') analyseCrypto(item.id);
-  }, [analyseCrypto]);
+    else if (item.assetType === 'stocks') analyseStock(item.id, 'stocks');
+    else if (item.assetType === 'etfs') analyseStock(item.id, 'etfs');
+    else if (item.assetType === 'forex') analyseForex(item.id);
+  }, [analyseCrypto, analyseStock, analyseForex]);
 
   const getQuickPicks = () => {
     if (assetType === 'crypto') return CRYPTO_PICKS.map(p => ({ label: p.sym, id: p.id }));
@@ -146,7 +238,12 @@ export default function Index() {
         <div className="space-y-3 sm:space-y-4">
           <SearchBar
             onSearch={handleSearch}
-            placeholder={assetType === 'crypto' ? 'Search coins (e.g., bitcoin)...' : assetType === 'forex' ? 'Search currency pairs...' : 'Search by ticker...'}
+            placeholder={
+              assetType === 'crypto' ? 'Search coins (e.g., bitcoin)...' :
+              assetType === 'forex' ? 'Enter pair (e.g., AUD/USD)...' :
+              assetType === 'stocks' ? 'Enter ticker (e.g., AAPL, BHP.AX)...' :
+              'Enter ETF ticker (e.g., SPY, VGS.AX)...'
+            }
             loading={loading}
           />
           <QuickPicks picks={getQuickPicks()} onSelect={handleQuickPick} loading={loading} />
@@ -268,7 +365,7 @@ export default function Index() {
         <div className="max-w-7xl mx-auto text-center space-y-1.5 sm:space-y-2">
           <p className="text-xs text-muted-foreground font-mono">Signal Forge v6.0 — Multi-Asset Investment Analysis</p>
           <p className="text-[10px] text-muted-foreground">
-            CoinGecko (crypto) • Yahoo Finance (stocks/ETFs) • Frankfurter (forex) • Alpha Vantage (fallback)
+            CoinGecko (crypto) • Yahoo Finance (stocks/ETFs) • Frankfurter (forex)
           </p>
           <p className="text-[10px] text-muted-foreground italic">
             ⚠️ Algorithmic analysis only. Not financial advice. Always do your own research.
