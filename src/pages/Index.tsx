@@ -15,6 +15,7 @@ import AnalysisTextPanel from '@/components/analysis/AnalysisTextPanel';
 import IndicatorsPanel from '@/components/analysis/IndicatorsPanel';
 import PortfolioBuilder from '@/components/analysis/PortfolioBuilder';
 import TopPicks from '@/components/analysis/TopPicks';
+import BreakoutFinder from '@/components/analysis/BreakoutFinder';
 import { getCoinData, getCoinChart, searchCoins } from '@/services/api/coingecko';
 import { getStockChart } from '@/services/api/yahoo';
 import { getForexChart } from '@/services/api/frankfurter';
@@ -371,7 +372,10 @@ export default function Index() {
             </div>
 
             {assetType === 'crypto' && (
-              <TopPicks onSelect={(id) => analyseCrypto(id)} />
+              <>
+                <BreakoutFinder onSelect={(id) => analyseCrypto(id)} />
+                <TopPicks onSelect={(id) => analyseCrypto(id)} />
+              </>
             )}
 
             <PortfolioBuilder riskProfile={riskProfile} />
