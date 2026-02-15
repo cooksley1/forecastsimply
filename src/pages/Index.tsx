@@ -33,10 +33,10 @@ import { fetchCryptoHistory, fetchEquityHistory, fetchForexHistory } from '@/ser
 import { processTA } from '@/analysis/processTA';
 import type { ForecastMethodId } from '@/analysis/forecast';
 import {
-  CRYPTO_PICKS, STOCK_PICKS_US, STOCK_PICKS_ASX,
-  ETF_PICKS_US, ETF_PICKS_ASX, FOREX_PICKS,
+  CRYPTO_PICKS, STOCK_PICKS_BY_EXCHANGE, ETF_PICKS_BY_EXCHANGE, FOREX_PICKS,
   CRYPTO_TIMEFRAMES, STOCK_TIMEFRAMES,
 } from '@/utils/constants';
+import ExchangeSelector, { STOCK_EXCHANGES, ETF_EXCHANGES } from '@/components/search/ExchangeSelector';
 import type { AssetType, AssetInfo, WatchlistItem } from '@/types/assets';
 import type { TechnicalData } from '@/types/analysis';
 import { getSecondaryCurrency, convertFromUSD, getCurrencySymbol, SUPPORTED_CURRENCIES, setSecondaryCurrency } from '@/utils/currencyConversion';
@@ -65,6 +65,8 @@ export default function Index() {
   const [activeOverlays, setActiveOverlays] = useState<OverlayId[]>([]);
   const [fullscreenChart, setFullscreenChart] = useState(false);
   const [dataSource, setDataSource] = useState<string>('');
+  const [stockExchange, setStockExchange] = useState('ALL');
+  const [etfExchange, setEtfExchange] = useState('ALL');
   const [secondaryCurrency, setSecCurrency] = useState<string | null>(getSecondaryCurrency());
   const [secondaryPrice, setSecondaryPrice] = useState<number | null>(null);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>(() => {
@@ -289,10 +291,10 @@ export default function Index() {
 
   const getQuickPicks = useCallback(() => {
     if (assetType === 'crypto') return CRYPTO_PICKS.map(p => ({ label: p.sym, id: p.id }));
-    if (assetType === 'stocks') return [...STOCK_PICKS_US, ...STOCK_PICKS_ASX].map(p => ({ label: p.sym, id: p.sym }));
-    if (assetType === 'etfs') return [...ETF_PICKS_US, ...ETF_PICKS_ASX].map(p => ({ label: p.sym, id: p.sym }));
+    if (assetType === 'stocks') return (STOCK_PICKS_BY_EXCHANGE[stockExchange] || []).map(p => ({ label: p.sym, id: p.sym }));
+    if (assetType === 'etfs') return (ETF_PICKS_BY_EXCHANGE[etfExchange] || []).map(p => ({ label: p.sym, id: p.sym }));
     return FOREX_PICKS.map(p => ({ label: p.name, id: `${p.from}${p.to}` }));
-  }, [assetType]);
+  }, [assetType, stockExchange, etfExchange]);
 
   const handleCurrencyChange = useCallback((code: string) => {
     const newVal = code === 'none' ? null : code;
@@ -350,6 +352,13 @@ export default function Index() {
             ))}
           </nav>
           {assetType === 'forex' && <ForexPairSelector onAnalyse={(pairId) => analyseForex(pairId)} loading={loading} />}
+          {(assetType === 'stocks' || assetType === 'etfs') && (
+            <ExchangeSelector
+              exchanges={assetType === 'stocks' ? STOCK_EXCHANGES : ETF_EXCHANGES}
+              selected={assetType === 'stocks' ? stockExchange : etfExchange}
+              onSelect={assetType === 'stocks' ? setStockExchange : setEtfExchange}
+            />
+          )}
           <QuickPicks picks={getQuickPicks()} onSelect={handleQuickPick} loading={loading} />
         </div>
 
