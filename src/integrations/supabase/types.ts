@@ -134,6 +134,54 @@ export type Database = {
         }
         Relationships: []
       }
+      price_alerts: {
+        Row: {
+          active: boolean
+          alert_type: string
+          asset_id: string
+          asset_type: string
+          created_at: string
+          id: string
+          name: string
+          reference_price: number | null
+          symbol: string
+          target_pct: number | null
+          target_price: number | null
+          triggered_at: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          alert_type: string
+          asset_id: string
+          asset_type: string
+          created_at?: string
+          id?: string
+          name: string
+          reference_price?: number | null
+          symbol: string
+          target_pct?: number | null
+          target_price?: number | null
+          triggered_at?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          alert_type?: string
+          asset_id?: string
+          asset_type?: string
+          created_at?: string
+          id?: string
+          name?: string
+          reference_price?: number | null
+          symbol?: string
+          target_pct?: number | null
+          target_price?: number | null
+          triggered_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -160,6 +208,33 @@ export type Database = {
           display_name?: string | null
           id?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
           user_id?: string
         }
         Relationships: []
