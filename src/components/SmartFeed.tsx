@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import type { AssetType } from '@/types/assets';
+import type { AssetType, WatchlistItem } from '@/types/assets';
 
 interface Insight {
   asset: string;
@@ -21,6 +21,7 @@ interface Digest {
 
 interface Props {
   assetType: AssetType;
+  watchlist?: WatchlistItem[];
   onSelectAsset?: (id: string, type: string) => void;
 }
 
@@ -31,7 +32,7 @@ const DIGEST_NAMES: Record<AssetType, { icon: string; label: string }> = {
   forex: { icon: '💱', label: 'ForexSimply Market Digest' },
 };
 
-export default function SmartFeed({ assetType, onSelectAsset }: Props) {
+export default function SmartFeed({ assetType, watchlist = [], onSelectAsset }: Props) {
   const { user } = useAuth();
   const [digest, setDigest] = useState<Digest | null>(null);
   const [loading, setLoading] = useState(false);
@@ -57,8 +58,16 @@ export default function SmartFeed({ assetType, onSelectAsset }: Props) {
         setDigest(approved as any);
         setExpanded(true);
       } else {
-        // Fall back to AI-generated personalised digest
-        const { data, error: fnError } = await supabase.functions.invoke('curated-digest');
+        // Pass local watchlist to the edge function so it knows about user's watched assets
+        const watchlistPayload = watchlist.map(w => ({
+          asset_id: w.id,
+          symbol: w.symbol,
+          name: w.name,
+          asset_type: w.assetType,
+        }));
+        const { data, error: fnError } = await supabase.functions.invoke('curated-digest', {
+          body: { watchlist: watchlistPayload },
+        });
         if (fnError) throw fnError;
         setDigest(data);
         setExpanded(true);

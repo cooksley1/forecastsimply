@@ -469,6 +469,7 @@ export default function Index() {
       <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
         {/* AI Smart Feed — always visible */}
         <SmartFeed
+          watchlist={watchlist}
           assetType={assetType}
           onSelectAsset={(id, type) => {
             if (type === 'crypto') analyseCrypto(id);

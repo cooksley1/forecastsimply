@@ -33,11 +33,22 @@ serve(async (req) => {
       });
     }
 
+    // Parse body for client-provided watchlist
+    let clientWatchlist: { asset_id: string; symbol: string; name: string; asset_type: string }[] = [];
+    try {
+      const body = await req.json();
+      if (body?.watchlist && Array.isArray(body.watchlist)) {
+        clientWatchlist = body.watchlist;
+      }
+    } catch {
+      // no body or invalid JSON — that's fine
+    }
+
     // Check URL for asset_type param
     const url = new URL(req.url);
     const requestedType = url.searchParams.get("asset_type");
 
-    // First, check if there's an approved digest for any/all asset types
+    // First, check if there's an approved digest
     if (requestedType) {
       const { data: approved } = await supabase
         .from("market_digests")
@@ -62,7 +73,7 @@ serve(async (req) => {
     }
 
     // No approved digest — generate one with AI (personalised)
-    const [historyRes, watchlistRes, prefsRes] = await Promise.all([
+    const [historyRes, dbWatchlistRes, prefsRes] = await Promise.all([
       supabase
         .from("analysis_history")
         .select("asset_id, asset_type, symbol, name, signal_label, signal_score, market_phase, price")
@@ -82,11 +93,14 @@ serve(async (req) => {
     ]);
 
     const history = historyRes.data || [];
-    const watchlist = watchlistRes.data || [];
+    const dbWatchlist = dbWatchlistRes.data || [];
     const prefs = prefsRes.data;
 
+    // Merge DB watchlist with client-provided watchlist (client takes priority)
+    const allWatchlist = clientWatchlist.length > 0 ? clientWatchlist : dbWatchlist;
+
     const recentAssets = history.map(h => `${h.name} (${h.symbol}) - Signal: ${h.signal_label} (${h.signal_score}/100), Phase: ${h.market_phase || "unknown"}`).join("\n");
-    const watchlistAssets = watchlist.map(w => `${w.name} (${w.symbol}, ${w.asset_type})`).join(", ");
+    const watchlistAssets = allWatchlist.map(w => `${w.name} (${w.symbol}, ${w.asset_type})`).join(", ");
     const riskProfile = prefs?.risk_profile || "moderate";
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
