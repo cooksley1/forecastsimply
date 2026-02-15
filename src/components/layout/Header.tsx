@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
+import { clearAllCache } from '@/services/cache';
 import ApiKeySettings from '@/components/settings/ApiKeySettings';
 import LoginDialog from '@/components/auth/LoginDialog';
 import AccountPanel from '@/components/account/AccountPanel';
@@ -23,12 +25,22 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { isAdmin } = useAdminCheck();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const hasKey = !!getStoredApiKey();
   const logoHeader = theme === 'dark' ? logoHeaderDark : logoHeaderLight;
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    clearAllCache();
+    await queryClient.invalidateQueries();
+    // Brief visual feedback
+    setTimeout(() => setRefreshing(false), 800);
+  };
 
   return (
     <>
@@ -38,6 +50,14 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
             <img src={logoHeader} alt="ForecastSimply" className="h-8 sm:h-9" />
 
             <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className={`p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all text-sm ${refreshing ? 'animate-spin' : ''}`}
+                title="Refresh all data"
+              >
+                🔄
+              </button>
               {onWatchlistSelect && (
                 <WatchlistDropdown
                   items={watchlist}
