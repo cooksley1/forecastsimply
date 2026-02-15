@@ -467,18 +467,16 @@ export default function Index() {
       />
 
       <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
-        {/* AI Smart Feed — only for logged-in users */}
-        {!showAnalysis && (
-          <SmartFeed
-            assetType={assetType}
-            onSelectAsset={(id, type) => {
-              if (type === 'crypto') analyseCrypto(id);
-              else if (type === 'stocks') analyseStock(id, 'stocks');
-              else if (type === 'etfs') analyseStock(id, 'etfs');
-              else if (type === 'forex') analyseForex(id);
-            }}
-          />
-        )}
+        {/* AI Smart Feed — always visible */}
+        <SmartFeed
+          assetType={assetType}
+          onSelectAsset={(id, type) => {
+            if (type === 'crypto') analyseCrypto(id);
+            else if (type === 'stocks') analyseStock(id, 'stocks');
+            else if (type === 'etfs') analyseStock(id, 'etfs');
+            else if (type === 'forex') analyseForex(id);
+          }}
+        />
         {/* ── SEARCH BAR ── Always visible */}
         <div className="space-y-3">
           <SearchBar
