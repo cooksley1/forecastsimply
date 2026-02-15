@@ -1,11 +1,15 @@
 import Header from '@/components/layout/Header';
 import { Link } from 'react-router-dom';
+import SEO from '@/components/SEO';
+import BackToHome from '@/components/BackToHome';
 
 export default function Privacy() {
   return (
     <div className="min-h-screen bg-background">
+      <SEO title="Privacy Policy — ForecastSimply" description="How ForecastSimply collects, uses, and protects your personal data." />
       <Header />
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        <BackToHome />
         <h1 className="text-2xl font-bold text-foreground">Privacy Policy</h1>
         <p className="text-xs text-muted-foreground font-mono">Last updated: February 2026</p>
 

@@ -1,10 +1,14 @@
 import Header from '@/components/layout/Header';
+import SEO from '@/components/SEO';
+import BackToHome from '@/components/BackToHome';
 
 export default function Contact() {
   return (
     <div className="min-h-screen bg-background">
+      <SEO title="Contact — ForecastSimply" description="Get in touch with the ForecastSimply team for support, bug reports, or feature requests." />
       <Header />
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        <BackToHome />
         <h1 className="text-2xl font-bold text-foreground">Contact Us</h1>
 
         <section className="space-y-4 text-sm text-muted-foreground leading-relaxed">

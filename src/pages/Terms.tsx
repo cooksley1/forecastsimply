@@ -1,11 +1,15 @@
 import Header from '@/components/layout/Header';
 import { Link } from 'react-router-dom';
+import SEO from '@/components/SEO';
+import BackToHome from '@/components/BackToHome';
 
 export default function Terms() {
   return (
     <div className="min-h-screen bg-background">
+      <SEO title="Terms of Service — ForecastSimply" description="Terms and conditions for using ForecastSimply's technical analysis platform." />
       <Header />
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        <BackToHome />
         <h1 className="text-2xl font-bold text-foreground">Terms of Service</h1>
         <p className="text-xs text-muted-foreground font-mono">Last updated: February 2026</p>
 

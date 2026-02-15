@@ -1,10 +1,14 @@
 import Header from '@/components/layout/Header';
+import SEO from '@/components/SEO';
+import BackToHome from '@/components/BackToHome';
 
 export default function Disclaimer() {
   return (
     <div className="min-h-screen bg-background">
+      <SEO title="Financial Disclaimer — ForecastSimply" description="ForecastSimply is not financial advice. Read our full disclaimer about risks and limitations." />
       <Header />
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        <BackToHome />
         <h1 className="text-2xl font-bold text-foreground">Financial Disclaimer</h1>
         <p className="text-xs text-muted-foreground font-mono">Last updated: February 2026</p>
 
