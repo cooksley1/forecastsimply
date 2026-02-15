@@ -561,9 +561,9 @@ export default function Index() {
               </div>
             </div>
 
-            {/* Timeframe + Forecast bar (combined) */}
-            <div className="bg-card border border-border rounded-xl p-3">
-              <div className="flex items-center gap-1 flex-wrap">
+            {/* Timeframe bar */}
+            <div className="bg-card border border-border rounded-xl p-3 space-y-2">
+              <div className="flex items-center gap-1 overflow-x-auto">
                 <span className="text-[10px] text-muted-foreground font-mono uppercase shrink-0">TF:</span>
                 {timeframes.map(tf => (
                   <button
@@ -576,10 +576,19 @@ export default function Index() {
                     {tf.label}
                   </button>
                 ))}
-                <span className="w-px h-4 bg-border shrink-0 mx-1" />
-                <span className="text-[10px] text-muted-foreground font-mono shrink-0" title="How far ahead to project prices">FC</span>
-                <input type="range" min={10} max={80} value={forecastPercent} onChange={e => setForecastPercent(Number(e.target.value))} className="w-14 sm:w-20 accent-primary" />
-                <span className="text-[10px] font-mono text-muted-foreground">{forecastPercent}%</span>
+              </div>
+              {/* Forecast slider row */}
+              <div className="flex items-center gap-2 border-t border-border/40 pt-2">
+                <div className="group relative">
+                  <span className="text-[10px] text-muted-foreground font-mono cursor-help">FC</span>
+                  <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block z-50 w-56 p-2 rounded-lg bg-popover border border-border shadow-lg">
+                    <p className="text-[10px] text-popover-foreground leading-relaxed">
+                      <span className="font-semibold">Forecast Length</span> — controls how far ahead to project prices. Higher values give broader estimates but wider confidence bands.
+                    </p>
+                  </div>
+                </div>
+                <input type="range" min={10} max={80} value={forecastPercent} onChange={e => setForecastPercent(Number(e.target.value))} className="flex-1 accent-primary" />
+                <span className="text-[10px] font-mono text-muted-foreground shrink-0 w-8 text-right">{forecastPercent}%</span>
               </div>
             </div>
 

@@ -28,15 +28,20 @@ export default function StickySubNav({ assetType, onAssetChange, showSections }:
   };
 
   return (
-    <div className="sticky top-[56px] z-40 bg-background/90 backdrop-blur-md border-b border-border/60">
+    <div className="sticky top-[56px] z-40 bg-background border-b border-border/60" style={{ WebkitBackfaceVisibility: 'hidden' }}>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-1.5 space-y-1">
-        {/* Row 1: Asset tabs — always fits in one row */}
+        {/* Row 1: Asset tabs — always visible */}
         <div className="flex justify-between gap-1">
           {ASSET_TABS.map(t => (
             <button
               key={t.key}
-              onClick={() => onAssetChange(t.key)}
-              className={`flex-1 text-center px-1 py-1 rounded-md text-[10px] sm:text-xs font-medium transition-all ${
+              onClick={(e) => {
+                e.stopPropagation();
+                onAssetChange(t.key);
+                // Scroll to top so user sees the fresh state
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className={`flex-1 text-center px-1 py-1.5 rounded-md text-[10px] sm:text-xs font-medium transition-all ${
                 assetType === t.key
                   ? 'bg-primary/15 text-primary'
                   : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
@@ -54,7 +59,10 @@ export default function StickySubNav({ assetType, onAssetChange, showSections }:
             {SECTIONS.map(s => (
               <button
                 key={s.id}
-                onClick={() => scrollTo(s.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  scrollTo(s.id);
+                }}
                 className="flex-1 text-center px-1 py-0.5 rounded-md text-[10px] sm:text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all"
               >
                 <span className="mr-0.5">{s.icon}</span>
