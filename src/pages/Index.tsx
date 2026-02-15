@@ -142,7 +142,6 @@ export default function Index() {
 
 
   const analyseCrypto = useCallback(async (coinId: string) => {
-    isNewSearchRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -200,7 +199,6 @@ export default function Index() {
 
   /* ── Stocks / ETFs ── */
   const analyseStock = useCallback(async (symbol: string, type: 'stocks' | 'etfs') => {
-    isNewSearchRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -238,7 +236,6 @@ export default function Index() {
 
   /* ── Forex ── */
   const analyseForex = useCallback(async (pairId: string) => {
-    isNewSearchRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -300,6 +297,7 @@ export default function Index() {
   };
 
   const handleSearch = useCallback(async (query: string) => {
+    isNewSearchRef.current = true;
     if (assetType === 'crypto') {
       setLoading(true);
       try {
@@ -475,6 +473,7 @@ export default function Index() {
         <SmartFeed
           watchlist={watchlist}
           assetType={assetType}
+          exchange={assetType === 'stocks' ? stockExchange : assetType === 'etfs' ? etfExchange : undefined}
           onSelectAsset={(id, type) => {
             if (type === 'crypto') analyseCrypto(id);
             else if (type === 'stocks') analyseStock(id, 'stocks');
