@@ -268,13 +268,10 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header
-        active={assetType}
-        onSelect={(t) => { setAssetType(t); setTechnicalData(null); setAssetInfo(null); setError(null); currentAssetRef.current = null; setDataSource(''); }}
-      />
+      <Header />
 
       <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
-        {/* ── SEARCH BAR ── Always visible */}
+        {/* ── SEARCH BAR + ASSET TABS ── Always visible */}
         <div className="space-y-3">
           <SearchBar
             onSearch={handleSearch}
@@ -286,6 +283,28 @@ export default function Index() {
             }
             loading={loading}
           />
+          {/* Asset type tabs */}
+          <nav className="flex gap-1 overflow-x-auto">
+            {([
+              { key: 'crypto' as const, label: 'Crypto', icon: '🪙' },
+              { key: 'stocks' as const, label: 'Stocks', icon: '📈' },
+              { key: 'etfs' as const, label: 'ETFs', icon: '📊' },
+              { key: 'forex' as const, label: 'Forex', icon: '💱' },
+            ]).map(t => (
+              <button
+                key={t.key}
+                onClick={() => { setAssetType(t.key); setTechnicalData(null); setAssetInfo(null); setError(null); currentAssetRef.current = null; setDataSource(''); }}
+                className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
+                  assetType === t.key
+                    ? 'bg-primary/15 text-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                }`}
+              >
+                <span className="mr-1">{t.icon}</span>
+                {t.label}
+              </button>
+            ))}
+          </nav>
           {assetType === 'forex' && <ForexPairSelector onAnalyse={(pairId) => analyseForex(pairId)} loading={loading} />}
           <QuickPicks picks={getQuickPicks()} onSelect={handleQuickPick} loading={loading} />
         </div>
@@ -454,7 +473,7 @@ export default function Index() {
               </>
             )}
 
-            <PortfolioBuilder riskProfile={riskProfile} />
+            <PortfolioBuilder riskProfile={riskProfile} riskLevel={riskLevel} onRiskLevelChange={setRiskLevel} />
           </div>
         )}
       </main>
