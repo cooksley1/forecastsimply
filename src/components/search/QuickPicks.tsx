@@ -97,6 +97,9 @@ export default function QuickPicks({
   const visible = expanded ? sorted : sorted.slice(0, maxVisible);
   const hasMore = sorted.length > maxVisible;
 
+  const isFiltering = ranking || (loading && sortBy !== 'default');
+  const activeSort = SORT_OPTIONS.find(o => o.value === sortBy);
+
   /* ── Card mode: stock/ETF exchange-first layout ── */
   if (cardMode) {
     return (
@@ -107,10 +110,17 @@ export default function QuickPicks({
             <button
               onClick={onRank}
               disabled={ranking || loading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all bg-sf-elevated border-border text-foreground hover:border-primary/40 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all disabled:cursor-not-allowed ${
+                ranking
+                  ? 'bg-primary/10 border-primary/30 text-primary animate-pulse'
+                  : 'bg-sf-elevated border-border text-foreground hover:border-primary/40 hover:text-primary disabled:opacity-50'
+              }`}
             >
               {ranking ? (
-                <span className="animate-pulse">⏳ Ranking...</span>
+                <>
+                  <span className="inline-block w-3 h-3 border-2 border-primary/40 border-t-primary rounded-full animate-spin" />
+                  Analysing signals…
+                </>
               ) : (
                 <>🏅 Rank by Signal</>
               )}
@@ -125,13 +135,16 @@ export default function QuickPicks({
                 onChange={e => {
                   const val = e.target.value as SortCriteria;
                   onSortChange(val);
-                  // Auto-trigger ranking if selecting a rank-dependent sort and not yet ranked
                   const opt = SORT_OPTIONS.find(o => o.value === val);
                   if (opt?.needsRank && !hasRanked && onRank && !ranking) {
                     onRank();
                   }
                 }}
-                className="appearance-none pl-2 pr-7 py-1.5 rounded-lg border border-border bg-sf-elevated text-xs font-medium text-foreground cursor-pointer hover:border-primary/40 transition-all"
+                className={`appearance-none pl-2 pr-7 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
+                  sortBy !== 'default'
+                    ? 'bg-primary/10 border-primary/30 text-primary'
+                    : 'bg-sf-elevated border-border text-foreground hover:border-primary/40'
+                }`}
               >
                 {SORT_OPTIONS.map(o => (
                   <option key={o.value} value={o.value}>
@@ -145,10 +158,34 @@ export default function QuickPicks({
             </div>
           )}
 
+          {/* Active filter indicator */}
+          {sortBy !== 'default' && activeSort && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-medium text-primary">
+              {activeSort.icon} Sorted: {activeSort.label}
+              <button
+                onClick={() => onSortChange?.('default')}
+                className="ml-0.5 hover:text-destructive transition-colors"
+                title="Clear filter"
+              >
+                ✕
+              </button>
+            </span>
+          )}
+
           <span className="text-[10px] text-muted-foreground ml-auto">
             {sorted.length} stocks{hasRanked && ` · ${Object.values(picks.filter(p => p.signal)).length} ranked`}
           </span>
         </div>
+
+        {/* Loading overlay for ranking/filtering */}
+        {isFiltering && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20">
+            <span className="inline-block w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+            <span className="text-[11px] text-primary font-medium">
+              {ranking ? 'Analysing all stocks — this takes a moment…' : 'Filtering results…'}
+            </span>
+          </div>
+        )}
 
         {/* Card grid */}
         {sorted.length === 0 ? (
@@ -156,7 +193,7 @@ export default function QuickPicks({
             {hasRanked ? 'No stocks match this filter. Try a different sort.' : 'No stocks available for this filter.'}
           </p>
         ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 transition-opacity ${isFiltering ? 'opacity-50' : ''}`}>
           {visible.map((p, i) => (
             <button
               key={p.id}
