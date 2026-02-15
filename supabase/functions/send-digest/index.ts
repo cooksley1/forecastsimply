@@ -23,7 +23,7 @@ function sentimentBadge(s: string) {
   return '<span style="color:#d97706;font-weight:600;font-size:11px;background:#fef3c7;padding:2px 8px;border-radius:4px;">● NEUTRAL</span>';
 }
 
-function buildEmailHtml(digest: any, assetType: string) {
+function buildSegmentHtml(digest: any, assetType: string) {
   const brand = ASSET_BRANDS[assetType] || ASSET_BRANDS.crypto;
 
   const insights = (digest.insights || [])
@@ -59,6 +59,45 @@ function buildEmailHtml(digest: any, assetType: string) {
     )
     .join("");
 
+  return `
+    <!-- Segment: ${brand.name} -->
+    <tr><td style="background:linear-gradient(135deg,${brand.colorDark} 0%,#ffffff 100%);padding:20px 24px 16px;border-top:2px solid ${brand.color};">
+      <div style="font-size:24px;margin-bottom:4px;display:inline-block;vertical-align:middle;">${brand.icon}</div>
+      <h2 style="margin:0;display:inline-block;vertical-align:middle;color:${brand.color};font-size:18px;font-weight:700;letter-spacing:-0.3px;margin-left:8px;">
+        ${brand.name}
+      </h2>
+    </td></tr>
+
+    <!-- Summary -->
+    <tr><td style="padding:12px 24px 16px;">
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;">
+        <p style="color:#334155;font-size:14px;line-height:1.7;margin:0;">${digest.market_summary || ""}</p>
+      </div>
+    </td></tr>
+
+    ${insights ? `<tr><td style="padding:0 24px 12px;">
+      <p style="color:#94a3b8;font-size:10px;font-family:'SF Mono','Fira Code',monospace;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 8px;font-weight:600;">Key Insights</p>
+      <table width="100%" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;" cellpadding="0" cellspacing="0">
+        ${insights}
+      </table>
+    </td></tr>` : ""}
+
+    ${recs ? `<tr><td style="padding:0 24px 12px;">
+      <p style="color:#94a3b8;font-size:10px;font-family:'SF Mono','Fira Code',monospace;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 8px;font-weight:600;">Recommendations</p>
+      <table width="100%" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;" cellpadding="0" cellspacing="0">
+        ${recs}
+      </table>
+    </td></tr>` : ""}
+
+    ${alerts ? `<tr><td style="padding:0 24px 16px;">
+      <p style="color:#94a3b8;font-size:10px;font-family:'SF Mono','Fira Code',monospace;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 8px;font-weight:600;">Watchlist Alerts</p>
+      <table width="100%" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;" cellpadding="0" cellspacing="0">
+        ${alerts}
+      </table>
+    </td></tr>` : ""}`;
+}
+
+function buildCombinedEmailHtml(digests: { digest: any; assetType: string }[]) {
   const dateStr = new Date().toLocaleDateString("en-AU", {
     weekday: "long",
     day: "numeric",
@@ -66,12 +105,19 @@ function buildEmailHtml(digest: any, assetType: string) {
     year: "numeric",
   });
 
+  const greeting = digests[0]?.digest?.greeting || "Good morning!";
+  const primaryBrand = ASSET_BRANDS[digests[0]?.assetType] || ASSET_BRANDS.crypto;
+  const typeNames = digests.map(d => ASSET_BRANDS[d.assetType]?.name || d.assetType).join(" · ");
+  const segments = digests.map(d => buildSegmentHtml(d.digest, d.assetType)).join(`
+    <tr><td style="padding:0;"><div style="height:8px;background:#f1f5f9;"></div></td></tr>
+  `);
+
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${brand.name} Market Digest</title>
+  <title>ForecastSimply Market Digest</title>
 </head>
 <body style="margin:0;padding:0;background:#f1f5f9;font-family:'Outfit','Helvetica Neue',Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px 16px;">
@@ -84,55 +130,27 @@ function buildEmailHtml(digest: any, assetType: string) {
         </td></tr>
 
         <!-- Header -->
-        <tr><td style="background:linear-gradient(135deg,${brand.colorDark} 0%,#ffffff 100%);padding:28px 24px;text-align:center;border-bottom:1px solid #e2e8f0;">
-          <div style="font-size:32px;margin-bottom:8px;">${brand.icon}</div>
-          <h1 style="margin:0;color:${brand.color};font-size:22px;font-weight:700;letter-spacing:-0.5px;">
-            ${brand.name} Market Digest
+        <tr><td style="padding:24px 24px 16px;text-align:center;border-bottom:1px solid #e2e8f0;">
+          <h1 style="margin:0;color:#1e293b;font-size:20px;font-weight:700;letter-spacing:-0.5px;">
+            Weekly Market Digest
           </h1>
-          <p style="margin:8px 0 0;color:#94a3b8;font-size:12px;font-family:'SF Mono','Fira Code',monospace;">
+          <p style="margin:6px 0 0;color:#94a3b8;font-size:12px;font-family:'SF Mono','Fira Code',monospace;">
             ${dateStr}
           </p>
+          <p style="margin:8px 0 0;color:#64748b;font-size:11px;">${typeNames}</p>
         </td></tr>
 
         <!-- Greeting -->
-        <tr><td style="padding:24px 24px 8px;">
-          <p style="color:${brand.color};font-size:15px;font-weight:600;margin:0;">${digest.greeting || "Good morning!"}</p>
+        <tr><td style="padding:20px 24px 12px;">
+          <p style="color:${primaryBrand.color};font-size:15px;font-weight:600;margin:0;">${greeting}</p>
         </td></tr>
 
-        <!-- Market Summary -->
-        <tr><td style="padding:8px 24px 20px;">
-          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;">
-            <p style="color:#334155;font-size:14px;line-height:1.7;margin:0;">${digest.market_summary || ""}</p>
-          </div>
-        </td></tr>
-
-        ${insights ? `<!-- Insights -->
-        <tr><td style="padding:0 24px;">
-          <p style="color:#94a3b8;font-size:10px;font-family:'SF Mono','Fira Code',monospace;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 8px;font-weight:600;">Key Insights</p>
-          <table width="100%" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;" cellpadding="0" cellspacing="0">
-            ${insights}
-          </table>
-        </td></tr>` : ""}
-
-        ${recs ? `<!-- Recommendations -->
-        <tr><td style="padding:20px 24px 0;">
-          <p style="color:#94a3b8;font-size:10px;font-family:'SF Mono','Fira Code',monospace;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 8px;font-weight:600;">Recommendations</p>
-          <table width="100%" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;" cellpadding="0" cellspacing="0">
-            ${recs}
-          </table>
-        </td></tr>` : ""}
-
-        ${alerts ? `<!-- Alerts -->
-        <tr><td style="padding:20px 24px 0;">
-          <p style="color:#94a3b8;font-size:10px;font-family:'SF Mono','Fira Code',monospace;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 8px;font-weight:600;">Watchlist Alerts</p>
-          <table width="100%" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;" cellpadding="0" cellspacing="0">
-            ${alerts}
-          </table>
-        </td></tr>` : ""}
+        <!-- Segments -->
+        ${segments}
 
         <!-- CTA -->
         <tr><td style="padding:28px 24px;text-align:center;">
-          <a href="${APP_URL}" style="display:inline-block;background:${brand.color};color:#ffffff;padding:14px 36px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;letter-spacing:0.3px;">
+          <a href="${APP_URL}" style="display:inline-block;background:#1e293b;color:#ffffff;padding:14px 36px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;letter-spacing:0.3px;">
             Open ForecastSimply →
           </a>
         </td></tr>
@@ -141,8 +159,8 @@ function buildEmailHtml(digest: any, assetType: string) {
         <tr><td style="padding:16px 24px 24px;text-align:center;border-top:1px solid #e2e8f0;background:#f8fafc;">
           <img src="${LOGO_URL}" alt="ForecastSimply" width="100" style="max-width:100px;height:auto;opacity:0.5;margin-bottom:8px;" />
           <p style="color:#94a3b8;font-size:11px;margin:0;line-height:1.6;">
-            You're receiving this because you subscribed to ${brand.name} Market Digest.<br>
-            <a href="${APP_URL}" style="color:${brand.color};text-decoration:none;">Manage preferences</a>
+            You're receiving this because you subscribed to ForecastSimply Market Digest.<br>
+            <a href="${APP_URL}" style="color:#1e293b;text-decoration:none;">Manage preferences</a>
           </p>
           <p style="color:#cbd5e1;font-size:10px;margin:8px 0 0;">© ${new Date().getFullYear()} ForecastSimply. All rights reserved.</p>
         </td></tr>
@@ -152,6 +170,11 @@ function buildEmailHtml(digest: any, assetType: string) {
   </table>
 </body>
 </html>`;
+}
+
+// Keep single-digest version for previews
+function buildEmailHtml(digest: any, assetType: string) {
+  return buildCombinedEmailHtml([{ digest, assetType }]);
 }
 
 serve(async (req) => {
@@ -337,32 +360,38 @@ Include 3-5 insights for the most important ${assetType} assets this week.`,
 
       let emailsSent = 0;
       if (subscribers?.length && approvedDigests?.length) {
+        // Order: crypto, stocks, etfs, forex
+        const typeOrder = ["crypto", "stocks", "etfs", "forex"];
+
         for (const sub of subscribers) {
           const prefs = (sub.preferences as any) || { crypto: true, stocks: true, etfs: true, forex: true };
-          const relevantDigests = approvedDigests.filter((d: any) => prefs[d.asset_type] !== false);
+          const relevantDigests = approvedDigests
+            .filter((d: any) => prefs[d.asset_type] !== false)
+            .sort((a: any, b: any) => typeOrder.indexOf(a.asset_type) - typeOrder.indexOf(b.asset_type));
 
-          for (const digest of relevantDigests) {
-            try {
-              // Use Supabase Auth to send email via the built-in SMTP
-              const html = buildEmailHtml(digest, digest.asset_type);
-              const brandName = ASSET_BRANDS[digest.asset_type]?.name || "ForecastSimply";
-              const subject = `${brandName} Market Digest — ${new Date().toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`;
+          if (!relevantDigests.length) continue;
 
-              // Use the admin API to send a custom email
-              const { error: emailErr } = await adminClient.auth.admin.generateLink({
-                type: "magiclink",
-                email: sub.email,
-                options: {
-                  data: { digest_type: digest.asset_type },
-                },
-              });
+          try {
+            // Build ONE combined email with all subscribed segments
+            const segments = relevantDigests.map((d: any) => ({ digest: d, assetType: d.asset_type }));
+            const html = buildCombinedEmailHtml(segments);
 
-              // Note: Full email delivery requires an email service integration
-              // The digests are stored and available in-app via the SmartFeed
-              emailsSent++;
-            } catch {
-              // Email delivery best-effort
-            }
+            const typeLabels = relevantDigests.map((d: any) => ASSET_BRANDS[d.asset_type]?.icon || "").join("");
+            const subject = `${typeLabels} ForecastSimply Market Digest — ${new Date().toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}`;
+
+            // Note: Full email delivery requires an email service integration (e.g. Resend)
+            // The digests are stored and available in-app via the SmartFeed
+            const { error: emailErr } = await adminClient.auth.admin.generateLink({
+              type: "magiclink",
+              email: sub.email,
+              options: {
+                data: { digest_types: relevantDigests.map((d: any) => d.asset_type) },
+              },
+            });
+
+            emailsSent++;
+          } catch {
+            // Email delivery best-effort
           }
         }
       }
