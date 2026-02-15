@@ -68,7 +68,7 @@ export default function QuickPicks({
   cardMode,
   sortBy = 'default',
   onSortChange,
-  maxVisible = 10,
+  maxVisible = 15,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const hasRanked = picks.some(p => p.signal);
@@ -203,12 +203,14 @@ export default function QuickPicks({
 
         {/* Show more / less */}
         {hasMore && (
-          <button
-            onClick={() => setExpanded(e => !e)}
-            className="text-[10px] text-primary hover:underline font-medium"
-          >
-            {expanded ? '▲ Show less' : `▼ Show all ${sorted.length}`}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setExpanded(e => !e)}
+              className="text-[10px] text-primary hover:underline font-medium"
+            >
+              {expanded ? `▲ Show top ${maxVisible}` : `▼ Show all ${sorted.length}`}
+            </button>
+          </div>
         )}
       </div>
     );

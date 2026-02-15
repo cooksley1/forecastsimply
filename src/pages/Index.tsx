@@ -38,6 +38,7 @@ import {
   CRYPTO_TIMEFRAMES, STOCK_TIMEFRAMES,
 } from '@/utils/constants';
 import ExchangeSelector, { STOCK_EXCHANGES, ETF_EXCHANGES } from '@/components/search/ExchangeSelector';
+import { useExchangeScreener } from '@/hooks/useExchangeScreener';
 import type { AssetType, AssetInfo, WatchlistItem } from '@/types/assets';
 import type { TechnicalData } from '@/types/analysis';
 import { getSecondaryCurrency, convertFromUSD, getCurrencySymbol, SUPPORTED_CURRENCIES, setSecondaryCurrency } from '@/utils/currencyConversion';
@@ -77,6 +78,14 @@ export default function Index() {
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>(() => {
     try { return JSON.parse(localStorage.getItem('sf_watchlist') || '[]'); } catch { return []; }
   });
+
+  // Dynamic exchange screener — currently supports ASX
+  const SCREENER_EXCHANGES = ['ASX'];
+  const useScreener = assetType === 'stocks' && SCREENER_EXCHANGES.includes(stockExchange);
+  const { stocks: screenerStocks, loading: screenerLoading } = useExchangeScreener(
+    stockExchange,
+    useScreener
+  );
 
   const currentAssetRef = useRef<{ id: string; type: AssetType } | null>(null);
   const isFirstRender = useRef(true);
@@ -335,13 +344,21 @@ export default function Index() {
     let items: { label: string; id: string; name?: string; divYield?: number; signal?: { label: string; score: number; confidence: number } }[] = [];
     if (assetType === 'crypto') items = CRYPTO_PICKS.map(p => ({ label: p.sym, id: p.id }));
     else if (assetType === 'stocks') {
-      let picks = STOCK_PICKS_BY_EXCHANGE[stockExchange] || [];
-      if (dividendOnly) {
-        picks = picks.filter(p => p.div);
-        // Sort by yield descending when dividend filter is active
-        picks = [...picks].sort((a, b) => b.yield - a.yield);
+      // Use dynamic screener data if available, otherwise fall back to hardcoded picks
+      if (useScreener && screenerStocks.length > 0) {
+        let dynamicPicks = screenerStocks;
+        if (dividendOnly) {
+          dynamicPicks = dynamicPicks.filter(p => p.div);
+        }
+        items = dynamicPicks.map(p => ({ label: p.sym, id: p.sym, name: p.name, divYield: p.yield }));
+      } else {
+        let picks = STOCK_PICKS_BY_EXCHANGE[stockExchange] || [];
+        if (dividendOnly) {
+          picks = picks.filter(p => p.div);
+          picks = [...picks].sort((a, b) => b.yield - a.yield);
+        }
+        items = picks.map(p => ({ label: p.sym, id: p.sym, name: p.name, divYield: p.yield }));
       }
-      items = picks.map(p => ({ label: p.sym, id: p.sym, name: p.name, divYield: p.yield }));
     } else if (assetType === 'etfs') {
       items = (ETF_PICKS_BY_EXCHANGE[etfExchange] || []).map(p => ({ label: p.sym, id: p.sym }));
     } else {
@@ -360,7 +377,7 @@ export default function Index() {
     }
 
     return withSignals;
-  }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks]);
+  }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks, useScreener, screenerStocks]);
 
   const handleRankPicks = useCallback(async () => {
     setRanking(true);
@@ -500,16 +517,20 @@ export default function Index() {
               </div>
             </div>
           )}
+          {screenerLoading && useScreener && (
+            <p className="text-[10px] text-muted-foreground animate-pulse">⏳ Loading full ASX list ({screenerStocks.length} loaded so far)...</p>
+          )}
           <QuickPicks
             picks={getQuickPicks()}
             onSelect={handleQuickPick}
-            loading={loading}
+            loading={loading || (screenerLoading && useScreener)}
             onRank={handleRankPicks}
             ranking={ranking}
             showDividends={assetType === 'stocks'}
             cardMode={assetType === 'stocks' || assetType === 'etfs'}
             sortBy={pickSort}
             onSortChange={setPickSort}
+            maxVisible={15}
           />
         </div>
 
