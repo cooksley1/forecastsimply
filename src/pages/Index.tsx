@@ -454,10 +454,10 @@ export default function Index() {
           <SearchBar
             onSearch={handleSearch}
             placeholder={
-              assetType === 'crypto' ? 'Search coins (e.g., bitcoin)...' :
-              assetType === 'forex' ? 'Enter pair (e.g., AUD/USD)...' :
-              assetType === 'stocks' ? 'Enter ticker (e.g., AAPL, BHP.AX)...' :
-              'Enter ETF ticker (e.g., SPY, VGS.AX)...'
+              assetType === 'crypto' ? 'Search coins e.g. bitcoin' :
+              assetType === 'forex' ? 'Pair e.g. AUD/USD' :
+              assetType === 'stocks' ? 'Ticker e.g. AAPL, BHP.AX' :
+              'ETF e.g. SPY, VGS.AX'
             }
             loading={loading}
           />

@@ -25,7 +25,7 @@ export default function SearchBar({ onSearch, placeholder = 'Search...', loading
         onChange={e => setQuery(e.target.value)}
         onKeyDown={handleKey}
         placeholder={placeholder}
-        className="flex-1 bg-sf-inset border border-border rounded-lg px-4 py-2.5 text-foreground text-sm font-mono placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 transition-all"
+        className="flex-1 min-w-0 bg-sf-inset border border-border rounded-lg px-3 py-2.5 text-foreground text-xs sm:text-sm font-mono placeholder:text-muted-foreground placeholder:text-[10px] sm:placeholder:text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 transition-all"
       />
       <button
         onClick={handleSearch}
