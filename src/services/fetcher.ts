@@ -48,9 +48,67 @@ function markSourceFailed(source: string) {
 /** Sleep helper */
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-/** Crypto: CoinGecko → CoinPaprika → CoinLore+DIA fallback, with silent retry */
+/** Map CoinGecko IDs to Yahoo Finance crypto tickers */
+const GECKO_TO_YAHOO: Record<string, string> = {
+  'bitcoin': 'BTC-USD',
+  'ethereum': 'ETH-USD',
+  'solana': 'SOL-USD',
+  'binancecoin': 'BNB-USD',
+  'ripple': 'XRP-USD',
+  'cardano': 'ADA-USD',
+  'dogecoin': 'DOGE-USD',
+  'avalanche-2': 'AVAX-USD',
+  'polkadot': 'DOT-USD',
+  'chainlink': 'LINK-USD',
+  'litecoin': 'LTC-USD',
+  'bitcoin-cash': 'BCH-USD',
+  'uniswap': 'UNI-USD',
+  'cosmos': 'ATOM-USD',
+  'near': 'NEAR-USD',
+  'tron': 'TRX-USD',
+  'shiba-inu': 'SHIB-USD',
+  'aave': 'AAVE-USD',
+  'maker': 'MKR-USD',
+  'pepe': 'PEPE-USD',
+  'sui': 'SUI-USD',
+  'the-open-network': 'TON-USD',
+  'filecoin': 'FIL-USD',
+  'arbitrum': 'ARB-USD',
+  'optimism': 'OP-USD',
+  'aptos': 'APT-USD',
+  'vechain': 'VET-USD',
+  'stellar': 'XLM-USD',
+  'hedera-hashgraph': 'HBAR-USD',
+  'internet-computer': 'ICP-USD',
+};
+
+/** Crypto: CoinGecko → CoinPaprika → Yahoo Finance (for ALL) → CoinLore+DIA fallback */
 export async function fetchCryptoHistory(coinId: string, days: number): Promise<CryptoFetchResult> {
   const errors: string[] = [];
+  const isAllTime = days >= 9999;
+
+  // For ALL time, try Yahoo Finance first since it has full history for free
+  if (isAllTime) {
+    const yahooTicker = GECKO_TO_YAHOO[coinId] || `${coinId.toUpperCase()}-USD`;
+    try {
+      const chart = await getStockChart(yahooTicker, days);
+      // Get coin metadata from CoinGecko or DIA
+      let coinData: any = null;
+      try { coinData = await getCoinData(coinId); } catch { /* skip */ }
+      return {
+        priceData: {
+          timestamps: chart.timestamps,
+          closes: chart.closes,
+          volumes: chart.volumes,
+        },
+        coinData,
+        source: 'Yahoo Finance (full history)',
+      };
+    } catch (yahooError: any) {
+      console.warn('Yahoo Finance crypto failed:', yahooError.message);
+      errors.push(`Yahoo: ${yahooError.message}`);
+    }
+  }
 
   // Source 1: CoinGecko (skip if cooling down)
   if (!isSourceCoolingDown('coingecko')) {
@@ -98,7 +156,29 @@ export async function fetchCryptoHistory(coinId: string, days: number): Promise<
     console.log('CoinPaprika cooling down, skipping');
   }
 
-  // Source 3: CoinLore (live data, no rate limits) + DIA price — generate synthetic chart
+  // Source 3: Yahoo Finance (non-ALL time fallback too)
+  if (!isAllTime) {
+    const yahooTicker = GECKO_TO_YAHOO[coinId] || `${coinId.toUpperCase()}-USD`;
+    try {
+      const chart = await getStockChart(yahooTicker, days);
+      let coinData: any = null;
+      try { coinData = await getCoinData(coinId); } catch { /* skip */ }
+      return {
+        priceData: {
+          timestamps: chart.timestamps,
+          closes: chart.closes,
+          volumes: chart.volumes,
+        },
+        coinData,
+        source: 'Yahoo Finance',
+      };
+    } catch (yahooError: any) {
+      console.warn('Yahoo Finance crypto fallback failed:', yahooError.message);
+      errors.push(`Yahoo: ${yahooError.message}`);
+    }
+  }
+
+  // Source 4: CoinLore (live data, no rate limits) + DIA price — generate synthetic chart
   try {
     const result = await buildFallbackCryptoData(coinId, days);
     if (result) return result;
@@ -107,7 +187,7 @@ export async function fetchCryptoHistory(coinId: string, days: number): Promise<
     errors.push(`Fallback: ${fallbackError.message}`);
   }
 
-  // Silent retry: wait briefly and try CoinPaprika once more (it has generous limits)
+  // Silent retry: wait briefly and try CoinPaprika once more
   try {
     console.log('All sources failed, retrying CoinPaprika after brief wait...');
     await sleep(3000);
