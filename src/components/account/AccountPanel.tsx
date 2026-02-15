@@ -121,7 +121,7 @@ export default function AccountPanel({ open, onClose }: Props) {
       }, { onConflict: 'user_id' });
     setSaving(false);
     setSaveMsg(error ? `Failed: ${error.message}` : 'Preferences saved ✓');
-    if (prefs.theme !== theme) setTheme(prefs.theme as 'dark' | 'light');
+    if (prefs.theme !== theme) setTheme('dark');
     setTimeout(() => setSaveMsg(''), 2000);
   };
 

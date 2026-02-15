@@ -1,0 +1,24 @@
+<svg viewBox="0 0 280 48" width="280" height="48" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="fg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7d91a8"/>
+      <stop offset="35%" stop-color="#00d4ee"/>
+      <stop offset="100%" stop-color="#22c55e"/>
+    </linearGradient>
+    <filter id="gl">
+      <feGaussianBlur stdDeviation="1.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Mini icon -->
+  <rect x="2" y="2" width="44" height="44" rx="10" fill="#05090f" stroke="#1a2740" stroke-width="1"/>
+  <path d="M10,30 Q16,28 20,25 Q24,22 27,24 Q30,26 32,22" fill="none" stroke="#7d91a8" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M32,22 Q36,18 40,14" fill="none" stroke="url(#fg)" stroke-width="2" stroke-linecap="round" filter="url(#gl)"/>
+  <circle cx="32" cy="22" r="2.5" fill="#00d4ee" filter="url(#gl)"/>
+  <circle cx="40" cy="14" r="2.5" fill="#22c55e" filter="url(#gl)"/>
+  <circle cx="40" cy="14" r="1.2" fill="#05090f"/>
+  <line x1="8" y1="36" x2="40" y2="36" stroke="#1a2740" stroke-width="0.6"/>
+  <!-- Text -->
+  <text x="56" y="28" font-family="'Outfit', 'Manrope', sans-serif" font-size="22" font-weight="700" fill="#dce6f0" letter-spacing="-0.5">Forecast</text>
+  <text x="185" y="28" font-family="'Outfit', 'Manrope', sans-serif" font-size="22" font-weight="300" fill="#7d91a8">Simply</text>
+</svg>

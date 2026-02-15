@@ -25,7 +25,7 @@ export default function TradeSetupPanel({ setups }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {setups.map(setup => {
           const isLong = setup.type === 'long';
-          const borderColor = isLong ? 'border-sf-green/40' : 'border-sf-red/40';
+          const borderColor = isLong ? 'border-fs-green/40' : 'border-fs-red/40';
           const glowClass = isLong ? 'glow-green' : 'glow-red';
           const accentClass = isLong ? 'text-positive' : 'text-negative';
 

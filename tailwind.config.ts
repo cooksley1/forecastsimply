@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Outfit', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['Outfit', 'Manrope', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'SF Mono', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -51,13 +51,17 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        fs: {
+          cyan: "hsl(var(--fs-cyan))",
+          green: "hsl(var(--fs-green))",
+          red: "hsl(var(--fs-red))",
+          amber: "hsl(var(--fs-amber))",
+        },
         sf: {
-          cyan: "hsl(var(--sf-cyan))",
-          purple: "hsl(var(--sf-purple))",
-          amber: "hsl(var(--sf-amber))",
-          green: "hsl(var(--sf-green))",
-          red: "hsl(var(--sf-red))",
-          pink: "hsl(var(--sf-pink))",
+          cyan: "hsl(var(--fs-cyan))",
+          green: "hsl(var(--fs-green))",
+          red: "hsl(var(--fs-red))",
+          amber: "hsl(var(--fs-amber))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

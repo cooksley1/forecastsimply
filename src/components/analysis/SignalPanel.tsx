@@ -17,9 +17,9 @@ const signalExplanations: Record<string, string> = {
 
 export default function SignalPanel({ signal, price, name, symbol }: Props) {
   const colorMap = {
-    green: 'text-positive border-sf-green/30 bg-sf-green/5',
-    red: 'text-negative border-sf-red/30 bg-sf-red/5',
-    amber: 'text-neutral-signal border-sf-amber/30 bg-sf-amber/5',
+    green: 'text-positive border-fs-green/30 bg-fs-green/5',
+    red: 'text-negative border-fs-red/30 bg-fs-red/5',
+    amber: 'text-neutral-signal border-fs-amber/30 bg-fs-amber/5',
   };
 
   const glowMap = {
@@ -51,10 +51,10 @@ export default function SignalPanel({ signal, price, name, symbol }: Props) {
             <span className="text-muted-foreground">Confidence</span>
             <span className="font-mono text-foreground">{signal.confidence}%</span>
           </div>
-          <div className="h-2 rounded-full bg-sf-inset overflow-hidden">
+          <div className="h-2 rounded-full bg-muted overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${
-                signal.color === 'green' ? 'bg-sf-green' : signal.color === 'red' ? 'bg-sf-red' : 'bg-sf-amber'
+                signal.color === 'green' ? 'bg-fs-green' : signal.color === 'red' ? 'bg-fs-red' : 'bg-fs-amber'
               }`}
               style={{ width: `${signal.confidence}%` }}
             />

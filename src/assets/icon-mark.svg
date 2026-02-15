@@ -1,0 +1,44 @@
+<svg viewBox="0 0 400 400" width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="forecast-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7d91a8"/>
+      <stop offset="35%" stop-color="#00d4ee"/>
+      <stop offset="100%" stop-color="#22c55e"/>
+    </linearGradient>
+    <linearGradient id="confidence-band" x1="0%" y1="0%" x2="0%" y2="1">
+      <stop offset="0%" stop-color="#22c55e" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Background -->
+  <rect width="400" height="400" rx="80" fill="#05090f"/>
+  <rect x="1" y="1" width="398" height="398" rx="79" fill="none" stroke="#1a2740" stroke-width="2"/>
+  <!-- Confidence band -->
+  <path d="M55,215 Q130,200 195,185 Q240,175 285,145 Q315,128 360,105 L360,165 Q315,175 285,185 Q240,200 195,210 Q130,222 55,232 Z" fill="url(#confidence-band)"/>
+  <!-- Upper confidence dashed -->
+  <path d="M55,205 Q130,190 195,175 Q240,162 285,132 Q315,115 360,92" fill="none" stroke="#22c55e" stroke-width="1.2" opacity="0.25" stroke-dasharray="5 4"/>
+  <!-- Lower confidence dashed -->
+  <path d="M55,232 Q130,230 195,218 Q240,212 285,195 Q315,182 360,168" fill="none" stroke="#22c55e" stroke-width="1.2" opacity="0.25" stroke-dasharray="5 4"/>
+  <!-- Historical price line -->
+  <path d="M55,222 Q85,228 108,215 Q135,200 158,208 Q178,215 195,202" fill="none" stroke="#7d91a8" stroke-width="3" stroke-linecap="round"/>
+  <!-- Forecast line (gradient glow) -->
+  <path d="M195,202 Q230,180 265,155 Q300,132 340,108 Q350,102 360,95" fill="none" stroke="url(#forecast-grad)" stroke-width="3" stroke-linecap="round" filter="url(#glow)"/>
+  <!-- NOW dot (cyan) -->
+  <circle cx="195" cy="202" r="7" fill="#00d4ee" filter="url(#glow)"/>
+  <circle cx="195" cy="202" r="3.5" fill="#05090f"/>
+  <!-- Forecast endpoint (green) -->
+  <circle cx="360" cy="95" r="7" fill="#22c55e" filter="url(#glow)"/>
+  <circle cx="360" cy="95" r="3.5" fill="#05090f"/>
+  <!-- Horizon baseline -->
+  <line x1="40" y1="280" x2="360" y2="280" stroke="#1a2740" stroke-width="1"/>
+  <!-- Tick marks -->
+  <line x1="55" y1="276" x2="55" y2="284" stroke="#344058" stroke-width="1"/>
+  <line x1="130" y1="276" x2="130" y2="284" stroke="#344058" stroke-width="1"/>
+  <line x1="195" y1="276" x2="195" y2="284" stroke="#00d4ee" stroke-width="1.5"/>
+  <line x1="280" y1="276" x2="280" y2="284" stroke="#344058" stroke-width="1"/>
+  <line x1="360" y1="276" x2="360" y2="284" stroke="#344058" stroke-width="1"/>
+</svg>
