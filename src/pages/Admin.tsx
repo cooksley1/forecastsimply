@@ -579,7 +579,7 @@ export default function Admin() {
                       <TableHead>User</TableHead>
                       <TableHead className="hidden md:table-cell">Role</TableHead>
                       <TableHead className="hidden sm:table-cell">Status</TableHead>
-                      <TableHead className="hidden lg:table-cell">Last Login</TableHead>
+                      <TableHead className="hidden md:table-cell">Last Login</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -591,6 +591,10 @@ export default function Admin() {
                             <div className="font-medium text-foreground text-sm">{u.profile?.display_name || u.email?.split('@')[0] || u.phone || 'Unknown'}</div>
                             <div className="text-xs text-muted-foreground">{u.email || u.phone}</div>
                             <div className="text-[10px] text-muted-foreground/60 font-mono">{u.id.slice(0, 8)}...</div>
+                            {/* Show last login inline on small screens */}
+                            <div className="md:hidden mt-0.5">
+                              <LoginHistoryCell logins={u.login_history} lastSignIn={u.last_sign_in_at} />
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
@@ -612,7 +616,7 @@ export default function Admin() {
                             <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">⚪ Unverified</span>
                           )}
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell">
+                        <TableCell className="hidden md:table-cell">
                           <LoginHistoryCell logins={u.login_history} lastSignIn={u.last_sign_in_at} />
                         </TableCell>
                         <TableCell className="text-right">
