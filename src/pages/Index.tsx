@@ -635,13 +635,6 @@ export default function Index() {
               </div>
             )}
 
-            <PriceAlertDialog
-              open={alertDialogOpen}
-              onClose={() => setAlertDialogOpen(false)}
-              asset={assetInfo}
-              onCreated={() => setAlertRefreshKey(k => k + 1)}
-            />
-
             {/* Timeframe bar */}
             <div className="bg-card border border-border rounded-xl p-3 space-y-2">
               <div className="flex items-center gap-1 overflow-x-auto">
@@ -786,6 +779,13 @@ export default function Index() {
           onClose={() => setFullscreenChart(false)}
         />
       )}
+
+      <PriceAlertDialog
+        open={alertDialogOpen}
+        onClose={() => setAlertDialogOpen(false)}
+        asset={assetInfo}
+        onCreated={() => setAlertRefreshKey(k => k + 1)}
+      />
     </div>
   );
 }
