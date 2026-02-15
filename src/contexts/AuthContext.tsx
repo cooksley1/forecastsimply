@@ -21,18 +21,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Always set up auth state listener
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sess) => {
+      setSession(sess);
+      setUser(sess?.user ?? null);
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Process __lovable_token from OAuth redirect
+    const params = new URLSearchParams(window.location.search);
+    const lovableToken = params.get('__lovable_token');
+
+    if (lovableToken) {
+      // Clean the URL immediately
+      window.history.replaceState({}, '', window.location.pathname || '/');
+
+      (async () => {
+        try {
+          const decoded = JSON.parse(atob(lovableToken));
+          if (decoded.access_token && decoded.refresh_token) {
+            await supabase.auth.setSession({
+              access_token: decoded.access_token,
+              refresh_token: decoded.refresh_token,
+            });
+            return; // onAuthStateChange will handle the rest
+          }
+        } catch {
+          // Token might not be base64 JSON — try other formats
+        }
+        // If we couldn't process it, just finish loading
+        setLoading(false);
+      })();
+    } else {
+      // Normal init — get existing session
+      supabase.auth.getSession().then(({ data: { session: sess } }) => {
+        setSession(sess);
+        setUser(sess?.user ?? null);
+        setLoading(false);
+      });
+    }
 
     return () => subscription.unsubscribe();
   }, []);
