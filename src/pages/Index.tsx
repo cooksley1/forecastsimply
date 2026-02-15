@@ -17,6 +17,7 @@ import PortfolioBuilder from '@/components/analysis/PortfolioBuilder';
 import TopPicks from '@/components/analysis/TopPicks';
 import BreakoutFinder from '@/components/analysis/BreakoutFinder';
 import { getCoinData, getCoinChart, searchCoins } from '@/services/api/coingecko';
+import { getDIACryptoPrice, geckoIdToDIASymbol } from '@/services/api/dia';
 import { getStockChart } from '@/services/api/yahoo';
 import { getForexChart } from '@/services/api/frankfurter';
 import { processTA } from '@/analysis/processTA';
@@ -62,23 +63,30 @@ export default function Index() {
     setLoading(true);
     setError(null);
     try {
-      const [coinData, chartData] = await Promise.all([
+      // Try DIA for live price (fastest, no rate limits), CoinGecko for chart + metadata
+      const diaSymbol = geckoIdToDIASymbol(coinId);
+      const [coinData, chartData, diaPrice] = await Promise.all([
         getCoinData(coinId),
         getCoinChart(coinId, timeframeDays),
+        diaSymbol ? getDIACryptoPrice(diaSymbol).catch(() => null) : Promise.resolve(null),
       ]);
+
+      // Use DIA price if available (more recent, exchange-aggregated), fallback to CoinGecko
+      const livePrice = diaPrice?.price || coinData.market_data?.current_price?.usd || 0;
+      const change24h = diaPrice?.change24h ?? coinData.market_data?.price_change_percentage_24h;
 
       const info: AssetInfo = {
         id: coinId,
         symbol: coinData.symbol?.toUpperCase() || coinId,
         name: coinData.name || coinId,
         assetType: 'crypto',
-        price: coinData.market_data?.current_price?.usd || 0,
+        price: livePrice,
         priceAud: coinData.market_data?.current_price?.aud,
-        change24h: coinData.market_data?.price_change_percentage_24h,
+        change24h,
         change7d: coinData.market_data?.price_change_percentage_7d,
         change30d: coinData.market_data?.price_change_percentage_30d,
         marketCap: coinData.market_data?.market_cap?.usd,
-        volume24h: coinData.market_data?.total_volume?.usd,
+        volume24h: diaPrice?.volume24h || coinData.market_data?.total_volume?.usd,
         circulatingSupply: coinData.market_data?.circulating_supply,
         maxSupply: coinData.market_data?.max_supply,
         ath: coinData.market_data?.ath?.usd,
