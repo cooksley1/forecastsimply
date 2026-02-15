@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import type { WatchlistItem } from '@/types/assets';
 import { fmtPercent } from '@/utils/format';
 
@@ -11,19 +12,42 @@ interface Props {
 
 export default function WatchlistDropdown({ items, onSelect, onRemove, onClear }: Props) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, right: 0 });
+
+  const updatePos = useCallback(() => {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      const panelWidth = Math.min(window.innerWidth - 16, 320);
+      // Align right edge to button's right edge, but clamp so left edge stays at >= 8px
+      let right = window.innerWidth - r.right;
+      if (window.innerWidth - right - panelWidth < 8) {
+        right = window.innerWidth - panelWidth - 8;
+      }
+      setPos({ top: r.bottom + 4, right: Math.max(right, 8) });
+    }
+  }, []);
 
   useEffect(() => {
+    if (!open) return;
+    updatePos();
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (
+        panelRef.current && !panelRef.current.contains(e.target as Node) &&
+        btnRef.current && !btnRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  }, [open, updatePos]);
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
+        ref={btnRef}
         onClick={() => setOpen(o => !o)}
         className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-all ${
           open
@@ -40,8 +64,12 @@ export default function WatchlistDropdown({ items, onSelect, onRemove, onClear }
         )}
       </button>
 
-      {open && (
-        <div className="absolute right-0 mt-1 z-[60] w-[min(calc(100vw-1rem),20rem)] bg-card border border-border rounded-xl shadow-xl overflow-hidden">
+      {open && createPortal(
+        <div
+          ref={panelRef}
+          className="fixed z-[200] w-[min(calc(100vw-1rem),20rem)] bg-card border border-border rounded-xl shadow-xl overflow-hidden"
+          style={{ top: pos.top, right: Math.max(pos.right, 8) }}
+        >
           {items.length === 0 ? (
             <div className="p-4 text-center text-xs text-muted-foreground">
               No items yet. Search & analyse an asset to add it.
@@ -96,8 +124,9 @@ export default function WatchlistDropdown({ items, onSelect, onRemove, onClear }
               </div>
             </>
           )}
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }
