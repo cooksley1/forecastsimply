@@ -314,9 +314,9 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
         className={`touch-none ${fullscreen ? 'flex-1 min-h-0' : ''}`}
       >
         <ResponsiveContainer width="100%" height={fullscreen ? '100%' : isMobile ? 240 : 350}>
-          <ComposedChart data={visibleData} margin={{ top: 5, right: 5, left: isMobile ? 0 : 10, bottom: 5 }}>
+          <ComposedChart data={visibleData} margin={{ top: 5, right: 5, left: isMobile ? 0 : 10, bottom: 30 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(216 30% 18% / 0.5)" />
-            <XAxis dataKey="time" tickFormatter={formatTime} tick={{ fill: 'hsl(213 20% 55%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono' }} axisLine={{ stroke: 'hsl(216 30% 18%)' }} interval="preserveStartEnd" minTickGap={isMobile ? 40 : 60} />
+            <XAxis dataKey="time" tickFormatter={formatTime} tick={{ fill: 'hsl(213 20% 55%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono' }} axisLine={{ stroke: 'hsl(216 30% 18%)' }} interval="preserveStartEnd" minTickGap={isMobile ? 30 : 50} angle={-45} textAnchor="end" dy={10} />
             <YAxis domain={['auto', 'auto']} tick={{ fill: 'hsl(213 20% 55%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono' }} axisLine={{ stroke: 'hsl(216 30% 18%)' }} tickFormatter={(v: number) => fmtPrice(v).replace('$', '')} width={isMobile ? 50 : 60} />
             <Tooltip
               contentStyle={{ background: 'hsl(220 45% 8%)', border: '1px solid hsl(216 30% 18%)', borderRadius: 8, fontFamily: 'JetBrains Mono', fontSize: 11 }}
