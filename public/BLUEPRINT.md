@@ -1,6 +1,6 @@
-# Signal Forge v6.0 — Complete Technical Blueprint
+# ForecastSimply v7.0 — Complete Technical Blueprint
 
-> **Purpose**: This document contains every detail needed to rebuild the Signal Forge application from scratch. It covers architecture, data flow, algorithms, UI structure, and configuration.
+> **Purpose**: This document contains every detail needed to rebuild the ForecastSimply application from scratch. It covers architecture, data flow, algorithms, UI structure, backend services, and configuration.
 
 ---
 
@@ -19,6 +19,10 @@
 11. [Asset Types & Constants](#11-asset-types--constants)
 12. [Caching Strategy](#12-caching-strategy)
 13. [Design System](#13-design-system)
+14. [Backend Services](#17-backend-services)
+15. [Price Alerts & Notifications](#18-price-alerts--notifications)
+16. [Newsletter & Market Digest](#19-newsletter--market-digest)
+17. [Authentication & Security](#20-authentication--security)
 
 ---
 
@@ -704,4 +708,111 @@ DailyVol = √(Σ(return - mean)² / n) × 100  (as percentage)
 
 ---
 
-*End of Blueprint — Signal Forge v6.0*
+---
+
+## 17. Backend Services
+
+### Edge Functions (Supabase)
+
+| Function | Purpose | Auth |
+|----------|---------|------|
+| `yahoo-proxy` | Proxies Yahoo Finance chart requests (CORS bypass) | Public |
+| `yahoo-search` | Proxies Yahoo Finance search queries | Public |
+| `exchange-screener` | Screens ASX/LSE/TSE exchange tickers | Public |
+| `check-price-alerts` | Cron job: checks triggered price alerts, sends push/email | Cron (no JWT) |
+| `get-vapid-key` | Returns VAPID public key for push subscriptions | Public |
+| `curated-digest` | Generates AI-curated market digest content | Authenticated |
+| `send-digest` | Sends approved digest emails to subscribers | Cron / Admin |
+| `refresh-market-data` | Cron job: warms market data cache | Cron (no JWT) |
+| `admin-users` | User management (CRUD, ban, roles, impersonate) | Admin only |
+
+### Database Tables
+
+| Table | Purpose | RLS |
+|-------|---------|-----|
+| `profiles` | User display names, avatars | Owner only |
+| `user_roles` | Role-based access (admin, moderator, user) | Owner read, admin manage |
+| `user_preferences` | Theme, risk profile, timeframe defaults | Owner only |
+| `watchlist_groups` | Named watchlist folders with colors | Owner only |
+| `watchlist_items` | Individual watchlist entries | Owner only |
+| `analysis_history` | Saved analysis snapshots | Owner only |
+| `price_alerts` | User-defined price/percentage alerts | Owner only |
+| `push_subscriptions` | Web push notification endpoints | Owner only |
+| `login_history` | Sign-in audit trail (IP, user agent, location) | Owner + admin read |
+| `newsletter_subscribers` | Email subscriptions with asset preferences | Owner read, public insert |
+| `market_digests` | AI-generated weekly market reports | Admin manage, auth read approved |
+
+---
+
+## 18. Price Alerts & Notifications
+
+### Alert Types
+- **Price target**: Triggers when asset reaches a specific price
+- **Percentage move**: Triggers on a % change from reference price
+
+### Notification Delivery (Priority Order)
+1. **Push notifications** — via Web Push API (VAPID keys)
+2. **Email fallback** — automatically used when push is unavailable or blocked
+
+### Flow
+```
+check-price-alerts (cron) →
+  Fetch active alerts →
+  Check current prices →
+  For each triggered alert:
+    1. Try push notification (if subscription exists)
+    2. If push fails or no subscription → send email via Resend
+    3. Mark alert as triggered
+```
+
+### Browser-Specific Blocked Notification Instructions
+When push notifications are blocked, the UI detects the browser (Chrome, Edge, Firefox, Safari) and shows tailored step-by-step instructions for re-enabling them.
+
+---
+
+## 19. Newsletter & Market Digest
+
+### Subscription
+- Anonymous users can subscribe with email only
+- Authenticated users auto-link their user_id
+- Preferences: crypto, stocks, ETFs, forex (all enabled by default)
+- Managed via AccountPanel or footer signup form
+
+### Digest Pipeline
+```
+curated-digest (admin triggers) →
+  Generate AI market summary →
+  Save as draft in market_digests →
+  Admin reviews & approves →
+send-digest (cron or admin) →
+  Fetch approved digest →
+  Fetch active subscribers →
+  Send personalised HTML emails via Resend →
+  Includes: greeting, market summary, insights, recommendations, watchlist alerts
+```
+
+---
+
+## 20. Authentication & Security
+
+### Auth Methods
+- Email/password (with email verification)
+- Phone OTP
+- Google OAuth (via Lovable Cloud)
+
+### Security Model
+- **Row-Level Security (RLS)** on all tables
+- **Restrictive policies** scoped to `auth.uid() = user_id`
+- **Admin access** via `has_role()` SECURITY DEFINER function
+- **Edge function auth**: Admin functions verify caller role server-side
+- **Input validation**: Comprehensive validation on admin edge function (UUID, email, password, phone, role, metadata size)
+- **CORS**: Configured on all edge functions
+
+### Role System
+- Roles stored in dedicated `user_roles` table (not in profiles)
+- Enum: `admin | moderator | user`
+- Checked via `has_role(_user_id, _role)` function to avoid RLS recursion
+
+---
+
+*End of Blueprint — ForecastSimply v7.0*
