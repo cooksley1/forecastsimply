@@ -13,6 +13,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 
 // ── Types ──
+interface LoginRecord {
+  id: string;
+  signed_in_at: string;
+  ip_address?: string;
+  user_agent?: string;
+  city?: string;
+  country?: string;
+}
+
 interface AdminUser {
   id: string;
   email?: string;
@@ -24,6 +33,7 @@ interface AdminUser {
   user_metadata?: Record<string, any>;
   role: string;
   profile?: { display_name?: string; avatar_url?: string; banned_at?: string } | null;
+  login_history: LoginRecord[];
 }
 
 interface DigestInsight {
@@ -364,6 +374,62 @@ function DigestManagement() {
   );
 }
 
+// ── Status Indicator ──
+function StatusIndicator({ lastSignIn }: { lastSignIn?: string }) {
+  if (!lastSignIn) return <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">⚪ Inactive</span>;
+  const diffMs = Date.now() - new Date(lastSignIn).getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+  if (diffHours < 1) return <span className="text-xs bg-positive/10 text-positive px-2 py-0.5 rounded">🟢 Online</span>;
+  if (diffHours < 24) return <span className="text-xs bg-positive/10 text-positive px-2 py-0.5 rounded">🟢 Today</span>;
+  if (diffHours < 168) return <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">🔵 This week</span>;
+  if (diffHours < 720) return <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">🟡 This month</span>;
+  return <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">⚫ Dormant</span>;
+}
+
+// ── Login History Cell ──
+function LoginHistoryCell({ logins, lastSignIn }: { logins: LoginRecord[]; lastSignIn?: string }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const formatDate = (d: string) => {
+    const date = new Date(d);
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  };
+
+  if (logins.length === 0) {
+    return (
+      <span className="text-xs text-muted-foreground">
+        {lastSignIn ? formatDate(lastSignIn) : 'Never'}
+      </span>
+    );
+  }
+
+  const latest = logins[0];
+  const rest = logins.slice(1);
+
+  return (
+    <div className="space-y-0.5">
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs text-foreground font-mono">{formatDate(latest.signed_in_at)}</span>
+        {latest.country && <span className="text-[9px] text-muted-foreground">{latest.city ? `${latest.city}, ` : ''}{latest.country}</span>}
+        {rest.length > 0 && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-[9px] text-primary hover:underline ml-1"
+          >
+            {expanded ? 'hide' : `+${rest.length} more`}
+          </button>
+        )}
+      </div>
+      {expanded && rest.map((l) => (
+        <div key={l.id} className="flex items-center gap-1.5 pl-1 border-l border-border ml-1">
+          <span className="text-[10px] text-muted-foreground font-mono">{formatDate(l.signed_in_at)}</span>
+          {l.country && <span className="text-[9px] text-muted-foreground/60">{l.city ? `${l.city}, ` : ''}{l.country}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Main Admin Page ──
 export default function Admin() {
   const { user } = useAuth();
@@ -513,7 +579,7 @@ export default function Admin() {
                       <TableHead>User</TableHead>
                       <TableHead className="hidden md:table-cell">Role</TableHead>
                       <TableHead className="hidden sm:table-cell">Status</TableHead>
-                      <TableHead className="hidden lg:table-cell">Last Sign In</TableHead>
+                      <TableHead className="hidden lg:table-cell">Last Login</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -539,15 +605,15 @@ export default function Admin() {
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
                           {isBanned(u) ? (
-                            <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded">Banned</span>
+                            <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded">🔴 Banned</span>
                           ) : u.email_confirmed_at ? (
-                            <span className="text-xs bg-positive/10 text-positive px-2 py-0.5 rounded">Active</span>
+                            <StatusIndicator lastSignIn={u.last_sign_in_at} />
                           ) : (
-                            <span className="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded">Unverified</span>
+                            <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">⚪ Unverified</span>
                           )}
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
-                          {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString() : 'Never'}
+                        <TableCell className="hidden lg:table-cell">
+                          <LoginHistoryCell logins={u.login_history} lastSignIn={u.last_sign_in_at} />
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center gap-1 justify-end flex-wrap">
