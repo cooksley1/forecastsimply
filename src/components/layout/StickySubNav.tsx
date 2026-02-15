@@ -34,7 +34,7 @@ export default function StickySubNav({ assetType, onAssetChange, showSections }:
 
   return (
     <nav
-      className="sticky top-[56px] z-40 bg-background border-b border-border shadow-sm"
+      className="sticky top-[56px] z-40 bg-background border-b border-border shadow-sm overflow-hidden"
       style={{ position: 'sticky' }}
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-1.5 space-y-1">
@@ -62,7 +62,7 @@ export default function StickySubNav({ assetType, onAssetChange, showSections }:
 
         {/* Row 2: Section jump links — only when analysis is visible */}
         {showSections && (
-          <div className="flex justify-between gap-1 border-t border-border/40 pt-1">
+          <div className="flex gap-1 border-t border-border/40 pt-1 overflow-x-auto no-scrollbar">
             {SECTIONS.map(s => (
               <button
                 key={s.id}
@@ -71,10 +71,10 @@ export default function StickySubNav({ assetType, onAssetChange, showSections }:
                   e.preventDefault();
                   scrollTo(s.id);
                 }}
-                className="flex-1 text-center px-1 py-0.5 rounded-md text-[10px] sm:text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all"
+                className="shrink-0 text-center px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all"
               >
                 <span className="mr-0.5">{s.icon}</span>
-                <span className="hidden sm:inline">{s.label}</span>
+                <span>{s.label}</span>
               </button>
             ))}
           </div>
