@@ -520,16 +520,19 @@ export default function Index() {
                   );
                 })}
                 {assetType === 'stocks' && (
-                  <button
-                    onClick={() => setDividendOnly(d => !d)}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ml-auto ${
-                      dividendOnly
-                        ? 'bg-primary/15 border-primary/40 text-primary'
-                        : 'border-border text-muted-foreground hover:border-primary/30'
-                    }`}
-                  >
-                    💰 Dividends
-                  </button>
+                  <>
+                    <span className="w-px h-5 bg-border mx-1" />
+                    <button
+                      onClick={() => setDividendOnly(d => !d)}
+                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                        dividendOnly
+                          ? 'bg-primary/15 border-primary/40 text-primary'
+                          : 'border-border text-muted-foreground hover:border-primary/30'
+                      }`}
+                    >
+                      💰 Dividends Only
+                    </button>
+                  </>
                 )}
               </div>
             </div>
