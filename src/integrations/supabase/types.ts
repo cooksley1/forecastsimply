@@ -91,10 +91,7 @@ export type Database = {
       }
       user_preferences: {
         Row: {
-          av_api_key: string | null
-          cg_api_key: string | null
           default_timeframe_days: number
-          fmp_api_key: string | null
           forecast_percent: number
           id: string
           risk_profile: string
@@ -104,10 +101,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          av_api_key?: string | null
-          cg_api_key?: string | null
           default_timeframe_days?: number
-          fmp_api_key?: string | null
           forecast_percent?: number
           id?: string
           risk_profile?: string
@@ -117,10 +111,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          av_api_key?: string | null
-          cg_api_key?: string | null
           default_timeframe_days?: number
-          fmp_api_key?: string | null
           forecast_percent?: number
           id?: string
           risk_profile?: string
