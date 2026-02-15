@@ -88,18 +88,14 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
     const d = new Date(ts);
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     if (spanDays < 2) {
-      // Under 2 days — just hours
       return `${d.getHours().toString().padStart(2,'0')}:00`;
-    } else if (spanDays < 180) {
-      // Under 6 months — month + day
+    } else if (spanDays < 60) {
       return `${months[d.getMonth()]} ${d.getDate()}`;
-    } else if (spanDays < 900) {
-      // Under ~2.5 years — month + short year
-      return `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
-    } else if (spanDays < 2000) {
+    } else if (spanDays < 365) {
       return `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
     } else {
-      return `${d.getFullYear()}`;
+      // 1Y+ including ALL — show abbreviated month + 2-digit year, spaced out
+      return `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
     }
   };
 
@@ -137,7 +133,7 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
       <ResponsiveContainer width="100%" height={isMobile ? 240 : 350}>
         <ComposedChart data={combined} margin={{ top: 5, right: 5, left: isMobile ? 0 : 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(216 30% 18% / 0.5)" />
-          <XAxis dataKey="time" tickFormatter={formatTime} tick={{ fill: 'hsl(213 20% 55%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono' }} axisLine={{ stroke: 'hsl(216 30% 18%)' }} interval={isMobile ? 'preserveStartEnd' : undefined} />
+          <XAxis dataKey="time" tickFormatter={formatTime} tick={{ fill: 'hsl(213 20% 55%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono' }} axisLine={{ stroke: 'hsl(216 30% 18%)' }} interval="preserveStartEnd" minTickGap={isMobile ? 40 : 60} />
           <YAxis domain={['auto', 'auto']} tick={{ fill: 'hsl(213 20% 55%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono' }} axisLine={{ stroke: 'hsl(216 30% 18%)' }} tickFormatter={(v: number) => fmtPrice(v).replace('$', '')} width={isMobile ? 50 : 60} />
           <Tooltip
             contentStyle={{ background: 'hsl(220 45% 8%)', border: '1px solid hsl(216 30% 18%)', borderRadius: 8, fontFamily: 'JetBrains Mono', fontSize: 11 }}
