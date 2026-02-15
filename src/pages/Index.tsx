@@ -275,6 +275,19 @@ export default function Index() {
     return () => clearTimeout(timer);
   }, [timeframeDays, forecastPercent, forecastMethods, riskLevel]);
 
+  /* ── Auto-scroll to signal when analysis loads ── */
+  useEffect(() => {
+    if (technicalData && assetInfo && !loading) {
+      requestAnimationFrame(() => {
+        const el = document.getElementById('section-signal');
+        if (el) {
+          const y = el.getBoundingClientRect().top + window.scrollY - 140;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      });
+    }
+  }, [technicalData, assetInfo, loading]);
+
   /* ── Handlers ── */
   const EXCHANGE_SUFFIXES: Record<string, string> = {
     US: '', ASX: '.AX', LSE: '.L', TSE: '.TO', XETRA: '.DE', HKSE: '.HK', JPX: '.T',
@@ -550,7 +563,7 @@ export default function Index() {
         {showAnalysis && (
           <div className="space-y-4">
             {/* Signal + metadata bar */}
-            <div id="section-signal" className="flex flex-col sm:flex-row sm:items-center gap-3 scroll-mt-16">
+            <div id="section-signal" className="flex flex-col sm:flex-row sm:items-center gap-3 scroll-mt-36">
               <SignalPanel signal={technicalData.signal} price={assetInfo.price} name={assetInfo.name} symbol={assetInfo.symbol} />
               <div className="flex items-center gap-2 flex-wrap ml-auto">
                 {dataSource && (
@@ -614,7 +627,7 @@ export default function Index() {
             {/* Card Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Price Chart — full width */}
-              <div id="section-chart" className="lg:col-span-2 relative scroll-mt-16">
+              <div id="section-chart" className="lg:col-span-2 relative scroll-mt-36">
                 <FullscreenChartButton onClick={() => setFullscreenChart(true)} />
                 <MemoMainChart data={technicalData} timeframeDays={timeframeDays} activeOverlays={activeOverlays} />
               </div>
@@ -624,7 +637,7 @@ export default function Index() {
               <MemoRSIChart data={technicalData} />
 
               {/* Risk Profile + Recommendations + Trade Setups */}
-              <div id="section-recs" className="lg:col-span-2 space-y-4 scroll-mt-16">
+              <div id="section-recs" className="lg:col-span-2 space-y-4 scroll-mt-36">
                 {/* Risk slider inline */}
                 <div className="bg-card border border-border rounded-xl p-3">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -640,13 +653,13 @@ export default function Index() {
               </div>
 
               {/* Trade Setups */}
-              <div id="section-setups"><MemoTradeSetupPanel setups={technicalData.tradeSetups} /></div>
+              <div id="section-setups" className="scroll-mt-36"><MemoTradeSetupPanel setups={technicalData.tradeSetups} /></div>
 
               {/* Indicators */}
-              <div id="section-indicators"><MemoIndicatorsPanel indicators={technicalData.indicators} currentPrice={assetInfo.price} /></div>
+              <div id="section-indicators" className="scroll-mt-36"><MemoIndicatorsPanel indicators={technicalData.indicators} currentPrice={assetInfo.price} /></div>
 
               {/* Analysis Text — full width */}
-              <div id="section-analysis" className="lg:col-span-2 scroll-mt-16">
+              <div id="section-analysis" className="lg:col-span-2 scroll-mt-36">
                 <AnalysisTextPanel text={technicalData.analysisText} marketPhase={technicalData.marketPhase} />
               </div>
             </div>
