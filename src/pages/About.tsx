@@ -1,11 +1,15 @@
 import Header from '@/components/layout/Header';
 import { Link } from 'react-router-dom';
+import SEO from '@/components/SEO';
+import BackToHome from '@/components/BackToHome';
 
 export default function About() {
   return (
     <div className="min-h-screen bg-background">
+      <SEO title="About — ForecastSimply" description="Learn about ForecastSimply's mission to democratise access to professional-grade technical analysis tools." />
       <Header />
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        <BackToHome />
         <h1 className="text-2xl font-bold text-foreground">About ForecastSimply</h1>
 
         <section className="space-y-4 text-sm text-muted-foreground leading-relaxed">
