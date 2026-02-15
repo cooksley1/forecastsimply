@@ -129,6 +129,18 @@ export default function ChartControls({
           <span className="text-[10px] sm:text-xs font-mono text-foreground w-8 text-right">{forecastPercent}%</span>
         </div>
         <p className="text-[9px] text-muted-foreground/70">How far ahead to project</p>
+        <div className="bg-muted/40 border border-border/50 rounded-lg p-2">
+          <p className="text-[9px] sm:text-[10px] text-muted-foreground leading-relaxed">
+            <span className="font-semibold text-foreground/80">ℹ️ What is this?</span>{' '}
+            {forecastPercent <= 20
+              ? 'A short forecast (≤20%) projects just a few candles ahead — higher accuracy but limited planning horizon. Best for confirming immediate trend direction.'
+              : forecastPercent <= 40
+              ? 'A moderate forecast (20–40%) balances accuracy with useful lookahead. Good for swing trade timing and near-term price targets.'
+              : forecastPercent <= 60
+              ? 'A longer forecast (40–60%) gives broader price trajectory estimates. Useful for position planning, but confidence bands widen significantly.'
+              : 'An extended forecast (60%+) projects far ahead — useful for big-picture scenarios but inherently less precise. Treat as directional guidance, not targets.'}
+          </p>
+        </div>
       </div>
     </div>
   );
