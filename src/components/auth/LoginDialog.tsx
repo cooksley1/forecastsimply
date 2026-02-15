@@ -35,9 +35,14 @@ export default function LoginDialog({ open, onClose }: Props) {
     const { error } = await fn(email, password);
     setLoading(false);
     if (error) {
-      setError(error.message);
+      // If user signed up via Google and tries email login, guide them
+      if (error.message.includes('Invalid login credentials')) {
+        setError('Invalid credentials. If you signed up with Google, use the Google button above, or create a password via "Sign Up" with the same email.');
+      } else {
+        setError(error.message);
+      }
     } else if (isSignup) {
-      setSuccess('Check your email to confirm your account.');
+      setSuccess('Check your email to confirm your account. If you already use Google sign-in, this will link a password to your account.');
     } else {
       onClose();
     }

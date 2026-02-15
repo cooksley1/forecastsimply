@@ -100,10 +100,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    const { lovable } = await import('@/integrations/lovable');
-    await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: window.location.origin,
-    });
+    try {
+      const { lovable } = await import('@/integrations/lovable');
+      const result = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: window.location.origin,
+      });
+      if (result && 'error' in result && result.error) {
+        console.error('[Auth] Google sign-in error:', result.error);
+      }
+    } catch (err) {
+      console.error('[Auth] Google sign-in exception:', err);
+    }
   }, []);
 
   const signOut = useCallback(async () => {
