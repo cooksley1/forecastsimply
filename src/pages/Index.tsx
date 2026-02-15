@@ -40,6 +40,9 @@ import {
 import ExchangeSelector, { STOCK_EXCHANGES, ETF_EXCHANGES } from '@/components/search/ExchangeSelector';
 import StickySubNav from '@/components/layout/StickySubNav';
 import { useExchangeScreener } from '@/hooks/useExchangeScreener';
+import SocialShare from '@/components/SocialShare';
+import SmartFeed from '@/components/SmartFeed';
+import NewsletterSignup from '@/components/NewsletterSignup';
 import type { AssetType, AssetInfo, WatchlistItem } from '@/types/assets';
 import type { TechnicalData } from '@/types/analysis';
 import { getSecondaryCurrency, convertFromUSD, getCurrencySymbol, SUPPORTED_CURRENCIES, setSecondaryCurrency } from '@/utils/currencyConversion';
@@ -449,6 +452,17 @@ export default function Index() {
       />
 
       <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
+        {/* AI Smart Feed — only for logged-in users */}
+        {!showAnalysis && (
+          <SmartFeed
+            onSelectAsset={(id, type) => {
+              if (type === 'crypto') analyseCrypto(id);
+              else if (type === 'stocks') analyseStock(id, 'stocks');
+              else if (type === 'etfs') analyseStock(id, 'etfs');
+              else if (type === 'forex') analyseForex(id);
+            }}
+          />
+        )}
         {/* ── SEARCH BAR ── Always visible */}
         <div className="space-y-3">
           <SearchBar
@@ -558,6 +572,7 @@ export default function Index() {
                     <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>
                   ))}
                 </select>
+                <SocialShare assetInfo={assetInfo} technicalData={technicalData} />
               </div>
             </div>
 
@@ -662,7 +677,13 @@ export default function Index() {
       </main>
 
       <footer className="border-t border-border mt-8 py-6 px-3">
-        <div className="max-w-7xl mx-auto space-y-3">
+        <div className="max-w-7xl mx-auto space-y-4">
+          {/* Newsletter signup */}
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-[10px] text-muted-foreground font-mono uppercase">Weekly Market Insights</span>
+            <NewsletterSignup variant="footer" />
+          </div>
+
           <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
             <Link to="/about" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">About</Link>
             <Link to="/faq" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">FAQ</Link>

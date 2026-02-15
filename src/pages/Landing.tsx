@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import LoginDialog from '@/components/auth/LoginDialog';
+import NewsletterSignup from '@/components/NewsletterSignup';
 import { useState } from 'react';
 import SEO from '@/components/SEO';
 import logoHeaderDark from '@/assets/logo-header.svg';
@@ -104,6 +105,11 @@ export default function Landing() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Newsletter signup */}
+        <div className="max-w-lg mx-auto mt-12 sm:mt-16">
+          <NewsletterSignup variant="hero" />
         </div>
       </main>
 
