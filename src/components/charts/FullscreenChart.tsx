@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, Maximize2 } from 'lucide-react';
 import type { TechnicalData } from '@/types/analysis';
 import type { OverlayId } from './AnalysisOverlayBar';
@@ -31,11 +31,94 @@ export function FullscreenChartButton({ onClick }: { onClick: () => void }) {
   );
 }
 
+/** Try to lock orientation to landscape via Screen Orientation API */
+async function lockLandscape() {
+  try {
+    // Request fullscreen first — orientation lock requires fullscreen on most browsers
+    await document.documentElement.requestFullscreen?.();
+  } catch { /* ignore */ }
+
+  try {
+    const orientation = screen.orientation as any;
+    if (orientation?.lock) {
+      await orientation.lock('landscape-primary');
+    }
+  } catch { /* not supported or denied */ }
+}
+
+function unlockOrientation() {
+  try {
+    const orientation = screen.orientation as any;
+    if (orientation?.unlock) {
+      orientation.unlock();
+    }
+  } catch { /* ignore */ }
+
+  try {
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.();
+    }
+  } catch { /* ignore */ }
+}
+
 export function FullscreenChartModal({
   data, timeframeDays, activeOverlays, setActiveOverlays,
   forecastMethods, setForecastMethods, onClose,
 }: Props & { onClose: () => void }) {
   const [showControls, setShowControls] = useState(false);
+  const [isLandscapeNative, setIsLandscapeNative] = useState(false);
+
+  // Lock orientation on mount, unlock on unmount
+  useEffect(() => {
+    let mounted = true;
+
+    const setup = async () => {
+      await lockLandscape();
+      // Check if we successfully got landscape
+      if (mounted) {
+        const isLand = window.innerWidth > window.innerHeight ||
+          screen.orientation?.type?.includes('landscape');
+        setIsLandscapeNative(isLand);
+      }
+    };
+
+    setup();
+
+    // Listen for orientation changes to update state
+    const handleChange = () => {
+      const isLand = window.innerWidth > window.innerHeight ||
+        screen.orientation?.type?.includes('landscape');
+      setIsLandscapeNative(isLand);
+    };
+
+    screen.orientation?.addEventListener('change', handleChange);
+    window.addEventListener('resize', handleChange);
+
+    return () => {
+      mounted = false;
+      unlockOrientation();
+      screen.orientation?.removeEventListener('change', handleChange);
+      window.removeEventListener('resize', handleChange);
+    };
+  }, []);
+
+  // Handle close — unlock then call parent
+  const handleClose = useCallback(() => {
+    unlockOrientation();
+    onClose();
+  }, [onClose]);
+
+  // Also close on fullscreen exit (e.g. swipe gesture)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        // Small delay to let orientation unlock settle
+        setTimeout(() => onClose(), 100);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [onClose]);
 
   const toggleOverlay = (id: OverlayId) => {
     if (activeOverlays.includes(id)) {
@@ -53,10 +136,13 @@ export function FullscreenChartModal({
     }
   };
 
+  // Use CSS rotation fallback only if orientation lock didn't work
+  const needsCSSRotation = !isLandscapeNative;
+
   return (
     <div
       className="fixed inset-0 z-[100] bg-background flex flex-col"
-      style={{
+      style={needsCSSRotation ? {
         transform: 'rotate(90deg)',
         transformOrigin: 'center center',
         width: '100vh',
@@ -65,7 +151,7 @@ export function FullscreenChartModal({
         left: '50%',
         marginTop: 'calc(-50vw)',
         marginLeft: 'calc(-50vh)',
-      }}
+      } : undefined}
     >
       {/* Top toolbar */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-card shrink-0">
@@ -78,7 +164,7 @@ export function FullscreenChartModal({
             {showControls ? '▲ Hide' : '⚙️ Controls'}
           </button>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1.5 rounded-lg bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
             title="Back to portrait"
           >
@@ -133,7 +219,7 @@ export function FullscreenChartModal({
         </div>
       )}
 
-      {/* Chart — force tall height for landscape */}
+      {/* Chart fills remaining space */}
       <div className="flex-1 min-h-0 p-1">
         <div className="h-full [&_.recharts-responsive-container]:!h-full">
           <div className="bg-card border border-border rounded-xl p-2 h-full flex flex-col">
