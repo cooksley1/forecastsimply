@@ -33,10 +33,10 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-border bg-background px-2 sm:px-4 py-2 sm:py-3 overflow-hidden" style={{ height: '56px', position: 'sticky' }}>
+      <header className="sticky top-0 z-50 border-b border-border bg-background px-2 sm:px-4 py-2 sm:py-3 overflow-hidden" style={{ height: '64px', position: 'sticky' }}>
         <div className="max-w-7xl mx-auto h-full">
           <div className="flex items-center justify-between h-full">
-            <img src={logo} alt="ForecastSimply" className="h-9 sm:h-11 shrink-0" />
+            <img src={logo} alt="ForecastSimply" className="h-12 sm:h-14 shrink-0" />
 
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               {onWatchlistSelect && (
