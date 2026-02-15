@@ -1,6 +1,5 @@
-import { useState, useCallback, useRef, useEffect, useMemo, memo } from 'react';
+import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import Header from '@/components/layout/Header';
-import WatchlistBar from '@/components/layout/WatchlistBar';
 import SearchBar from '@/components/search/SearchBar';
 import QuickPicks from '@/components/search/QuickPicks';
 import ForexPairSelector from '@/components/search/ForexPairSelector';
@@ -32,10 +31,8 @@ import {
 } from '@/utils/constants';
 import type { AssetType, AssetInfo, WatchlistItem } from '@/types/assets';
 import type { TechnicalData } from '@/types/analysis';
-import type { ResultTab } from '@/types/assets';
 import { getSecondaryCurrency, convertFromUSD, getCurrencySymbol, SUPPORTED_CURRENCIES, setSecondaryCurrency } from '@/utils/currencyConversion';
 
-// Memoized heavy components
 const MemoMainChart = memo(MainChart);
 const MemoVolumeChart = memo(VolumeChart);
 const MemoRSIChart = memo(RSIChart);
@@ -47,7 +44,6 @@ const MemoBreakoutFinder = memo(BreakoutFinder);
 
 export default function Index() {
   const [assetType, setAssetType] = useState<AssetType>('crypto');
-  const [activeTab, setActiveTab] = useState<ResultTab>('home');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [assetInfo, setAssetInfo] = useState<AssetInfo | null>(null);
@@ -69,13 +65,12 @@ export default function Index() {
   const addToWatchlist = useCallback((info: AssetInfo) => {
     setWatchlist(prev => {
       const filtered = prev.filter(w => w.id !== info.id);
-      const next = [{ id: info.id, symbol: info.symbol, name: info.name, assetType: info.assetType, price: info.price, change24h: info.change24h, addedAt: Date.now() }, ...filtered].slice(0, 12);
+      const next = [{ id: info.id, symbol: info.symbol, name: info.name, assetType: info.assetType, price: info.price, change24h: info.change24h, addedAt: Date.now() }, ...filtered].slice(0, 20);
       localStorage.setItem('sf_watchlist', JSON.stringify(next));
       return next;
     });
   }, []);
 
-  // Update secondary price when currency or asset changes
   const updateSecondaryPrice = useCallback(async (usdPrice: number) => {
     const curr = getSecondaryCurrency();
     if (curr && usdPrice > 0) {
@@ -93,8 +88,6 @@ export default function Index() {
     try {
       const result = await fetchCryptoHistory(coinId, timeframeDays);
       setDataSource(result.source);
-
-      // Get metadata from CoinGecko data or DIA
       const diaSymbol = geckoIdToDIASymbol(coinId);
       let coinData = result.coinData;
       let livePrice: number;
@@ -106,7 +99,6 @@ export default function Index() {
         change24h = diaPrice?.change24h ?? coinData.market_data?.price_change_percentage_24h;
       } else {
         livePrice = result.priceData.closes[result.priceData.closes.length - 1];
-        // Try to get metadata from CoinGecko even if chart came from CoinPaprika
         try { coinData = await getCoinData(coinId); } catch { coinData = null; }
         change24h = coinData?.market_data?.price_change_percentage_24h;
       }
@@ -137,7 +129,6 @@ export default function Index() {
       setAssetInfo(info);
       setTechnicalData(ta);
       addToWatchlist(info);
-      setActiveTab('charts');
       updateSecondaryPrice(livePrice);
     } catch (e: any) {
       setError(e.message || 'Failed to fetch data. Try again.');
@@ -153,23 +144,12 @@ export default function Index() {
     try {
       const result = await fetchEquityHistory(symbol, timeframeDays);
       setDataSource(result.source);
-
       const { closes, timestamps, volumes } = result.data;
       const lastPrice = closes[closes.length - 1];
-      const change24h = closes.length >= 2
-        ? ((closes[closes.length - 1] - closes[closes.length - 2]) / closes[closes.length - 2]) * 100
-        : undefined;
+      const change24h = closes.length >= 2 ? ((closes[closes.length - 1] - closes[closes.length - 2]) / closes[closes.length - 2]) * 100 : undefined;
 
-      const info: AssetInfo = {
-        id: symbol,
-        symbol: symbol,
-        name: symbol,
-        assetType: type,
-        price: lastPrice,
-        change24h,
-      };
+      const info: AssetInfo = { id: symbol, symbol, name: symbol, assetType: type, price: lastPrice, change24h };
 
-      // Try to get name from Yahoo (if that was the source)
       if (result.source === 'Yahoo Finance') {
         try {
           const chart = await getStockChart(symbol, timeframeDays);
@@ -185,7 +165,6 @@ export default function Index() {
       setAssetInfo(info);
       setTechnicalData(ta);
       addToWatchlist(info);
-      setActiveTab('charts');
       updateSecondaryPrice(lastPrice);
     } catch (e: any) {
       setError(e.message || `Failed to fetch ${symbol}.`);
@@ -201,32 +180,19 @@ export default function Index() {
     try {
       const from = pairId.slice(0, 3);
       const to = pairId.slice(3, 6);
-
       const result = await fetchForexHistory(from, to, timeframeDays);
       setDataSource(result.source);
-
       const { closes, timestamps, volumes } = result.data;
       const lastPrice = closes[closes.length - 1];
-      const change24h = closes.length >= 2
-        ? ((closes[closes.length - 1] - closes[closes.length - 2]) / closes[closes.length - 2]) * 100
-        : undefined;
+      const change24h = closes.length >= 2 ? ((closes[closes.length - 1] - closes[closes.length - 2]) / closes[closes.length - 2]) * 100 : undefined;
 
-      const info: AssetInfo = {
-        id: pairId,
-        symbol: `${from}/${to}`,
-        name: `${from}/${to}`,
-        assetType: 'forex',
-        price: lastPrice,
-        change24h,
-        currency: to,
-      };
+      const info: AssetInfo = { id: pairId, symbol: `${from}/${to}`, name: `${from}/${to}`, assetType: 'forex', price: lastPrice, change24h, currency: to };
 
       const ta = processTA(closes, timestamps, volumes, forecastPercent, 'forex', forecastMethods);
       currentAssetRef.current = { id: pairId, type: 'forex' };
       setAssetInfo(info);
       setTechnicalData(ta);
       addToWatchlist(info);
-      setActiveTab('charts');
     } catch (e: any) {
       setError(e.message || 'Failed to fetch forex data. Try again.');
     } finally {
@@ -234,15 +200,11 @@ export default function Index() {
     }
   }, [timeframeDays, forecastPercent, forecastMethods, addToWatchlist]);
 
-  /* ── Auto-reanalyse when settings change ── */
+  /* ── Auto-reanalyse ── */
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
     const asset = currentAssetRef.current;
     if (!asset) return;
-
     const timer = setTimeout(() => {
       if (asset.type === 'crypto') analyseCrypto(asset.id);
       else if (asset.type === 'stocks') analyseStock(asset.id, 'stocks');
@@ -250,36 +212,23 @@ export default function Index() {
       else if (asset.type === 'forex') analyseForex(asset.id);
     }, 500);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeframeDays, forecastPercent, forecastMethods]);
 
-  /* ── Unified handlers ── */
+  /* ── Handlers ── */
   const handleSearch = useCallback(async (query: string) => {
     if (assetType === 'crypto') {
       setLoading(true);
       try {
         const results = await searchCoins(query);
-        if (results.length > 0) {
-          await analyseCrypto(results[0].id);
-        } else {
-          setError(`Symbol '${query}' not found. Check the ticker and try again, or use the search bar to find the correct symbol.`);
-          setLoading(false);
-        }
-      } catch (e: any) {
-        setError(e.message);
-        setLoading(false);
-      }
-    } else if (assetType === 'stocks') {
-      await analyseStock(query.toUpperCase().trim(), 'stocks');
-    } else if (assetType === 'etfs') {
-      await analyseStock(query.toUpperCase().trim(), 'etfs');
-    } else if (assetType === 'forex') {
+        if (results.length > 0) await analyseCrypto(results[0].id);
+        else { setError(`Symbol '${query}' not found.`); setLoading(false); }
+      } catch (e: any) { setError(e.message); setLoading(false); }
+    } else if (assetType === 'stocks') await analyseStock(query.toUpperCase().trim(), 'stocks');
+    else if (assetType === 'etfs') await analyseStock(query.toUpperCase().trim(), 'etfs');
+    else if (assetType === 'forex') {
       const clean = query.toUpperCase().replace(/[^A-Z]/g, '');
-      if (clean.length === 6) {
-        await analyseForex(clean);
-      } else {
-        setError('Enter a 6-character pair like AUDUSD or AUD/USD');
-      }
+      if (clean.length === 6) await analyseForex(clean);
+      else setError('Enter a 6-character pair like AUDUSD');
     }
   }, [assetType, analyseCrypto, analyseStock, analyseForex]);
 
@@ -304,35 +253,27 @@ export default function Index() {
     return FOREX_PICKS.map(p => ({ label: p.name, id: `${p.from}${p.to}` }));
   }, [assetType]);
 
-  const timeframes = assetType === 'crypto' ? CRYPTO_TIMEFRAMES : STOCK_TIMEFRAMES;
-
-  const resultTabs: { key: ResultTab; label: string; icon: string }[] = [
-    { key: 'charts', label: 'Charts', icon: '📈' },
-    { key: 'recs', label: 'Recs', icon: '📊' },
-    { key: 'trade', label: 'Trade', icon: '🎯' },
-    { key: 'analysis', label: 'Analysis', icon: '📝' },
-    { key: 'indicators', label: 'Indicators', icon: '📊' },
-  ];
-
   const handleCurrencyChange = useCallback((code: string) => {
     const newVal = code === 'none' ? null : code;
     setSecCurrency(newVal);
     setSecondaryCurrency(newVal);
-    if (newVal && assetInfo?.price) {
-      convertFromUSD(assetInfo.price, newVal).then(p => setSecondaryPrice(p));
-    } else {
-      setSecondaryPrice(null);
-    }
+    if (newVal && assetInfo?.price) convertFromUSD(assetInfo.price, newVal).then(p => setSecondaryPrice(p));
+    else setSecondaryPrice(null);
   }, [assetInfo]);
+
+  const timeframes = assetType === 'crypto' ? CRYPTO_TIMEFRAMES : STOCK_TIMEFRAMES;
+  const showAnalysis = technicalData && assetInfo && !loading;
 
   return (
     <div className="min-h-screen bg-background">
-      <Header active={assetType} onSelect={(t) => { setAssetType(t); setActiveTab('home'); setTechnicalData(null); setAssetInfo(null); setError(null); currentAssetRef.current = null; setDataSource(''); }} />
-      <WatchlistBar items={watchlist} onSelect={handleWatchlistSelect} onClear={() => { setWatchlist([]); localStorage.removeItem('sf_watchlist'); }} />
+      <Header
+        active={assetType}
+        onSelect={(t) => { setAssetType(t); setTechnicalData(null); setAssetInfo(null); setError(null); currentAssetRef.current = null; setDataSource(''); }}
+      />
 
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
-        {/* Search section */}
-        <div className="space-y-3 sm:space-y-4">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
+        {/* ── SEARCH BAR ── Always visible */}
+        <div className="space-y-3">
           <SearchBar
             onSearch={handleSearch}
             placeholder={
@@ -343,52 +284,43 @@ export default function Index() {
             }
             loading={loading}
           />
-          {assetType === 'forex' && (
-            <ForexPairSelector onAnalyse={(pairId) => analyseForex(pairId)} loading={loading} />
-          )}
+          {assetType === 'forex' && <ForexPairSelector onAnalyse={(pairId) => analyseForex(pairId)} loading={loading} />}
           <QuickPicks picks={getQuickPicks()} onSelect={handleQuickPick} loading={loading} />
-          <GuidedDiscovery assetType={assetType} onSelect={handleQuickPick} loading={loading} />
         </div>
 
-        {/* Loading */}
         {loading && (
-          <div className="text-center py-16">
+          <div className="text-center py-12">
             <div className="text-primary font-mono animate-pulse-glow text-sm">Fetching data & running analysis...</div>
           </div>
         )}
 
-        {/* Error */}
         {error && (
           <div className="border border-destructive/50 bg-destructive/5 rounded-xl p-4">
             <p className="text-destructive text-sm font-mono">{error}</p>
           </div>
         )}
 
-        {/* Results */}
-        {technicalData && assetInfo && !loading && (
-          <>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <SignalPanel signal={technicalData.signal} price={assetInfo.price} name={assetInfo.name} symbol={assetInfo.symbol} />
-              </div>
-              <div className="flex items-center gap-3 flex-wrap">
-                {/* Data source badge */}
+        {/* ── ANALYSIS RESULTS — Card Grid Layout ── */}
+        {showAnalysis && (
+          <div className="space-y-4">
+            {/* Signal + metadata bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <SignalPanel signal={technicalData.signal} price={assetInfo.price} name={assetInfo.name} symbol={assetInfo.symbol} />
+              <div className="flex items-center gap-2 flex-wrap ml-auto">
                 {dataSource && (
-                  <span className="flex items-center gap-1 text-[10px] sm:text-xs font-mono text-muted-foreground bg-sf-inset px-2 py-1 rounded-lg border border-border">
-                    <span>📡</span> Data: {dataSource}
+                  <span className="text-[10px] sm:text-xs font-mono text-muted-foreground bg-card px-2 py-1 rounded-lg border border-border">
+                    📡 {dataSource}
                   </span>
                 )}
-                {/* Secondary currency */}
                 {secondaryCurrency && secondaryPrice !== null && assetInfo.assetType !== 'forex' && (
                   <span className="text-xs font-mono text-neutral-signal bg-neutral-signal/10 px-2 py-1 rounded-lg border border-neutral-signal/20">
                     {getCurrencySymbol(secondaryCurrency)}{secondaryPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {secondaryCurrency}
                   </span>
                 )}
-                {/* Currency selector */}
                 <select
                   value={secondaryCurrency || 'none'}
                   onChange={e => handleCurrencyChange(e.target.value)}
-                  className="text-[10px] sm:text-xs bg-sf-inset border border-border rounded-lg px-2 py-1 text-muted-foreground font-mono focus:outline-none focus:border-primary"
+                  className="text-[10px] sm:text-xs bg-card border border-border rounded-lg px-2 py-1 text-muted-foreground font-mono focus:outline-none focus:border-primary"
                 >
                   <option value="none">No 2nd currency</option>
                   {SUPPORTED_CURRENCIES.map(c => (
@@ -398,77 +330,121 @@ export default function Index() {
               </div>
             </div>
 
-            <div className="flex gap-0.5 sm:gap-1 overflow-x-auto border-b border-border pb-0 -mx-3 px-3 sm:mx-0 sm:px-0">
-              {resultTabs.map(t => (
-                <button
-                  key={t.key}
-                  onClick={() => setActiveTab(t.key)}
-                  className={`px-2.5 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-xs font-medium whitespace-nowrap border-b-2 transition-all ${
-                    activeTab === t.key
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {t.icon} {t.label}
-                </button>
-              ))}
+            {/* Controls bar — inline on mobile */}
+            <div className="bg-card border border-border rounded-xl p-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-muted-foreground font-mono uppercase">TF:</span>
+                  {timeframes.map(tf => (
+                    <button
+                      key={tf.days}
+                      onClick={() => setTimeframeDays(tf.days)}
+                      className={`px-2 py-1 rounded text-[10px] font-mono transition-all ${
+                        timeframeDays === tf.days ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {tf.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-muted-foreground font-mono uppercase">Risk:</span>
+                  {(['conservative', 'moderate', 'aggressive'] as RiskProfile[]).map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setRiskProfile(r)}
+                      className={`px-2 py-1 rounded text-[10px] font-mono transition-all ${
+                        riskProfile === r ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {r === 'conservative' ? '🛡️' : r === 'moderate' ? '⚖️' : '🔥'}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1.5 ml-auto">
+                  <span className="text-[10px] text-muted-foreground font-mono">FC {forecastPercent}%</span>
+                  <input
+                    type="range"
+                    min={10}
+                    max={80}
+                    value={forecastPercent}
+                    onChange={e => setForecastPercent(Number(e.target.value))}
+                    className="w-20 accent-primary"
+                  />
+                </div>
+              </div>
             </div>
 
-            {activeTab === 'charts' && (
-              <div className="flex flex-col lg:flex-row gap-4">
-                <div className="flex-1 min-w-0 space-y-4">
-                  <ForecastMethodBar
-                    selectedMethods={forecastMethods}
-                    setSelectedMethods={setForecastMethods}
-                  />
-                  <MemoMainChart data={technicalData} />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <MemoVolumeChart data={technicalData} />
-                    <MemoRSIChart data={technicalData} />
-                  </div>
+            <ForecastMethodBar selectedMethods={forecastMethods} setSelectedMethods={setForecastMethods} />
+
+            {/* Card Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Price Chart — full width */}
+              <div className="lg:col-span-2">
+                <MemoMainChart data={technicalData} />
+              </div>
+
+              {/* Volume & RSI */}
+              <MemoVolumeChart data={technicalData} />
+              <MemoRSIChart data={technicalData} />
+
+              {/* Recommendations — full width */}
+              <div className="lg:col-span-2">
+                <MemoRecommendationPanel recommendations={technicalData.recommendations} />
+              </div>
+
+              {/* Trade Setups */}
+              <MemoTradeSetupPanel setups={technicalData.tradeSetups} />
+
+              {/* Indicators */}
+              <MemoIndicatorsPanel indicators={technicalData.indicators} currentPrice={assetInfo.price} />
+
+              {/* Analysis Text — full width */}
+              <div className="lg:col-span-2">
+                <AnalysisTextPanel text={technicalData.analysisText} marketPhase={technicalData.marketPhase} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── DASHBOARD — empty state ── */}
+        {!technicalData && !loading && !error && (
+          <div className="space-y-6">
+            {/* Watchlist */}
+            {watchlist.length > 0 && (
+              <div className="bg-card border border-border rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-foreground font-semibold text-sm">📋 Watchlist</h3>
+                  <button
+                    onClick={() => { setWatchlist([]); localStorage.removeItem('sf_watchlist'); }}
+                    className="text-[10px] text-muted-foreground hover:text-destructive transition-all"
+                  >
+                    Clear all
+                  </button>
                 </div>
-                <div className="w-full lg:w-64 xl:w-72 shrink-0">
-                  <ChartControls
-                    timeframes={timeframes}
-                    timeframeDays={timeframeDays}
-                    setTimeframeDays={setTimeframeDays}
-                    forecastPercent={forecastPercent}
-                    setForecastPercent={setForecastPercent}
-                    riskProfile={riskProfile}
-                    setRiskProfile={setRiskProfile}
-                  />
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {watchlist.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleWatchlistSelect(item)}
+                      className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border hover:border-primary/40 transition-all text-left"
+                    >
+                      <div>
+                        <div className="text-xs font-medium text-foreground font-mono">{item.symbol}</div>
+                        <div className="text-[10px] text-muted-foreground truncate max-w-[80px]">{item.name}</div>
+                      </div>
+                      {item.change24h !== undefined && (
+                        <span className={`text-[10px] font-mono ${item.change24h >= 0 ? 'text-positive' : 'text-negative'}`}>
+                          {item.change24h >= 0 ? '+' : ''}{item.change24h.toFixed(1)}%
+                        </span>
+                      )}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
 
-            {activeTab === 'recs' && (
-              <MemoRecommendationPanel recommendations={technicalData.recommendations} />
-            )}
-
-            {activeTab === 'trade' && (
-              <MemoTradeSetupPanel setups={technicalData.tradeSetups} />
-            )}
-
-            {activeTab === 'analysis' && (
-              <AnalysisTextPanel text={technicalData.analysisText} marketPhase={technicalData.marketPhase} />
-            )}
-
-            {activeTab === 'indicators' && (
-              <MemoIndicatorsPanel indicators={technicalData.indicators} currentPrice={assetInfo.price} />
-            )}
-          </>
-        )}
-
-        {/* Empty state */}
-        {!technicalData && !loading && !error && (
-          <div className="space-y-6">
-            <div className="text-center py-6 sm:py-10 space-y-3">
-              <div className="text-3xl sm:text-4xl">🔍</div>
-              <h2 className="text-foreground text-lg sm:text-xl font-semibold">Select an asset to analyse</h2>
-              <p className="text-muted-foreground text-xs sm:text-sm max-w-md mx-auto px-4">
-                Search or tap a quick pick above, or explore the top picks and portfolio suggestions below.
-              </p>
-            </div>
+            <GuidedDiscovery assetType={assetType} onSelect={handleQuickPick} loading={loading} />
 
             {assetType === 'crypto' && (
               <>
@@ -477,36 +453,15 @@ export default function Index() {
               </>
             )}
 
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-[10px] text-muted-foreground font-mono">RISK:</span>
-              {(['conservative', 'moderate', 'aggressive'] as RiskProfile[]).map(r => (
-                <button
-                  key={r}
-                  onClick={() => setRiskProfile(r)}
-                  className={`px-3 py-1 rounded-lg text-[10px] sm:text-xs font-medium transition-all ${
-                    riskProfile === r
-                      ? 'bg-primary/15 text-primary border border-primary/30'
-                      : 'text-muted-foreground hover:text-foreground border border-transparent'
-                  }`}
-                >
-                  {r === 'conservative' ? '🛡️' : r === 'moderate' ? '⚖️' : '🔥'} {r.charAt(0).toUpperCase() + r.slice(1)}
-                </button>
-              ))}
-            </div>
             <PortfolioBuilder riskProfile={riskProfile} />
           </div>
         )}
       </main>
 
-      <footer className="border-t border-border mt-8 sm:mt-12 py-4 sm:py-6 px-3 sm:px-4">
-        <div className="max-w-7xl mx-auto text-center space-y-1.5 sm:space-y-2">
+      <footer className="border-t border-border mt-8 py-4 px-3">
+        <div className="max-w-7xl mx-auto text-center space-y-1">
           <p className="text-xs text-muted-foreground font-mono">Signal Forge v6.1 — Multi-Asset Investment Analysis</p>
-          <p className="text-[10px] text-muted-foreground">
-            CoinGecko • CoinPaprika (crypto) • Yahoo Finance • Alpha Vantage • FMP (stocks/ETFs) • Frankfurter (forex)
-          </p>
-          <p className="text-[10px] text-muted-foreground italic">
-            ⚠️ Algorithmic analysis only. Not financial advice. Always do your own research.
-          </p>
+          <p className="text-[10px] text-muted-foreground italic">⚠️ Not financial advice. Always DYOR.</p>
         </div>
       </footer>
     </div>
