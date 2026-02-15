@@ -561,13 +561,47 @@ export default function Admin() {
 
           {/* ── Users Tab ── */}
           <TabsContent value="users" className="space-y-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <Input placeholder="Search by email, phone, name, or ID..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="max-w-md" />
               <span className="text-xs text-muted-foreground font-mono">{filtered.length} users</span>
+              <Button variant="outline" size="sm" onClick={() => fetchUsers()} disabled={loading} className="gap-1.5">
+                {loading ? '⏳' : '🔄'} Refresh
+              </Button>
               <Button size="sm" className="ml-auto" onClick={() => { setForm({ email: '', password: '', phone: '', display_name: '' }); setCreateOpen(true); }}>
                 + Create User
               </Button>
             </div>
+            {/* Status summary */}
+            {!loading && (
+              <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
+                {(() => {
+                  const now = Date.now();
+                  let online = 0, today = 0, week = 0, month = 0, dormant = 0, banned = 0, unverified = 0;
+                  for (const u of filtered) {
+                    if (isBanned(u)) { banned++; continue; }
+                    if (!u.email_confirmed_at) { unverified++; continue; }
+                    if (!u.last_sign_in_at) { dormant++; continue; }
+                    const h = (now - new Date(u.last_sign_in_at).getTime()) / 36e5;
+                    if (h < 1) online++;
+                    else if (h < 24) today++;
+                    else if (h < 168) week++;
+                    else if (h < 720) month++;
+                    else dormant++;
+                  }
+                  return (
+                    <>
+                      {online > 0 && <span>🟢 Online: {online}</span>}
+                      {today > 0 && <span>🟢 Today: {today}</span>}
+                      {week > 0 && <span>🔵 This week: {week}</span>}
+                      {month > 0 && <span>🟡 This month: {month}</span>}
+                      {dormant > 0 && <span>⚫ Dormant: {dormant}</span>}
+                      {banned > 0 && <span>🔴 Banned: {banned}</span>}
+                      {unverified > 0 && <span>⚪ Unverified: {unverified}</span>}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
 
             {loading ? (
               <div className="text-center py-12 text-muted-foreground font-mono animate-pulse">Loading users...</div>
@@ -578,7 +612,7 @@ export default function Admin() {
                     <TableRow>
                       <TableHead>User</TableHead>
                       <TableHead className="hidden md:table-cell">Role</TableHead>
-                      <TableHead className="hidden sm:table-cell">Status</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead className="hidden md:table-cell">Last Login</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -607,7 +641,7 @@ export default function Admin() {
                             </SelectContent>
                           </Select>
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell">
+                        <TableCell>
                           {isBanned(u) ? (
                             <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded">🔴 Banned</span>
                           ) : u.email_confirmed_at ? (
