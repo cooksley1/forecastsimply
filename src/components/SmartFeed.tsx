@@ -43,10 +43,26 @@ export default function SmartFeed({ assetType, onSelectAsset }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('curated-digest');
-      if (fnError) throw fnError;
-      setDigest(data);
-      setExpanded(true);
+      // First check for an admin-approved digest for this asset type
+      const { data: approved } = await supabase
+        .from('market_digests')
+        .select('greeting, market_summary, insights, recommendations, watchlist_alerts')
+        .eq('asset_type', assetType)
+        .eq('status', 'approved')
+        .order('approved_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (approved) {
+        setDigest(approved as any);
+        setExpanded(true);
+      } else {
+        // Fall back to AI-generated personalised digest
+        const { data, error: fnError } = await supabase.functions.invoke('curated-digest');
+        if (fnError) throw fnError;
+        setDigest(data);
+        setExpanded(true);
+      }
     } catch (e: any) {
       setError(e.message || 'Failed to load digest');
       setExpanded(true);

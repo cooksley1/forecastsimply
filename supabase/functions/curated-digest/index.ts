@@ -33,7 +33,35 @@ serve(async (req) => {
       });
     }
 
-    // Fetch user's recent analysis history and watchlist
+    // Check URL for asset_type param
+    const url = new URL(req.url);
+    const requestedType = url.searchParams.get("asset_type");
+
+    // First, check if there's an approved digest for any/all asset types
+    if (requestedType) {
+      const { data: approved } = await supabase
+        .from("market_digests")
+        .select("*")
+        .eq("asset_type", requestedType)
+        .eq("status", "approved")
+        .order("approved_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (approved) {
+        return new Response(JSON.stringify({
+          greeting: approved.greeting,
+          market_summary: approved.market_summary,
+          insights: approved.insights || [],
+          recommendations: approved.recommendations || [],
+          watchlist_alerts: approved.watchlist_alerts || [],
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // No approved digest — generate one with AI (personalised)
     const [historyRes, watchlistRes, prefsRes] = await Promise.all([
       supabase
         .from("analysis_history")
@@ -57,7 +85,6 @@ serve(async (req) => {
     const watchlist = watchlistRes.data || [];
     const prefs = prefsRes.data;
 
-    // Build context for AI
     const recentAssets = history.map(h => `${h.name} (${h.symbol}) - Signal: ${h.signal_label} (${h.signal_score}/100), Phase: ${h.market_phase || "unknown"}`).join("\n");
     const watchlistAssets = watchlist.map(w => `${w.name} (${w.symbol}, ${w.asset_type})`).join(", ");
     const riskProfile = prefs?.risk_profile || "moderate";
@@ -118,7 +145,6 @@ Keep insights to 3-5 items max. Focus on assets the user has analysed or is watc
     const aiData = await aiResponse.json();
     const content = aiData.choices?.[0]?.message?.content || "";
 
-    // Parse JSON from response (handle markdown code blocks)
     let digest;
     try {
       const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/\{[\s\S]*\}/);

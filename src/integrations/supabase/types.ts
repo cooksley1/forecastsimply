@@ -59,6 +59,54 @@ export type Database = {
         }
         Relationships: []
       }
+      market_digests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          asset_type: string
+          created_by: string
+          generated_at: string
+          greeting: string | null
+          id: string
+          insights: Json | null
+          market_summary: string | null
+          recommendations: Json | null
+          status: string
+          updated_at: string
+          watchlist_alerts: Json | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          asset_type: string
+          created_by: string
+          generated_at?: string
+          greeting?: string | null
+          id?: string
+          insights?: Json | null
+          market_summary?: string | null
+          recommendations?: Json | null
+          status?: string
+          updated_at?: string
+          watchlist_alerts?: Json | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          asset_type?: string
+          created_by?: string
+          generated_at?: string
+          greeting?: string | null
+          id?: string
+          insights?: Json | null
+          market_summary?: string | null
+          recommendations?: Json | null
+          status?: string
+          updated_at?: string
+          watchlist_alerts?: Json | null
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           email: string

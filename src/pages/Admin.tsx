@@ -5,11 +5,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 
+// ── Types ──
 interface AdminUser {
   id: string;
   email?: string;
@@ -23,10 +26,39 @@ interface AdminUser {
   profile?: { display_name?: string; avatar_url?: string; banned_at?: string } | null;
 }
 
+interface DigestInsight {
+  asset: string;
+  name: string;
+  type: string;
+  insight: string;
+  sentiment: 'bullish' | 'bearish' | 'neutral';
+}
+
+interface DigestRecord {
+  id: string;
+  asset_type: string;
+  status: string;
+  greeting: string | null;
+  market_summary: string | null;
+  insights: DigestInsight[];
+  recommendations: string[];
+  watchlist_alerts: string[];
+  generated_at: string;
+  approved_at: string | null;
+  updated_at: string;
+}
+
+const ASSET_TYPES = [
+  { key: 'crypto', label: 'Crypto', icon: '🪙' },
+  { key: 'stocks', label: 'Stocks', icon: '📈' },
+  { key: 'etfs', label: 'ETFs', icon: '📊' },
+  { key: 'forex', label: 'Forex', icon: '💱' },
+];
+
+// ── Admin API helper ──
 async function adminApi(action: string, body?: any, method = 'POST') {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Not authenticated');
-
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users?action=${action}`;
   const res = await fetch(url, {
     method,
@@ -37,12 +69,302 @@ async function adminApi(action: string, body?: any, method = 'POST') {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
 }
 
+// ── Digest Editor Component ──
+function DigestEditor({ digest, onSave, onDelete }: { digest: DigestRecord; onSave: (d: DigestRecord) => void; onDelete: (id: string) => void }) {
+  const [form, setForm] = useState(digest);
+  const [insightText, setInsightText] = useState(JSON.stringify(digest.insights, null, 2));
+  const [recsText, setRecsText] = useState(JSON.stringify(digest.recommendations, null, 2));
+  const [alertsText, setAlertsText] = useState(JSON.stringify(digest.watchlist_alerts, null, 2));
+
+  const handleSave = () => {
+    try {
+      const parsed = {
+        ...form,
+        insights: JSON.parse(insightText),
+        recommendations: JSON.parse(recsText),
+        watchlist_alerts: JSON.parse(alertsText),
+      };
+      onSave(parsed);
+    } catch {
+      toast.error('Invalid JSON in one of the fields');
+    }
+  };
+
+  const brand = ASSET_TYPES.find(a => a.key === form.asset_type);
+
+  return (
+    <div className="border border-border rounded-xl bg-card p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span>{brand?.icon}</span>
+          <span className="text-sm font-semibold text-foreground">{brand?.label} Digest</span>
+          <span className={`text-[10px] px-2 py-0.5 rounded font-mono ${
+            form.status === 'approved' ? 'bg-positive/10 text-positive' :
+            form.status === 'paused' ? 'bg-destructive/10 text-destructive' :
+            'bg-muted text-muted-foreground'
+          }`}>{form.status.toUpperCase()}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive" onClick={() => onDelete(form.id)}>🗑️</Button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div>
+          <label className="text-[10px] text-muted-foreground font-mono uppercase">Greeting</label>
+          <Input value={form.greeting || ''} onChange={e => setForm(f => ({ ...f, greeting: e.target.value }))} className="h-8 text-xs" />
+        </div>
+        <div>
+          <label className="text-[10px] text-muted-foreground font-mono uppercase">Market Summary</label>
+          <Textarea value={form.market_summary || ''} onChange={e => setForm(f => ({ ...f, market_summary: e.target.value }))} className="text-xs min-h-[80px]" />
+        </div>
+        <div>
+          <label className="text-[10px] text-muted-foreground font-mono uppercase">Insights (JSON)</label>
+          <Textarea value={insightText} onChange={e => setInsightText(e.target.value)} className="text-xs font-mono min-h-[100px]" />
+        </div>
+        <div>
+          <label className="text-[10px] text-muted-foreground font-mono uppercase">Recommendations (JSON array of strings)</label>
+          <Textarea value={recsText} onChange={e => setRecsText(e.target.value)} className="text-xs font-mono min-h-[60px]" />
+        </div>
+        <div>
+          <label className="text-[10px] text-muted-foreground font-mono uppercase">Alerts (JSON array of strings)</label>
+          <Textarea value={alertsText} onChange={e => setAlertsText(e.target.value)} className="text-xs font-mono min-h-[60px]" />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 pt-2 border-t border-border">
+        <Button size="sm" onClick={handleSave}>💾 Save</Button>
+        <Button size="sm" variant="outline" onClick={() => onSave({ ...form, status: 'approved', approved_at: new Date().toISOString() } as any)}>
+          ✅ Approve & Publish
+        </Button>
+        <Button size="sm" variant="outline" className="text-destructive" onClick={() => onSave({ ...form, status: 'paused' } as any)}>
+          ⏸️ Pause
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Digest Management Tab ──
+function DigestManagement() {
+  const { user } = useAuth();
+  const [digests, setDigests] = useState<DigestRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [sendingTest, setSendingTest] = useState(false);
+
+  const fetchDigests = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from('market_digests')
+      .select('*')
+      .order('updated_at', { ascending: false });
+    setDigests((data as any) || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchDigests(); }, [fetchDigests]);
+
+  const handleGenerate = async (assetType: string) => {
+    if (!user) return;
+    setGenerating(assetType);
+    try {
+      const { data, error } = await supabase.functions.invoke('curated-digest');
+      if (error) throw error;
+
+      const { error: insertErr } = await supabase.from('market_digests').insert({
+        asset_type: assetType,
+        status: 'draft',
+        greeting: data.greeting,
+        market_summary: data.market_summary,
+        insights: data.insights,
+        recommendations: data.recommendations,
+        watchlist_alerts: data.watchlist_alerts,
+        created_by: user.id,
+      } as any);
+      if (insertErr) throw insertErr;
+      toast.success(`${assetType} digest generated`);
+      fetchDigests();
+    } catch (e: any) {
+      toast.error(e.message || 'Generation failed');
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  const handleSave = async (d: DigestRecord) => {
+    const update: any = {
+      greeting: d.greeting,
+      market_summary: d.market_summary,
+      insights: d.insights,
+      recommendations: d.recommendations,
+      watchlist_alerts: d.watchlist_alerts,
+      status: d.status,
+    };
+    if (d.status === 'approved') {
+      update.approved_at = new Date().toISOString();
+      update.approved_by = user?.id;
+      // Unpublish other approved digests of same type
+      await supabase
+        .from('market_digests')
+        .update({ status: 'draft' } as any)
+        .eq('asset_type', d.asset_type)
+        .eq('status', 'approved')
+        .neq('id', d.id);
+    }
+    const { error } = await supabase.from('market_digests').update(update as any).eq('id', d.id);
+    if (error) toast.error(error.message);
+    else toast.success('Digest saved');
+    fetchDigests();
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this digest?')) return;
+    await supabase.from('market_digests').delete().eq('id', id);
+    toast.success('Deleted');
+    fetchDigests();
+  };
+
+  const handlePreview = async (id: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-digest`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ action: 'preview', digest_id: id }),
+      });
+      const data = await res.json();
+      if (data.html) setPreviewHtml(data.html);
+      else toast.error(data.error || 'Preview failed');
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const handleSendTest = async () => {
+    setSendingTest(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-digest`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ action: 'send_test' }),
+      });
+      const data = await res.json();
+      if (data.digests) {
+        // Open each digest HTML in a new tab for preview
+        for (const d of data.digests) {
+          const blob = new Blob([d.html], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          window.open(url, `_blank_${d.asset_type}`);
+        }
+        toast.success(`${data.digests.length} digest(s) opened for preview → ${data.sent_to}`);
+      } else {
+        toast.error(data.error || 'Failed');
+      }
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
+  const grouped = ASSET_TYPES.map(at => ({
+    ...at,
+    digests: digests.filter(d => d.asset_type === at.key),
+    hasApproved: digests.some(d => d.asset_type === at.key && d.status === 'approved'),
+  }));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-foreground font-semibold">Market Digests</h2>
+        <Button size="sm" onClick={handleSendTest} disabled={sendingTest}>
+          {sendingTest ? '⏳ Generating…' : '📧 Preview All Approved Digests'}
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-8 text-muted-foreground font-mono animate-pulse">Loading digests...</div>
+      ) : (
+        <div className="space-y-6">
+          {grouped.map(group => (
+            <div key={group.key} className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span>{group.icon}</span>
+                  <span className="text-sm font-semibold text-foreground">{group.label}</span>
+                  {group.hasApproved && <span className="text-[10px] bg-positive/10 text-positive px-2 py-0.5 rounded font-mono">LIVE</span>}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs"
+                  onClick={() => handleGenerate(group.key)}
+                  disabled={generating === group.key}
+                >
+                  {generating === group.key ? '⏳ Generating…' : '🤖 Generate with AI'}
+                </Button>
+              </div>
+
+              {group.digests.length === 0 ? (
+                <div className="border border-dashed border-border rounded-lg p-4 text-center text-xs text-muted-foreground">
+                  No digests yet. Click "Generate with AI" to create one.
+                </div>
+              ) : (
+                group.digests.map(d => (
+                  <div key={d.id}>
+                    <DigestEditor digest={d} onSave={handleSave} onDelete={handleDelete} />
+                    <div className="mt-1">
+                      <Button size="sm" variant="ghost" className="text-xs" onClick={() => handlePreview(d.id)}>
+                        👁️ Preview Email
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Email Preview Dialog */}
+      <Dialog open={!!previewHtml} onOpenChange={() => setPreviewHtml(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Email Preview</DialogTitle>
+          </DialogHeader>
+          {previewHtml && (
+            <iframe
+              srcDoc={previewHtml}
+              className="w-full h-[60vh] rounded-lg border border-border"
+              title="Email Preview"
+            />
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewHtml(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ── Main Admin Page ──
 export default function Admin() {
   const { user } = useAuth();
   const { isAdmin, loading: roleLoading } = useAdminCheck();
@@ -68,10 +390,7 @@ export default function Admin() {
   }, []);
 
   useEffect(() => {
-    if (!roleLoading && !isAdmin) {
-      navigate('/');
-      return;
-    }
+    if (!roleLoading && !isAdmin) { navigate('/'); return; }
     if (isAdmin) fetchUsers();
   }, [isAdmin, roleLoading, navigate, fetchUsers]);
 
@@ -87,9 +406,7 @@ export default function Admin() {
       setCreateOpen(false);
       setForm({ email: '', password: '', phone: '', display_name: '' });
       fetchUsers();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const handleUpdate = async () => {
@@ -105,9 +422,7 @@ export default function Admin() {
       setEditUser(null);
       setForm({ email: '', password: '', phone: '', display_name: '' });
       fetchUsers();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const handleDelete = async (userId: string) => {
@@ -116,19 +431,15 @@ export default function Admin() {
       await adminApi('delete', { user_id: userId });
       toast.success('User deleted');
       fetchUsers();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const handleBan = async (userId: string, isBanned: boolean) => {
     try {
-      await adminApi('ban', { user_id: userId, duration: isBanned ? 0 : 87600 }); // 10 years
+      await adminApi('ban', { user_id: userId, duration: isBanned ? 0 : 87600 });
       toast.success(isBanned ? 'User unbanned' : 'User banned');
       fetchUsers();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const handleSetRole = async (userId: string, role: string) => {
@@ -136,9 +447,7 @@ export default function Admin() {
       await adminApi('set_role', { user_id: userId, role });
       toast.success(`Role set to ${role}`);
       fetchUsers();
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const handleImpersonate = async (userId: string) => {
@@ -148,26 +457,16 @@ export default function Admin() {
         window.open(data.link, '_blank');
         toast.success(`Magic link generated for ${data.email}`);
       }
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+    } catch (err: any) { toast.error(err.message); }
   };
 
   const filtered = users.filter(u => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return (
-      u.email?.toLowerCase().includes(q) ||
-      u.phone?.includes(q) ||
-      u.profile?.display_name?.toLowerCase().includes(q) ||
-      u.id.includes(q)
-    );
+    return u.email?.toLowerCase().includes(q) || u.phone?.includes(q) || u.profile?.display_name?.toLowerCase().includes(q) || u.id.includes(q);
   });
 
-  if (roleLoading) {
-    return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground font-mono">Checking access...</div>;
-  }
-
+  if (roleLoading) return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground font-mono">Checking access...</div>;
   if (!isAdmin) return null;
 
   const isBanned = (u: AdminUser) => {
@@ -184,134 +483,101 @@ export default function Admin() {
             <h1 className="text-foreground font-bold text-lg">Admin Panel</h1>
             <span className="text-xs font-mono bg-destructive/10 text-destructive px-2 py-0.5 rounded">ADMIN</span>
           </div>
-          <Button size="sm" onClick={() => { setForm({ email: '', password: '', phone: '', display_name: '' }); setCreateOpen(true); }}>
-            + Create User
-          </Button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <Input
-            placeholder="Search by email, phone, name, or ID..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="max-w-md"
-          />
-          <span className="text-xs text-muted-foreground font-mono">{filtered.length} users</span>
-        </div>
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        <Tabs defaultValue="users" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="users">👥 Users</TabsTrigger>
+            <TabsTrigger value="digests">📰 Digests</TabsTrigger>
+          </TabsList>
 
-        {loading ? (
-          <div className="text-center py-12 text-muted-foreground font-mono animate-pulse">Loading users...</div>
-        ) : (
-          <div className="border border-border rounded-xl overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead className="hidden md:table-cell">Role</TableHead>
-                  <TableHead className="hidden sm:table-cell">Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Last Sign In</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map(u => (
-                  <TableRow key={u.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium text-foreground text-sm">
-                          {u.profile?.display_name || u.email?.split('@')[0] || u.phone || 'Unknown'}
-                        </div>
-                        <div className="text-xs text-muted-foreground">{u.email || u.phone}</div>
-                        <div className="text-[10px] text-muted-foreground/60 font-mono">{u.id.slice(0, 8)}...</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <Select value={u.role} onValueChange={val => handleSetRole(u.id, val)}>
-                        <SelectTrigger className="w-28 h-7 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="user">User</SelectItem>
-                          <SelectItem value="moderator">Moderator</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      {isBanned(u) ? (
-                        <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded">Banned</span>
-                      ) : u.email_confirmed_at ? (
-                        <span className="text-xs bg-positive/10 text-positive px-2 py-0.5 rounded">Active</span>
-                      ) : (
-                        <span className="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded">Unverified</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
-                      {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString() : 'Never'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center gap-1 justify-end flex-wrap">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => {
-                            setEditUser(u);
-                            setForm({
-                              email: u.email || '',
-                              password: '',
-                              phone: u.phone || '',
-                              display_name: u.profile?.display_name || '',
-                            });
-                          }}
-                        >
-                          ✏️
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => handleImpersonate(u.id)}
-                          title="Impersonate"
-                        >
-                          👤
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => handleBan(u.id, isBanned(u))}
-                        >
-                          {isBanned(u) ? '🔓' : '🔒'}
-                        </Button>
-                        {u.id !== user?.id && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(u.id)}
-                          >
-                            🗑️
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+          {/* ── Users Tab ── */}
+          <TabsContent value="users" className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Input placeholder="Search by email, phone, name, or ID..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="max-w-md" />
+              <span className="text-xs text-muted-foreground font-mono">{filtered.length} users</span>
+              <Button size="sm" className="ml-auto" onClick={() => { setForm({ email: '', password: '', phone: '', display_name: '' }); setCreateOpen(true); }}>
+                + Create User
+              </Button>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-12 text-muted-foreground font-mono animate-pulse">Loading users...</div>
+            ) : (
+              <div className="border border-border rounded-xl overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead className="hidden md:table-cell">Role</TableHead>
+                      <TableHead className="hidden sm:table-cell">Status</TableHead>
+                      <TableHead className="hidden lg:table-cell">Last Sign In</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map(u => (
+                      <TableRow key={u.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium text-foreground text-sm">{u.profile?.display_name || u.email?.split('@')[0] || u.phone || 'Unknown'}</div>
+                            <div className="text-xs text-muted-foreground">{u.email || u.phone}</div>
+                            <div className="text-[10px] text-muted-foreground/60 font-mono">{u.id.slice(0, 8)}...</div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <Select value={u.role} onValueChange={val => handleSetRole(u.id, val)}>
+                            <SelectTrigger className="w-28 h-7 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="user">User</SelectItem>
+                              <SelectItem value="moderator">Moderator</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          {isBanned(u) ? (
+                            <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded">Banned</span>
+                          ) : u.email_confirmed_at ? (
+                            <span className="text-xs bg-positive/10 text-positive px-2 py-0.5 rounded">Active</span>
+                          ) : (
+                            <span className="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded">Unverified</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
+                          {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString() : 'Never'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center gap-1 justify-end flex-wrap">
+                            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setEditUser(u); setForm({ email: u.email || '', password: '', phone: u.phone || '', display_name: u.profile?.display_name || '' }); }}>✏️</Button>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => handleImpersonate(u.id)} title="Impersonate">👤</Button>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => handleBan(u.id, isBanned(u))}>{isBanned(u) ? '🔓' : '🔒'}</Button>
+                            {u.id !== user?.id && (
+                              <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive" onClick={() => handleDelete(u.id)}>🗑️</Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ── Digests Tab ── */}
+          <TabsContent value="digests">
+            <DigestManagement />
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Create User Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create User</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Create User</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Input placeholder="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
             <Input placeholder="Password" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
@@ -328,9 +594,7 @@ export default function Admin() {
       {/* Edit User Dialog */}
       <Dialog open={!!editUser} onOpenChange={() => setEditUser(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Edit User</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Input placeholder="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
             <Input placeholder="New password (leave blank to keep)" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
