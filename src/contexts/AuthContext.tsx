@@ -57,8 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
             return; // onAuthStateChange will handle the rest
           }
-        } catch {
-          // Token might not be base64 JSON — try other formats
+        } catch (err) {
+          console.error('[Auth] Failed to process OAuth token:', err);
         }
         // If we couldn't process it, just finish loading
         setLoading(false);
@@ -68,6 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.auth.getSession().then(({ data: { session: sess } }) => {
         setSession(sess);
         setUser(sess?.user ?? null);
+        setLoading(false);
+      }).catch((err) => {
+        console.error('[Auth] Failed to get session:', err);
         setLoading(false);
       });
     }
