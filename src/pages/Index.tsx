@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
 import SearchBar from '@/components/search/SearchBar';
+import WatchlistDropdown from '@/components/layout/WatchlistDropdown';
 import QuickPicks from '@/components/search/QuickPicks';
 import ForexPairSelector from '@/components/search/ForexPairSelector';
 import GuidedDiscovery from '@/components/search/GuidedDiscovery';
@@ -77,6 +78,14 @@ export default function Index() {
     setWatchlist(prev => {
       const filtered = prev.filter(w => w.id !== info.id);
       const next = [{ id: info.id, symbol: info.symbol, name: info.name, assetType: info.assetType, price: info.price, change24h: info.change24h, addedAt: Date.now() }, ...filtered].slice(0, 20);
+      localStorage.setItem('sf_watchlist', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const removeFromWatchlist = useCallback((id: string) => {
+    setWatchlist(prev => {
+      const next = prev.filter(w => w.id !== id);
       localStorage.setItem('sf_watchlist', JSON.stringify(next));
       return next;
     });
@@ -303,16 +312,26 @@ export default function Index() {
       <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
         {/* ── SEARCH BAR + ASSET TABS ── Always visible */}
         <div className="space-y-3">
-          <SearchBar
-            onSearch={handleSearch}
-            placeholder={
-              assetType === 'crypto' ? 'Search coins (e.g., bitcoin)...' :
-              assetType === 'forex' ? 'Enter pair (e.g., AUD/USD)...' :
-              assetType === 'stocks' ? 'Enter ticker (e.g., AAPL, BHP.AX)...' :
-              'Enter ETF ticker (e.g., SPY, VGS.AX)...'
-            }
-            loading={loading}
-          />
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <SearchBar
+                onSearch={handleSearch}
+                placeholder={
+                  assetType === 'crypto' ? 'Search coins (e.g., bitcoin)...' :
+                  assetType === 'forex' ? 'Enter pair (e.g., AUD/USD)...' :
+                  assetType === 'stocks' ? 'Enter ticker (e.g., AAPL, BHP.AX)...' :
+                  'Enter ETF ticker (e.g., SPY, VGS.AX)...'
+                }
+                loading={loading}
+              />
+            </div>
+            <WatchlistDropdown
+              items={watchlist}
+              onSelect={handleWatchlistSelect}
+              onRemove={removeFromWatchlist}
+              onClear={() => { setWatchlist([]); localStorage.removeItem('sf_watchlist'); }}
+            />
+          </div>
           {/* Asset type tabs */}
           <nav className="flex gap-1 overflow-x-auto">
             {([
@@ -459,39 +478,6 @@ export default function Index() {
         {/* ── DASHBOARD — empty state ── */}
         {!technicalData && !loading && !error && (
           <div className="space-y-6">
-            {/* Watchlist */}
-            {watchlist.length > 0 && (
-              <div className="bg-card border border-border rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-foreground font-semibold text-sm">📋 Watchlist</h3>
-                  <button
-                    onClick={() => { setWatchlist([]); localStorage.removeItem('sf_watchlist'); }}
-                    className="text-[10px] text-muted-foreground hover:text-destructive transition-all"
-                  >
-                    Clear all
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                  {watchlist.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => handleWatchlistSelect(item)}
-                      className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border hover:border-primary/40 transition-all text-left"
-                    >
-                      <div>
-                        <div className="text-xs font-medium text-foreground font-mono">{item.symbol}</div>
-                        <div className="text-[10px] text-muted-foreground truncate max-w-[80px]">{item.name}</div>
-                      </div>
-                      {item.change24h !== undefined && (
-                        <span className={`text-[10px] font-mono ${item.change24h >= 0 ? 'text-positive' : 'text-negative'}`}>
-                          {item.change24h >= 0 ? '+' : ''}{item.change24h.toFixed(1)}%
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <GuidedDiscovery assetType={assetType} onSelect={handleQuickPick} loading={loading} />
 
