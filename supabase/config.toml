@@ -1,1 +1,4 @@
 project_id = "xusgljsdrntbqzxkmlcu"
+
+[functions.curated-digest]
+verify_jwt = false
