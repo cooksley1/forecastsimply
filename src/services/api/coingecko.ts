@@ -3,7 +3,7 @@ import { getStoredApiKey } from '@/components/settings/ApiKeySettings';
 
 const BASE_PUBLIC = 'https://api.coingecko.com/api/v3';
 const BASE_PRO = 'https://pro-api.coingecko.com/api/v3';
-const CACHE_TTL = 5 * 60 * 1000; // 5 min
+const CACHE_TTL = 10 * 60 * 1000; // 10 min
 
 function getBase() {
   return getStoredApiKey() ? BASE_PRO : BASE_PUBLIC;

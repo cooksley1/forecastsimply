@@ -37,9 +37,13 @@ export default function RecommendationPanel({ recommendations }: Props) {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {recommendations.map(rec => (
-          <div key={rec.horizon} className="bg-sf-card border border-border rounded-xl p-4">
-            <div className="text-xs text-muted-foreground mb-1 font-mono">{horizonLabels[rec.horizon]}</div>
-            <p className="text-[10px] text-muted-foreground/70 mb-2 italic">{horizonExplain[rec.horizon]}</p>
+          <div key={rec.horizon} className={`rounded-xl p-4 ${
+            rec.horizon === 'dca'
+              ? 'bg-purple-950/30 border-2 border-purple-500/30 md:col-span-3'
+              : 'bg-sf-card border border-border'
+          }`}>
+            <div className={`text-xs mb-1 font-mono ${rec.horizon === 'dca' ? 'text-purple-400' : 'text-muted-foreground'}`}>{rec.horizon === 'dca' ? '💰 ' : ''}{horizonLabels[rec.horizon]}</div>
+            <p className={`text-[10px] mb-2 italic ${rec.horizon === 'dca' ? 'text-purple-400/70' : 'text-muted-foreground/70'}`}>{horizonExplain[rec.horizon]}</p>
             <div className={`text-lg font-bold mb-3 ${
               rec.color === 'green' ? 'text-positive' : rec.color === 'red' ? 'text-negative' : 'text-neutral-signal'
             }`}>
