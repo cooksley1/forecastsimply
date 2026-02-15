@@ -1,7 +1,7 @@
 import { getCached, setCache } from '../cache';
 
 const BASE = 'https://api.frankfurter.app';
-const CACHE_TTL = 15 * 60 * 1000; // 15 min
+const CACHE_TTL = 60 * 60 * 1000; // 60 min (ECB updates daily)
 
 function subtractDays(date: Date, days: number): Date {
   const d = new Date(date);
