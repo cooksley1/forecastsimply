@@ -519,22 +519,21 @@ export default function Index() {
                     </button>
                   );
                 })}
-                {assetType === 'stocks' && (
-                  <>
-                    <span className="w-px h-5 bg-border mx-1" />
-                    <button
-                      onClick={() => setDividendOnly(d => !d)}
-                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                        dividendOnly
-                          ? 'bg-primary/15 border-primary/40 text-primary'
-                          : 'border-border text-muted-foreground hover:border-primary/30'
-                      }`}
-                    >
-                      💰 Dividends Only
-                    </button>
-                  </>
-                )}
               </div>
+              {assetType === 'stocks' && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setDividendOnly(d => !d)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                      dividendOnly
+                        ? 'bg-positive/10 text-positive border border-positive/30'
+                        : 'bg-secondary/50 border border-border text-muted-foreground hover:text-foreground hover:border-positive/30'
+                    }`}
+                  >
+                    💰 {dividendOnly ? 'Showing Dividend Stocks' : 'Filter: Dividends Only'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
           {screenerLoading && useScreener && (
