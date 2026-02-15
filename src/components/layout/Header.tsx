@@ -6,11 +6,20 @@ import { useAdminCheck } from '@/hooks/useAdminCheck';
 import ApiKeySettings from '@/components/settings/ApiKeySettings';
 import LoginDialog from '@/components/auth/LoginDialog';
 import AccountPanel from '@/components/account/AccountPanel';
+import WatchlistDropdown from '@/components/layout/WatchlistDropdown';
 import { getStoredApiKey } from '@/components/settings/ApiKeySettings';
+import type { WatchlistItem } from '@/types/assets';
 import logoHeaderDark from '@/assets/logo-header.svg';
 import logoHeaderLight from '@/assets/logo-header-light.svg';
 
-export default function Header() {
+interface Props {
+  watchlist?: WatchlistItem[];
+  onWatchlistSelect?: (item: WatchlistItem) => void;
+  onWatchlistRemove?: (id: string) => void;
+  onWatchlistClear?: () => void;
+}
+
+export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistRemove, onWatchlistClear }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -29,6 +38,14 @@ export default function Header() {
             <img src={logoHeader} alt="ForecastSimply" className="h-8 sm:h-9" />
 
             <div className="flex items-center gap-1.5 sm:gap-2">
+              {onWatchlistSelect && (
+                <WatchlistDropdown
+                  items={watchlist}
+                  onSelect={onWatchlistSelect}
+                  onRemove={onWatchlistRemove || (() => {})}
+                  onClear={onWatchlistClear || (() => {})}
+                />
+              )}
               <button
                 onClick={toggleTheme}
                 className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all text-sm"

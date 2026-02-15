@@ -24,7 +24,7 @@ export function FullscreenChartButton({ onClick }: { onClick: () => void }) {
     <button
       onClick={onClick}
       className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-card/80 backdrop-blur border border-border text-muted-foreground hover:text-foreground transition-colors"
-      title="Expand to fullscreen landscape"
+      title="Expand chart"
     >
       <Maximize2 size={16} />
     </button>
@@ -36,10 +36,6 @@ export function FullscreenChartModal({
   forecastMethods, setForecastMethods, onClose,
 }: Props & { onClose: () => void }) {
   const [showControls, setShowControls] = useState(false);
-
-  const handleClose = useCallback(() => {
-    onClose();
-  }, [onClose]);
 
   const toggleOverlay = (id: OverlayId) => {
     if (activeOverlays.includes(id)) {
@@ -58,22 +54,10 @@ export function FullscreenChartModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[100] bg-background flex flex-col"
-      style={{
-        transform: 'rotate(90deg)',
-        transformOrigin: 'center center',
-        width: '100vh',
-        height: '100vw',
-        top: '50%',
-        left: '50%',
-        marginTop: 'calc(-50vw)',
-        marginLeft: 'calc(-50vh)',
-      }}
-    >
+    <div className="fixed inset-0 z-[100] bg-background flex flex-col">
       {/* Top toolbar */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-card shrink-0">
-        <span className="text-[10px] font-mono text-muted-foreground uppercase">Landscape View</span>
+        <span className="text-[10px] font-mono text-muted-foreground uppercase">Expanded View</span>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowControls(!showControls)}
@@ -82,9 +66,9 @@ export function FullscreenChartModal({
             {showControls ? '▲ Hide' : '⚙️ Controls'}
           </button>
           <button
-            onClick={handleClose}
+            onClick={onClose}
             className="p-1.5 rounded-lg bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
-            title="Back to portrait"
+            title="Close"
           >
             <X size={16} />
           </button>

@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
 import SearchBar from '@/components/search/SearchBar';
-import WatchlistDropdown from '@/components/layout/WatchlistDropdown';
+
 import QuickPicks from '@/components/search/QuickPicks';
 import ForexPairSelector from '@/components/search/ForexPairSelector';
 import GuidedDiscovery from '@/components/search/GuidedDiscovery';
@@ -307,31 +307,26 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header
+        watchlist={watchlist}
+        onWatchlistSelect={handleWatchlistSelect}
+        onWatchlistRemove={removeFromWatchlist}
+        onWatchlistClear={() => { setWatchlist([]); localStorage.removeItem('sf_watchlist'); }}
+      />
 
       <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
         {/* ── SEARCH BAR + ASSET TABS ── Always visible */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="flex-1">
-              <SearchBar
-                onSearch={handleSearch}
-                placeholder={
-                  assetType === 'crypto' ? 'Search coins (e.g., bitcoin)...' :
-                  assetType === 'forex' ? 'Enter pair (e.g., AUD/USD)...' :
-                  assetType === 'stocks' ? 'Enter ticker (e.g., AAPL, BHP.AX)...' :
-                  'Enter ETF ticker (e.g., SPY, VGS.AX)...'
-                }
-                loading={loading}
-              />
-            </div>
-            <WatchlistDropdown
-              items={watchlist}
-              onSelect={handleWatchlistSelect}
-              onRemove={removeFromWatchlist}
-              onClear={() => { setWatchlist([]); localStorage.removeItem('sf_watchlist'); }}
-            />
-          </div>
+          <SearchBar
+            onSearch={handleSearch}
+            placeholder={
+              assetType === 'crypto' ? 'Search coins (e.g., bitcoin)...' :
+              assetType === 'forex' ? 'Enter pair (e.g., AUD/USD)...' :
+              assetType === 'stocks' ? 'Enter ticker (e.g., AAPL, BHP.AX)...' :
+              'Enter ETF ticker (e.g., SPY, VGS.AX)...'
+            }
+            loading={loading}
+          />
           {/* Asset type tabs */}
           <nav className="flex gap-1 overflow-x-auto">
             {([
