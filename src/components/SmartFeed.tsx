@@ -59,8 +59,8 @@ export default function SmartFeed({ onSelectAsset }: Props) {
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
         <div className="flex items-center gap-2">
-          <span className="text-sm">🧠</span>
-          <h3 className="text-xs font-semibold text-foreground font-mono">AI Market Digest</h3>
+          <span className="text-sm">📊</span>
+          <h3 className="text-xs font-semibold text-foreground font-mono">ForecastSimply Market Digest</h3>
         </div>
         <button
           onClick={fetchDigest}
