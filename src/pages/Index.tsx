@@ -38,6 +38,7 @@ import {
   CRYPTO_TIMEFRAMES, STOCK_TIMEFRAMES,
 } from '@/utils/constants';
 import ExchangeSelector, { STOCK_EXCHANGES, ETF_EXCHANGES } from '@/components/search/ExchangeSelector';
+import StickySubNav from '@/components/layout/StickySubNav';
 import { useExchangeScreener } from '@/hooks/useExchangeScreener';
 import type { AssetType, AssetInfo, WatchlistItem } from '@/types/assets';
 import type { TechnicalData } from '@/types/analysis';
@@ -441,8 +442,14 @@ export default function Index() {
         onWatchlistClear={() => { setWatchlist([]); localStorage.removeItem('sf_watchlist'); }}
       />
 
+      <StickySubNav
+        assetType={assetType}
+        onAssetChange={(t) => { setAssetType(t); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); setPickSort('default'); }}
+        showSections={!!showAnalysis}
+      />
+
       <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
-        {/* ── SEARCH BAR + ASSET TABS ── Always visible */}
+        {/* ── SEARCH BAR ── Always visible */}
         <div className="space-y-3">
           <SearchBar
             onSearch={handleSearch}
@@ -454,28 +461,6 @@ export default function Index() {
             }
             loading={loading}
           />
-          {/* Asset type tabs */}
-          <nav className="flex gap-1 overflow-x-auto">
-            {([
-              { key: 'crypto' as const, label: 'Crypto', icon: '🪙' },
-              { key: 'stocks' as const, label: 'Stocks', icon: '📈' },
-              { key: 'etfs' as const, label: 'ETFs', icon: '📊' },
-              { key: 'forex' as const, label: 'Forex', icon: '💱' },
-            ]).map(t => (
-              <button
-                key={t.key}
-                onClick={() => { setAssetType(t.key); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); setPickSort('default'); }}
-                className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                  assetType === t.key
-                    ? 'bg-primary/15 text-primary'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-                }`}
-              >
-                <span className="mr-1">{t.icon}</span>
-                {t.label}
-              </button>
-            ))}
-          </nav>
           {assetType === 'forex' && <ForexPairSelector onAnalyse={(pairId) => analyseForex(pairId)} loading={loading} />}
           {(assetType === 'stocks' || assetType === 'etfs') && (
             <div className="space-y-2">
@@ -550,7 +535,7 @@ export default function Index() {
         {showAnalysis && (
           <div className="space-y-4">
             {/* Signal + metadata bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div id="section-signal" className="flex flex-col sm:flex-row sm:items-center gap-3 scroll-mt-16">
               <SignalPanel signal={technicalData.signal} price={assetInfo.price} name={assetInfo.name} symbol={assetInfo.symbol} />
               <div className="flex items-center gap-2 flex-wrap ml-auto">
                 {dataSource && (
@@ -612,7 +597,7 @@ export default function Index() {
             {/* Card Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Price Chart — full width */}
-              <div className="lg:col-span-2 relative">
+              <div id="section-chart" className="lg:col-span-2 relative scroll-mt-16">
                 <FullscreenChartButton onClick={() => setFullscreenChart(true)} />
                 <MemoMainChart data={technicalData} timeframeDays={timeframeDays} activeOverlays={activeOverlays} />
               </div>
@@ -622,7 +607,7 @@ export default function Index() {
               <MemoRSIChart data={technicalData} />
 
               {/* Risk Profile + Recommendations + Trade Setups */}
-              <div className="lg:col-span-2 space-y-4">
+              <div id="section-recs" className="lg:col-span-2 space-y-4 scroll-mt-16">
                 {/* Risk slider inline */}
                 <div className="bg-card border border-border rounded-xl p-3">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -638,13 +623,13 @@ export default function Index() {
               </div>
 
               {/* Trade Setups */}
-              <MemoTradeSetupPanel setups={technicalData.tradeSetups} />
+              <div id="section-setups"><MemoTradeSetupPanel setups={technicalData.tradeSetups} /></div>
 
               {/* Indicators */}
-              <MemoIndicatorsPanel indicators={technicalData.indicators} currentPrice={assetInfo.price} />
+              <div id="section-indicators"><MemoIndicatorsPanel indicators={technicalData.indicators} currentPrice={assetInfo.price} /></div>
 
               {/* Analysis Text — full width */}
-              <div className="lg:col-span-2">
+              <div id="section-analysis" className="lg:col-span-2 scroll-mt-16">
                 <AnalysisTextPanel text={technicalData.analysisText} marketPhase={technicalData.marketPhase} />
               </div>
             </div>
