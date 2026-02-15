@@ -395,31 +395,21 @@ export default function Index() {
 
             {/* Risk & FC bar */}
             <div className="bg-card border border-border rounded-xl p-3">
-              <div className="flex items-center gap-3 overflow-x-auto">
+              <div className="flex items-center gap-2 flex-wrap">
                 {/* Risk slider */}
-                <div className="flex items-center gap-1.5 shrink-0 group relative">
-                  <span className="text-[10px] text-muted-foreground font-mono uppercase cursor-help" title="Risk Profile adjusts stop-losses, targets & confidence thresholds">Risk ⓘ</span>
-                  <input type="range" min={1} max={5} step={1} value={riskLevel} onChange={e => setRiskLevel(Number(e.target.value) as RiskLevel)} className="w-20 accent-primary" />
+                <div className="flex items-center gap-1 shrink-0 group relative">
+                  <span className="text-[10px] text-muted-foreground font-mono uppercase cursor-help" title="Risk Profile">Risk</span>
+                  <input type="range" min={1} max={5} step={1} value={riskLevel} onChange={e => setRiskLevel(Number(e.target.value) as RiskLevel)} className="w-16 sm:w-20 accent-primary" />
                   <span className="text-[10px] font-mono text-primary whitespace-nowrap">{getRiskMeta(riskLevel).icon} {getRiskMeta(riskLevel).label}</span>
-                  <span className="hidden group-hover:block absolute top-full left-0 mt-1 z-50 bg-popover border border-border rounded-lg p-2 text-[10px] text-muted-foreground w-52 shadow-lg">
-                    <strong className="text-foreground">Risk Profile (1–5)</strong><br/>
-                    1 🛡️ Conservative — Tight stops, capital preservation<br/>
-                    3 ⚖️ Moderate — Balanced risk/reward<br/>
-                    5 🔥 Aggressive — Wide stops, max growth
-                  </span>
                 </div>
 
-                <div className="w-px h-5 bg-border shrink-0" />
+                <div className="w-px h-4 bg-border shrink-0" />
 
                 {/* Forecast slider */}
-                <div className="flex items-center gap-1.5 shrink-0 group relative">
-                  <span className="text-[10px] text-muted-foreground font-mono cursor-help" title="How far ahead to project prices">FC ⓘ</span>
-                  <input type="range" min={10} max={80} value={forecastPercent} onChange={e => setForecastPercent(Number(e.target.value))} className="w-20 accent-primary" />
+                <div className="flex items-center gap-1 shrink-0 group relative">
+                  <span className="text-[10px] text-muted-foreground font-mono cursor-help" title="How far ahead to project prices">FC</span>
+                  <input type="range" min={10} max={80} value={forecastPercent} onChange={e => setForecastPercent(Number(e.target.value))} className="w-16 sm:w-20 accent-primary" />
                   <span className="text-[10px] font-mono text-muted-foreground">{forecastPercent}%</span>
-                  <span className="hidden group-hover:block absolute top-full right-0 mt-1 z-50 bg-popover border border-border rounded-lg p-2 text-[10px] text-muted-foreground w-48 shadow-lg">
-                    <strong className="text-foreground">Forecast Length</strong><br/>
-                    How far ahead to project. Higher % = longer forecast but lower confidence.
-                  </span>
                 </div>
               </div>
             </div>
