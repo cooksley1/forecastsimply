@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { X, Maximize2 } from 'lucide-react';
 import type { TechnicalData } from '@/types/analysis';
 import type { OverlayId } from './AnalysisOverlayBar';
@@ -31,106 +31,15 @@ export function FullscreenChartButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-/** Try to lock orientation to landscape via Screen Orientation API */
-async function lockLandscape(): Promise<boolean> {
-  let enteredFullscreen = false;
-
-  try {
-    if (document.documentElement.requestFullscreen) {
-      await document.documentElement.requestFullscreen();
-      enteredFullscreen = true;
-    }
-  } catch {
-    // Fullscreen not available (e.g. iframe sandbox)
-  }
-
-  try {
-    const orientation = screen.orientation as any;
-    if (orientation?.lock) {
-      await orientation.lock('landscape-primary');
-    }
-  } catch {
-    // Orientation lock not supported or denied
-  }
-
-  return enteredFullscreen;
-}
-
-function unlockOrientation() {
-  try {
-    const orientation = screen.orientation as any;
-    if (orientation?.unlock) {
-      orientation.unlock();
-    }
-  } catch { /* ignore */ }
-
-  try {
-    if (document.fullscreenElement) {
-      document.exitFullscreen?.();
-    }
-  } catch { /* ignore */ }
-}
-
 export function FullscreenChartModal({
   data, timeframeDays, activeOverlays, setActiveOverlays,
   forecastMethods, setForecastMethods, onClose,
 }: Props & { onClose: () => void }) {
   const [showControls, setShowControls] = useState(false);
-  const [isLandscapeNative, setIsLandscapeNative] = useState(false);
-  const [didEnterFullscreen, setDidEnterFullscreen] = useState(false);
 
-  // Lock orientation on mount, unlock on unmount
-  useEffect(() => {
-    let mounted = true;
-
-    const setup = async () => {
-      const gotFullscreen = await lockLandscape();
-      if (mounted) {
-        setDidEnterFullscreen(gotFullscreen);
-        const isLand = window.innerWidth > window.innerHeight ||
-          screen.orientation?.type?.includes('landscape');
-        setIsLandscapeNative(isLand);
-      }
-    };
-
-    setup();
-
-    // Listen for orientation changes to update state
-    const handleChange = () => {
-      const isLand = window.innerWidth > window.innerHeight ||
-        screen.orientation?.type?.includes('landscape');
-      setIsLandscapeNative(isLand);
-    };
-
-    screen.orientation?.addEventListener('change', handleChange);
-    window.addEventListener('resize', handleChange);
-
-    return () => {
-      mounted = false;
-      unlockOrientation();
-      screen.orientation?.removeEventListener('change', handleChange);
-      window.removeEventListener('resize', handleChange);
-    };
-  }, []);
-
-  // Handle close — unlock then call parent
   const handleClose = useCallback(() => {
-    unlockOrientation();
     onClose();
   }, [onClose]);
-
-  // Only listen for fullscreen exit if we actually entered fullscreen
-  useEffect(() => {
-    if (!didEnterFullscreen) return;
-
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement) {
-        setTimeout(() => onClose(), 100);
-      }
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, [onClose, didEnterFullscreen]);
 
   const toggleOverlay = (id: OverlayId) => {
     if (activeOverlays.includes(id)) {
@@ -148,13 +57,10 @@ export function FullscreenChartModal({
     }
   };
 
-  // Use CSS rotation fallback only if orientation lock didn't work
-  const needsCSSRotation = !isLandscapeNative;
-
   return (
     <div
       className="fixed inset-0 z-[100] bg-background flex flex-col"
-      style={needsCSSRotation ? {
+      style={{
         transform: 'rotate(90deg)',
         transformOrigin: 'center center',
         width: '100vh',
@@ -163,7 +69,7 @@ export function FullscreenChartModal({
         left: '50%',
         marginTop: 'calc(-50vw)',
         marginLeft: 'calc(-50vh)',
-      } : undefined}
+      }}
     >
       {/* Top toolbar */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-card shrink-0">
