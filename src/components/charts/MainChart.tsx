@@ -87,14 +87,17 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
   const formatTime = (ts: number) => {
     const d = new Date(ts);
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    if (spanDays < 2) {
+    if (spanDays < 0.25) {
+      // Under 6 hours — show HH:MM (15-min granularity)
+      return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+    } else if (spanDays < 2) {
+      // Under 2 days — just hours
       return `${d.getHours().toString().padStart(2,'0')}:00`;
     } else if (spanDays < 60) {
       return `${months[d.getMonth()]} ${d.getDate()}`;
     } else if (spanDays < 365) {
       return `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
     } else {
-      // 1Y+ including ALL — show abbreviated month + 2-digit year, spaced out
       return `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
     }
   };
