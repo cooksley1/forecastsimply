@@ -39,7 +39,7 @@ export default function StickySubNav({ assetType, onAssetChange, showSections }:
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-1.5 space-y-1">
         {/* Row 1: Asset tabs — always visible */}
-        <div className="flex justify-between gap-1">
+        <div className="flex justify-between gap-1 bg-secondary/50 rounded-lg p-1">
           {ASSET_TABS.map(t => (
             <button
               key={t.key}
