@@ -26,3 +26,13 @@ export function setCache(key: string, data: unknown): void {
     // localStorage full — ignore
   }
 }
+
+/** Clear all sf_cache_ entries from localStorage */
+export function clearAllCache(): void {
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith('sf_cache_')) keysToRemove.push(key);
+  }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+}

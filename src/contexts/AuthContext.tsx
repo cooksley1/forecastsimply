@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { clearAllCache } from '@/services/cache';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -20,13 +22,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   // Always set up auth state listener
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sess) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sess) => {
       setSession(sess);
       setUser(sess?.user ?? null);
       setLoading(false);
+
+      // Clear all caches when user signs in so they get fresh data
+      if (event === 'SIGNED_IN') {
+        clearAllCache();
+        queryClient.invalidateQueries();
+        console.log('[Auth] Signed in — all data caches cleared');
+      }
     });
 
     // Process __lovable_token from OAuth redirect
