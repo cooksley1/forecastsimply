@@ -56,5 +56,36 @@ export function generateTradeSetups(
   };
   shortSetup.riskReward = (shortSetup.entry - shortSetup.tp2) / Math.max(0.01, shortSetup.stop - shortSetup.entry);
 
-  return [longSetup, shortSetup];
+  // ── Validation ──
+  return [validateSetup(longSetup), validateSetup(shortSetup)];
+}
+
+function validateSetup(setup: TradeSetup): TradeSetup {
+  const minDist = setup.entry * 0.005; // 0.5% minimum distance
+
+  if (setup.type === 'long') {
+    // Long: TP1 > TP2 is wrong (TP2 should be higher), Stop < Entry
+    if (setup.stop >= setup.entry) setup.stop = setup.entry * 0.95;
+    if (setup.tp1 <= setup.entry) setup.tp1 = setup.entry * 1.03;
+    if (setup.tp2 <= setup.tp1) setup.tp2 = setup.tp1 * 1.05;
+    if (setup.entry - setup.stop < minDist) setup.stop = setup.entry - minDist;
+  } else {
+    // Short: Stop > Entry, TP1 < Entry, TP2 < TP1
+    if (setup.stop <= setup.entry) setup.stop = setup.entry * 1.05;
+    if (setup.tp1 >= setup.entry) setup.tp1 = setup.entry * 0.97;
+    if (setup.tp2 >= setup.tp1) setup.tp2 = setup.tp1 * 0.95;
+    if (setup.stop - setup.entry < minDist) setup.stop = setup.entry + minDist;
+  }
+
+  // Recalculate R:R after validation
+  if (setup.type === 'long') {
+    setup.riskReward = (setup.tp2 - setup.entry) / Math.max(0.01, setup.entry - setup.stop);
+  } else {
+    setup.riskReward = (setup.entry - setup.tp2) / Math.max(0.01, setup.stop - setup.entry);
+  }
+
+  // Ensure R:R is positive and reasonable
+  setup.riskReward = Math.max(0.1, Math.min(20, setup.riskReward));
+
+  return setup;
 }
