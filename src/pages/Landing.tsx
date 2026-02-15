@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import LoginDialog from '@/components/auth/LoginDialog';
@@ -10,13 +10,13 @@ import logoHeaderLight from '@/assets/logo-header-light.svg';
 import logoStacked from '@/assets/logo-stacked.svg';
 
 export default function Landing() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { theme } = useTheme();
   const [loginOpen, setLoginOpen] = useState(false);
   const logoHeader = theme === 'dark' ? logoHeaderDark : logoHeaderLight;
 
-  // If logged in, don't show landing — Index handles the app
-  if (user) return null;
+  // If logged in, redirect to main app instead of showing blank
+  if (user) return <Navigate to="/" replace />;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
