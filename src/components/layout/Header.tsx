@@ -17,9 +17,10 @@ interface Props {
   onWatchlistSelect?: (item: WatchlistItem) => void;
   onWatchlistRemove?: (id: string) => void;
   onWatchlistClear?: () => void;
+  onWatchlistNoteUpdate?: (id: string, note: string) => void;
 }
 
-export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistRemove, onWatchlistClear }: Props) {
+export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistRemove, onWatchlistClear, onWatchlistNoteUpdate }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -100,7 +101,7 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
       </header>
       <ApiKeySettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <LoginDialog open={loginOpen} onClose={() => setLoginOpen(false)} />
-      {user && <AccountPanel open={accountOpen} onClose={() => setAccountOpen(false)} watchlist={watchlist} onWatchlistRemove={onWatchlistRemove} onWatchlistClear={onWatchlistClear} />}
+      {user && <AccountPanel open={accountOpen} onClose={() => setAccountOpen(false)} watchlist={watchlist} onWatchlistRemove={onWatchlistRemove} onWatchlistClear={onWatchlistClear} onWatchlistNoteUpdate={onWatchlistNoteUpdate} />}
     </>
   );
 }

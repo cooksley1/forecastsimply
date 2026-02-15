@@ -11,6 +11,7 @@ interface Props {
   watchlist?: WatchlistItem[];
   onWatchlistRemove?: (id: string) => void;
   onWatchlistClear?: () => void;
+  onWatchlistNoteUpdate?: (id: string, note: string) => void;
 }
 
 interface UserPrefs {
@@ -64,7 +65,7 @@ const ASSET_TYPE_ICONS: Record<string, string> = {
   forex: '💱',
 };
 
-export default function AccountPanel({ open, onClose, watchlist = [], onWatchlistRemove, onWatchlistClear }: Props) {
+export default function AccountPanel({ open, onClose, watchlist = [], onWatchlistRemove, onWatchlistClear, onWatchlistNoteUpdate }: Props) {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'watchlist' | 'newsletter'>('profile');
@@ -477,37 +478,67 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
                 <p className="text-[10px] text-muted-foreground">Search and analyse an asset, then click the ⭐ button to add it here.</p>
               </div>
             ) : (
-              watchlist.map(item => (
-                <div key={item.id} className="flex items-center justify-between p-2.5 rounded-lg bg-background/50 border border-border/50 group">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm">{ASSET_TYPE_ICONS[item.assetType] || '📊'}</span>
-                      <span className="text-xs font-medium text-foreground font-mono">{item.symbol}</span>
-                      <span className="text-[9px] text-muted-foreground capitalize">{item.assetType}</span>
-                    </div>
-                    <div className="text-[9px] text-muted-foreground mt-0.5">
-                      {item.name} · ${Number(item.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                      {item.change24h != null && (
-                        <span className={`ml-1 ${item.change24h >= 0 ? 'text-positive' : 'text-negative'}`}>
-                          {item.change24h >= 0 ? '+' : ''}{item.change24h.toFixed(2)}%
-                        </span>
+              watchlist.map(item => {
+                const addedPrice = item.addedPrice ?? item.price;
+                const priceDiff = item.price - addedPrice;
+                const pctChange = addedPrice > 0 ? (priceDiff / addedPrice) * 100 : 0;
+                const addedDate = new Date(item.addedAt);
+                return (
+                  <div key={item.id} className="p-2.5 rounded-lg bg-background/50 border border-border/50 group space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm">{ASSET_TYPE_ICONS[item.assetType] || '📊'}</span>
+                          <span className="text-xs font-medium text-foreground font-mono">{item.symbol}</span>
+                          <span className="text-[9px] text-muted-foreground capitalize">{item.assetType}</span>
+                        </div>
+                        <div className="text-[9px] text-muted-foreground mt-0.5">{item.name}</div>
+                      </div>
+                      {onWatchlistRemove && (
+                        <button
+                          onClick={() => onWatchlistRemove(item.id)}
+                          className="text-muted-foreground hover:text-destructive text-xs transition-all p-1 rounded hover:bg-destructive/10"
+                          title="Remove from watchlist"
+                        >
+                          ✕
+                        </button>
                       )}
                     </div>
-                    <div className="text-[8px] text-muted-foreground/60 mt-0.5">
-                      Added {new Date(item.addedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+
+                    {/* Price & performance row */}
+                    <div className="flex items-center gap-3 text-[10px]">
+                      <div className="text-muted-foreground">
+                        <span className="font-mono">Added:</span>{' '}
+                        <span className="text-foreground font-medium">${addedPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="text-muted-foreground">
+                        <span className="font-mono">Now:</span>{' '}
+                        <span className="text-foreground font-medium">${Number(item.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <span className={`font-mono font-semibold ${pctChange >= 0 ? 'text-positive' : 'text-negative'}`}>
+                        {pctChange >= 0 ? '▲' : '▼'} {Math.abs(pctChange).toFixed(2)}%
+                      </span>
+                    </div>
+
+                    {/* Date/time */}
+                    <div className="text-[9px] text-muted-foreground/70">
+                      📅 {addedDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} at {addedDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+
+                    {/* Note */}
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-[9px] text-muted-foreground mt-0.5">📝</span>
+                      <input
+                        type="text"
+                        value={item.note || ''}
+                        onChange={(e) => onWatchlistNoteUpdate?.(item.id, e.target.value)}
+                        placeholder="Add a note (e.g. Buy signal, support level)…"
+                        className="flex-1 text-[10px] bg-transparent border-b border-border/50 focus:border-primary/50 outline-none py-0.5 text-foreground placeholder:text-muted-foreground/50 transition-colors"
+                      />
                     </div>
                   </div>
-                  {onWatchlistRemove && (
-                    <button
-                      onClick={() => onWatchlistRemove(item.id)}
-                      className="text-muted-foreground hover:text-destructive text-xs transition-all p-1 rounded hover:bg-destructive/10"
-                      title="Remove from watchlist"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}

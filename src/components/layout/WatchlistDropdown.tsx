@@ -88,29 +88,35 @@ export default function WatchlistDropdown({ items, onSelect, onRemove, onClear }
                 </button>
               </div>
               <div className="max-h-64 overflow-y-auto divide-y divide-border/50">
-                {items.map(item => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between px-3 py-2 hover:bg-background/50 transition-colors group"
-                  >
-                    <button
-                      onClick={() => { onSelect(item); setOpen(false); }}
-                      className="flex items-center gap-2 text-left flex-1 min-w-0"
+                {items.map(item => {
+                  const addedPrice = item.addedPrice ?? item.price;
+                  const pctChange = addedPrice > 0 ? ((item.price - addedPrice) / addedPrice) * 100 : 0;
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between px-3 py-2 hover:bg-background/50 transition-colors group"
                     >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-medium text-foreground font-mono">{item.symbol}</span>
-                          <span className="text-[9px] text-muted-foreground capitalize">{item.assetType}</span>
+                      <button
+                        onClick={() => { onSelect(item); setOpen(false); }}
+                        className="flex items-center gap-2 text-left flex-1 min-w-0"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-medium text-foreground font-mono">{item.symbol}</span>
+                            <span className="text-[9px] text-muted-foreground capitalize">{item.assetType}</span>
+                          </div>
+                          <div className="text-[10px] text-muted-foreground truncate">
+                            ${addedPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })} →{' '}
+                            <span className="text-foreground">${Number(item.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                            <span className={`ml-1 font-mono ${pctChange >= 0 ? 'text-positive' : 'text-negative'}`}>
+                              {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(1)}%
+                            </span>
+                          </div>
+                          {item.note && (
+                            <div className="text-[9px] text-primary/70 truncate mt-0.5">📝 {item.note}</div>
+                          )}
                         </div>
-                        <div className="text-[10px] text-muted-foreground truncate">{item.name}</div>
-                      </div>
-                    </button>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {item.change24h !== undefined && (
-                        <span className={`text-[10px] font-mono ${item.change24h >= 0 ? 'text-positive' : 'text-negative'}`}>
-                          {fmtPercent(item.change24h)}
-                        </span>
-                      )}
+                      </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
                         className="text-muted-foreground hover:text-destructive text-xs transition-all p-1 rounded hover:bg-destructive/10"
@@ -119,8 +125,8 @@ export default function WatchlistDropdown({ items, onSelect, onRemove, onClear }
                         ✕
                       </button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}
