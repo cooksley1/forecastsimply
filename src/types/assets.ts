@@ -47,4 +47,6 @@ export interface WatchlistItem {
   price: number;
   change24h?: number;
   addedAt: number;
+  addedPrice: number;
+  note?: string;
 }
