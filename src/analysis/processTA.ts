@@ -255,6 +255,7 @@ export function processTA(
   const recommendations = generateRecommendations(
     signal, currentPrice, support, resistance, target, assetType, currentRsi,
     bbPosition, lastSma20, lastSma50, sma200Last, riskLevel,
+    indicators, forecasts,
   );
   const tradeSetups = generateTradeSetups(support, resistance, signal, atrValues, riskLevel);
   const marketPhase = detectMarketPhase(closes, sma20, sma50);
