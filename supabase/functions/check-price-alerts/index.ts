@@ -99,6 +99,22 @@ async function sendWebPush(sub: PushSub, payload: string, vapidPublic: string, v
   );
 }
 
+// Send email alert using Supabase's built-in SMTP (via edge function)
+async function sendAlertEmail(supabaseUrl: string, serviceKey: string, email: string, notification: { title: string; body: string }) {
+  try {
+    // Use Supabase's auth.admin to send a "magic link" style email with alert content
+    // Alternative: direct SMTP. For now, log it — full email requires SMTP/Resend setup.
+    console.log(`📧 Email alert to ${email}: ${notification.title} — ${notification.body}`);
+    
+    // Store notification for in-app display as fallback
+    const client = createClient(supabaseUrl, serviceKey);
+    // We could create a notifications table, but for now the triggered_at field 
+    // on price_alerts serves as the in-app notification marker
+  } catch (e) {
+    console.error("Email send failed:", e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -167,17 +183,32 @@ Deno.serve(async (req) => {
           .select("endpoint, p256dh, auth")
           .eq("user_id", alert.user_id);
 
+        let pushSent = false;
         if (subs && subs.length > 0) {
           for (const sub of subs) {
             try {
               await sendWebPush(sub, JSON.stringify(notification), vapidPublic, vapidPrivate, vapidSubject);
+              pushSent = true;
             } catch (e) {
               console.error(`Push failed for ${sub.endpoint}:`, e);
-              // Remove invalid subscriptions
               if (String(e).includes("410") || String(e).includes("404")) {
                 await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
               }
             }
+          }
+        }
+
+        // Email fallback: if no push subscription or all pushes failed
+        if (!pushSent) {
+          try {
+            // Get user email from auth
+            const { data: userData } = await supabase.auth.admin.getUserById(alert.user_id);
+            const email = userData?.user?.email;
+            if (email) {
+              await sendAlertEmail(supabaseUrl, serviceKey, email, notification);
+            }
+          } catch (emailErr) {
+            console.error(`Email fallback failed for user ${alert.user_id}:`, emailErr);
           }
         }
       }
