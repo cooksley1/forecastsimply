@@ -27,7 +27,7 @@ export default function Landing() {
       {/* Header */}
       <header className="border-b border-border px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <img src={logo} alt="ForecastSimply" className="h-10 sm:h-11" />
+          <img src={logo} alt="ForecastSimply" className="h-12 sm:h-14" />
           <div className="flex items-center gap-2">
             <Link to="/about" className="text-xs text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">About</Link>
             <Link to="/faq" className="text-xs text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">FAQ</Link>
