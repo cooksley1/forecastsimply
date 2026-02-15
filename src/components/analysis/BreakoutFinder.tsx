@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getTopTickers, coinloreSymbolToGeckoId } from '@/services/api/coinlore';
 import type { CoinLoreTicker } from '@/services/api/coinlore';
 import { getCoinChart, getCoinData } from '@/services/api/coingecko';
+import { getDIACryptoPrice, geckoIdToDIASymbol } from '@/services/api/dia';
 import { processTA } from '@/analysis/processTA';
 import { fmtPrice } from '@/utils/format';
 
@@ -108,9 +109,11 @@ export default function BreakoutFinder({ onSelect }: Props) {
         setScanStatus(`Analysing ${coinId} (${count}/${deepList.length})...`);
 
         try {
-          const [coinData, chartData] = await Promise.all([
+          const diaSymbol = geckoIdToDIASymbol(coinId);
+          const [coinData, chartData, diaPrice] = await Promise.all([
             getCoinData(coinId),
             getCoinChart(coinId, 90),
+            diaSymbol ? getDIACryptoPrice(diaSymbol).catch(() => null) : Promise.resolve(null),
           ]);
 
           const prices = (chartData.prices || []).map((p: number[]) => p[1]);
@@ -120,7 +123,8 @@ export default function BreakoutFinder({ onSelect }: Props) {
           if (prices.length < 30) continue;
 
           const ta = processTA(prices, timestamps, vols, 30, 'crypto', 'holt');
-          const price = prices[prices.length - 1];
+          // Use DIA price if available (exchange-aggregated, most recent), else chart last price
+          const price = diaPrice?.price || prices[prices.length - 1];
 
           let score = 0;
           const reasoning: string[] = [];
@@ -242,7 +246,7 @@ export default function BreakoutFinder({ onSelect }: Props) {
         <div>
           <h3 className="text-sm sm:text-base font-semibold text-foreground">🚀 Breakout Finder</h3>
           <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-            Pre-screens 100 coins via CoinLore (instant), then deep-analyses top candidates with full TA
+            Pre-screens 100 coins via CoinLore, verifies prices via DIA, then deep-analyses with CoinGecko charts
           </p>
         </div>
         <div className="flex gap-2">
