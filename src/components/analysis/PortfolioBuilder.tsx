@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import type { RiskProfile } from '@/components/charts/ChartControls';
-import { getRiskMeta, riskLevelToProfile, type RiskLevel } from '@/components/charts/ChartControls';
+import { getRiskMeta, type RiskLevel } from '@/components/charts/ChartControls';
 import { fmtPrice } from '@/utils/format';
 
 interface Props {
   riskProfile: RiskProfile;
+  riskLevel: RiskLevel;
+  onRiskLevelChange: (level: RiskLevel) => void;
 }
 
 interface Allocation {
@@ -55,25 +57,41 @@ const PORTFOLIOS: Record<RiskProfile, Allocation[]> = {
 };
 
 const PROFILE_LABELS: Record<RiskProfile, { label: string; desc: string; color: string }> = {
-  conservative: { label: '🛡️ Conservative', desc: 'Focus on capital preservation with steady growth. Target: 5-8% annual returns.', color: 'text-positive' },
-  'moderate-conservative': { label: '🔒 Mod-Conservative', desc: 'Stability-first with measured growth. Target: 8-12% annual returns.', color: 'text-positive' },
-  moderate: { label: '⚖️ Moderate', desc: 'Balanced approach mixing stability with growth. Target: 10-18% annual returns.', color: 'text-primary' },
-  'moderate-aggressive': { label: '📈 Mod-Aggressive', desc: 'Growth-focused with controlled risk. Target: 15-25% annual returns.', color: 'text-warning' },
-  aggressive: { label: '🔥 Aggressive', desc: 'Maximum growth potential, higher volatility. Target: 20%+ annual returns.', color: 'text-warning' },
+  conservative: { label: '🛡️ Conservative', desc: 'Capital preservation, steady growth. Target: 5-8% p.a.', color: 'text-positive' },
+  'moderate-conservative': { label: '🔒 Mod-Conservative', desc: 'Stability-first with measured growth. Target: 8-12% p.a.', color: 'text-positive' },
+  moderate: { label: '⚖️ Moderate', desc: 'Balanced stability & growth. Target: 10-18% p.a.', color: 'text-primary' },
+  'moderate-aggressive': { label: '📈 Mod-Aggressive', desc: 'Growth-focused, controlled risk. Target: 15-25% p.a.', color: 'text-warning' },
+  aggressive: { label: '🔥 Aggressive', desc: 'Max growth, higher volatility. Target: 20%+ p.a.', color: 'text-warning' },
 };
 
-export default function PortfolioBuilder({ riskProfile }: Props) {
+export default function PortfolioBuilder({ riskProfile, riskLevel, onRiskLevelChange }: Props) {
   const [budget, setBudget] = useState(1000);
   const allocations = PORTFOLIOS[riskProfile];
   const profile = PROFILE_LABELS[riskProfile];
+  const meta = getRiskMeta(riskLevel);
 
   return (
     <div className="bg-sf-card border border-border rounded-xl p-3 sm:p-4 space-y-4">
       <div>
         <h3 className="text-sm sm:text-base font-semibold text-foreground">💼 Portfolio Builder</h3>
-        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
-          Suggested allocation based on your <span className={profile.color}>{profile.label}</span> profile. {profile.desc}
-        </p>
+        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">{profile.desc}</p>
+      </div>
+
+      {/* Risk slider inline */}
+      <div className="flex items-center gap-3 bg-background/50 border border-border/50 rounded-lg p-2.5">
+        <span className="text-[10px] text-muted-foreground font-mono uppercase shrink-0">Risk</span>
+        <input
+          type="range"
+          min={1}
+          max={5}
+          step={1}
+          value={riskLevel}
+          onChange={e => onRiskLevelChange(Number(e.target.value) as RiskLevel)}
+          className="flex-1 accent-primary"
+        />
+        <span className={`text-[10px] sm:text-xs font-medium shrink-0 ${profile.color}`}>
+          {meta.icon} {meta.label}
+        </span>
       </div>
 
       {/* Budget input */}
@@ -96,14 +114,12 @@ export default function PortfolioBuilder({ riskProfile }: Props) {
           const dollarAmount = budget * a.percent / 100;
           return (
             <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-background/50 border border-border/50">
-              {/* Percent bar */}
               <div className="w-10 shrink-0">
                 <div className="text-[10px] font-mono text-primary text-center">{a.percent}%</div>
                 <div className="h-1 bg-border rounded-full overflow-hidden mt-0.5">
                   <div className="h-full bg-primary rounded-full" style={{ width: `${a.percent}%` }} />
                 </div>
               </div>
-
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-medium text-foreground">{a.name}</span>
@@ -111,7 +127,6 @@ export default function PortfolioBuilder({ riskProfile }: Props) {
                 </div>
                 <p className="text-[9px] text-muted-foreground/70 truncate">{a.reason}</p>
               </div>
-
               <div className="text-xs font-mono text-foreground shrink-0">
                 {fmtPrice(dollarAmount)}
               </div>
