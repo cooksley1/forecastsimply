@@ -3,6 +3,8 @@ import Header from '@/components/layout/Header';
 import WatchlistBar from '@/components/layout/WatchlistBar';
 import SearchBar from '@/components/search/SearchBar';
 import QuickPicks from '@/components/search/QuickPicks';
+import ForexPairSelector from '@/components/search/ForexPairSelector';
+import GuidedDiscovery from '@/components/search/GuidedDiscovery';
 import MainChart from '@/components/charts/MainChart';
 import ForecastMethodBar from '@/components/charts/ForecastMethodBar';
 import VolumeChart from '@/components/charts/VolumeChart';
@@ -285,7 +287,11 @@ export default function Index() {
             }
             loading={loading}
           />
+          {assetType === 'forex' && (
+            <ForexPairSelector onAnalyse={(pairId) => analyseForex(pairId)} loading={loading} />
+          )}
           <QuickPicks picks={getQuickPicks()} onSelect={handleQuickPick} loading={loading} />
+          <GuidedDiscovery assetType={assetType} onSelect={handleQuickPick} loading={loading} />
         </div>
 
         {/* Loading */}
