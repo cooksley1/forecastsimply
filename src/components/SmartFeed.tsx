@@ -21,6 +21,7 @@ interface Digest {
 
 interface Props {
   assetType: AssetType;
+  exchange?: string;
   watchlist?: WatchlistItem[];
   onSelectAsset?: (id: string, type: string) => void;
 }
@@ -32,7 +33,7 @@ const DIGEST_NAMES: Record<AssetType, { icon: string; label: string }> = {
   forex: { icon: '💱', label: 'ForexSimply Market Digest' },
 };
 
-export default function SmartFeed({ assetType, watchlist = [], onSelectAsset }: Props) {
+export default function SmartFeed({ assetType, exchange, watchlist = [], onSelectAsset }: Props) {
   const { user } = useAuth();
   const [digest, setDigest] = useState<Digest | null>(null);
   const [loading, setLoading] = useState(false);
@@ -58,7 +59,6 @@ export default function SmartFeed({ assetType, watchlist = [], onSelectAsset }: 
         setDigest(approved as any);
         setExpanded(true);
       } else {
-        // Pass local watchlist to the edge function so it knows about user's watched assets
         const watchlistPayload = watchlist.map(w => ({
           asset_id: w.id,
           symbol: w.symbol,
@@ -66,7 +66,7 @@ export default function SmartFeed({ assetType, watchlist = [], onSelectAsset }: 
           asset_type: w.assetType,
         }));
         const { data, error: fnError } = await supabase.functions.invoke('curated-digest', {
-          body: { watchlist: watchlistPayload },
+          body: { watchlist: watchlistPayload, exchange },
         });
         if (fnError) throw fnError;
         setDigest(data);
@@ -80,15 +80,16 @@ export default function SmartFeed({ assetType, watchlist = [], onSelectAsset }: 
     }
   };
 
-  // Reset expanded when asset type changes
+  // Reset when asset type or exchange changes
   useEffect(() => {
     setExpanded(false);
     setDigest(null);
-  }, [assetType]);
+  }, [assetType, exchange]);
 
   if (!user) return null;
 
   const { icon, label } = DIGEST_NAMES[assetType];
+  const displayLabel = exchange && exchange !== 'ALL' ? `${label} (${exchange})` : label;
 
   const sentimentColor = (s: string) =>
     s === 'bullish' ? 'text-positive' : s === 'bearish' ? 'text-negative' : 'text-neutral-signal';
@@ -111,7 +112,7 @@ export default function SmartFeed({ assetType, watchlist = [], onSelectAsset }: 
       >
         <div className="flex items-center gap-2">
           <span className={`text-sm ${loading ? 'animate-bounce' : ''}`}>{icon}</span>
-          <h3 className="text-xs font-semibold text-foreground font-mono">{label}</h3>
+          <h3 className="text-xs font-semibold text-foreground font-mono">{displayLabel}</h3>
           {loading && (
             <span className="text-[10px] text-primary font-mono animate-pulse">Loading…</span>
           )}
