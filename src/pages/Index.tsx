@@ -126,7 +126,7 @@ export default function Index() {
         description: coinData?.description?.en?.slice(0, 200),
       };
 
-      const ta = processTA(result.priceData.closes, result.priceData.timestamps, result.priceData.volumes, forecastPercent, 'crypto', forecastMethods);
+      const ta = processTA(result.priceData.closes, result.priceData.timestamps, result.priceData.volumes, forecastPercent, 'crypto', forecastMethods, riskLevel);
       currentAssetRef.current = { id: coinId, type: 'crypto' };
       setAssetInfo(info);
       setTechnicalData(ta);
@@ -137,7 +137,7 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, forecastMethods, addToWatchlist, updateSecondaryPrice]);
+  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, addToWatchlist, updateSecondaryPrice]);
 
   /* ── Stocks / ETFs ── */
   const analyseStock = useCallback(async (symbol: string, type: 'stocks' | 'etfs') => {
@@ -162,7 +162,7 @@ export default function Index() {
         } catch { /* use defaults */ }
       }
 
-      const ta = processTA(closes, timestamps, volumes, forecastPercent, type, forecastMethods);
+      const ta = processTA(closes, timestamps, volumes, forecastPercent, type, forecastMethods, riskLevel);
       currentAssetRef.current = { id: symbol, type };
       setAssetInfo(info);
       setTechnicalData(ta);
@@ -173,7 +173,7 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, forecastMethods, addToWatchlist, updateSecondaryPrice]);
+  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, addToWatchlist, updateSecondaryPrice]);
 
   /* ── Forex ── */
   const analyseForex = useCallback(async (pairId: string) => {
@@ -190,7 +190,7 @@ export default function Index() {
 
       const info: AssetInfo = { id: pairId, symbol: `${from}/${to}`, name: `${from}/${to}`, assetType: 'forex', price: lastPrice, change24h, currency: to };
 
-      const ta = processTA(closes, timestamps, volumes, forecastPercent, 'forex', forecastMethods);
+      const ta = processTA(closes, timestamps, volumes, forecastPercent, 'forex', forecastMethods, riskLevel);
       currentAssetRef.current = { id: pairId, type: 'forex' };
       setAssetInfo(info);
       setTechnicalData(ta);
@@ -200,7 +200,7 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, forecastMethods, addToWatchlist]);
+  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, addToWatchlist]);
 
   /* ── Auto-reanalyse ── */
   useEffect(() => {
@@ -214,7 +214,7 @@ export default function Index() {
       else if (asset.type === 'forex') analyseForex(asset.id);
     }, 500);
     return () => clearTimeout(timer);
-  }, [timeframeDays, forecastPercent, forecastMethods]);
+  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel]);
 
   /* ── Handlers ── */
   const handleSearch = useCallback(async (query: string) => {
