@@ -11,6 +11,7 @@ import MainChart from '@/components/charts/MainChart';
 import ForecastMethodBar from '@/components/charts/ForecastMethodBar';
 import AnalysisOverlayBar from '@/components/charts/AnalysisOverlayBar';
 import type { OverlayId } from '@/components/charts/AnalysisOverlayBar';
+import { FullscreenChartButton, FullscreenChartModal } from '@/components/charts/FullscreenChart';
 import VolumeChart from '@/components/charts/VolumeChart';
 import RSIChart from '@/components/charts/RSIChart';
 import ChartControls from '@/components/charts/ChartControls';
@@ -61,6 +62,7 @@ export default function Index() {
   const [riskLevel, setRiskLevel] = useState<RiskLevel>(3);
   const riskProfile = riskLevelToProfile(riskLevel);
   const [activeOverlays, setActiveOverlays] = useState<OverlayId[]>([]);
+  const [fullscreenChart, setFullscreenChart] = useState(false);
   const [dataSource, setDataSource] = useState<string>('');
   const [secondaryCurrency, setSecCurrency] = useState<string | null>(getSecondaryCurrency());
   const [secondaryPrice, setSecondaryPrice] = useState<number | null>(null);
@@ -415,7 +417,8 @@ export default function Index() {
             {/* Card Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Price Chart — full width */}
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-2 relative">
+                <FullscreenChartButton onClick={() => setFullscreenChart(true)} />
                 <MemoMainChart data={technicalData} timeframeDays={timeframeDays} activeOverlays={activeOverlays} />
               </div>
 
@@ -520,6 +523,18 @@ export default function Index() {
           </div>
         </div>
       </footer>
+
+      {fullscreenChart && technicalData && (
+        <FullscreenChartModal
+          data={technicalData}
+          timeframeDays={timeframeDays}
+          activeOverlays={activeOverlays}
+          setActiveOverlays={setActiveOverlays}
+          forecastMethods={forecastMethods}
+          setForecastMethods={setForecastMethods}
+          onClose={() => setFullscreenChart(false)}
+        />
+      )}
     </div>
   );
 }
