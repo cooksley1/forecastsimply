@@ -254,10 +254,31 @@ serve(async (req) => {
       if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
       const assetTypes = ["crypto", "stocks", "etfs", "forex"];
+      const MARKET_EXCHANGES: Record<string, { label: string; stocks: string; etfs: string }> = {
+        AU: { label: "Australia (ASX)", stocks: "CBA, BHP, CSL, WES, NAB, WBC, ANZ, FMG", etfs: "VGS, VAS, IVV, VDHG, A200" },
+        US: { label: "United States", stocks: "AAPL, MSFT, NVDA, GOOGL, AMZN, TSLA, META, JPM", etfs: "SPY, QQQ, VTI, VOO, ARKK" },
+        UK: { label: "United Kingdom (LSE)", stocks: "SHEL, AZN, HSBA, ULVR, BP, GSK, RIO", etfs: "VWRL, ISF, VUSA, SGLN" },
+        HK: { label: "Hong Kong (HKSE)", stocks: "Tencent, Alibaba, HSBC HK, AIA, Meituan, China Mobile", etfs: "" },
+        EU: { label: "Europe (XETRA)", stocks: "SAP, Siemens, Allianz, Deutsche Telekom, BASF, Mercedes-Benz, BMW, Adidas", etfs: "" },
+        CA: { label: "Canada (TSE)", stocks: "Royal Bank, TD Bank, Shopify, Enbridge, CN Rail", etfs: "" },
+        JP: { label: "Japan (JPX)", stocks: "Toyota, Sony, Keyence, SoftBank, MUFG, Hitachi", etfs: "" },
+      };
+      const allMarkets = Object.keys(MARKET_EXCHANGES);
       const results: string[] = [];
 
       for (const assetType of assetTypes) {
         try {
+          // Build market context for stocks/etfs digests
+          let marketContext = "";
+          if (assetType === "stocks" || assetType === "etfs") {
+            const marketLines = allMarkets.map(mk => {
+              const info = MARKET_EXCHANGES[mk];
+              const items = assetType === "stocks" ? info.stocks : info.etfs;
+              return items ? `- ${info.label}: ${items}` : null;
+            }).filter(Boolean).join("\n");
+            marketContext = `\n\nCover these global markets and their key assets:\n${marketLines}\n\nGroup insights by market/region.`;
+          }
+
           // Generate digest with AI
           const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
@@ -270,20 +291,20 @@ serve(async (req) => {
               messages: [
                 {
                   role: "system",
-                  content: `You are ForecastSimply's market insights AI. Generate a weekly market digest for ${ASSET_BRANDS[assetType]?.name || assetType} covering major market movements, trends, and actionable insights. Today is ${new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}. Be concise, data-driven, and professional.
+                  content: `You are ForecastSimply's market insights AI. Generate a weekly market digest for ${ASSET_BRANDS[assetType]?.name || assetType} covering major market movements, trends, and actionable insights. Today is ${new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}. Be concise, data-driven, and professional.${marketContext}
 
 Format as JSON:
 {
   "greeting": "Short greeting for the week",
   "market_summary": "2-3 sentence overview of the week's ${assetType} market activity",
   "insights": [
-    {"asset": "SYMBOL", "name": "Full Name", "type": "${assetType}", "insight": "Key development this week", "sentiment": "bullish|bearish|neutral"}
+    {"asset": "SYMBOL", "name": "Full Name", "type": "${assetType}", "insight": "Key development this week", "sentiment": "bullish|bearish|neutral", "market": "AU|US|UK|HK|EU|CA|JP"}
   ],
   "recommendations": ["Actionable tip 1", "Actionable tip 2", "Actionable tip 3"],
   "watchlist_alerts": ["Notable alert about a trending asset"]
 }
 
-Include 3-5 insights for the most important ${assetType} assets this week.`,
+Include 3-5 insights for the most important ${assetType} assets this week. For stocks/etfs, include the "market" field to indicate which region the asset belongs to.`,
                 },
                 {
                   role: "user",
@@ -364,10 +385,17 @@ Include 3-5 insights for the most important ${assetType} assets this week.`,
         const typeOrder = ["crypto", "stocks", "etfs", "forex"];
 
         for (const sub of subscribers) {
-          const prefs = (sub.preferences as any) || { crypto: true, stocks: true, etfs: true, forex: true };
+          const prefs = (sub.preferences as any) || { crypto: true, stocks: true, etfs: true, forex: true, markets: ["AU"] };
+          const userMarkets: string[] = Array.isArray(prefs.markets) ? prefs.markets : ["AU"];
           const relevantDigests = approvedDigests
             .filter((d: any) => prefs[d.asset_type] !== false)
-            .sort((a: any, b: any) => typeOrder.indexOf(a.asset_type) - typeOrder.indexOf(b.asset_type));
+            .sort((a: any, b: any) => typeOrder.indexOf(a.asset_type) - typeOrder.indexOf(b.asset_type))
+            // Filter insights within each digest to only include user's selected markets
+            .map((d: any) => {
+              if (d.asset_type === "crypto" || d.asset_type === "forex") return d; // global, no market filter
+              const filteredInsights = (d.insights || []).filter((ins: any) => !ins.market || userMarkets.includes(ins.market));
+              return { ...d, insights: filteredInsights };
+            });
 
           if (!relevantDigests.length) continue;
 
