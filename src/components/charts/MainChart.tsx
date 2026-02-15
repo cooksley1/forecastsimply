@@ -8,9 +8,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Props {
   data: TechnicalData;
+  timeframeDays?: number;
 }
 
-export default function MainChart({ data }: Props) {
+export default function MainChart({ data, timeframeDays = 90 }: Props) {
   const isMobile = useIsMobile();
   const { prices, indicators, forecasts } = data;
 
@@ -80,7 +81,27 @@ export default function MainChart({ data }: Props) {
   const formatTime = (ts: number) => {
     const d = new Date(ts);
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${months[d.getMonth()]} ${d.getDate()}`;
+    if (timeframeDays <= 0.2) {
+      // 1H / 4H — show hours:minutes
+      return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+    } else if (timeframeDays <= 1) {
+      // 24H — show hour
+      return `${d.getHours().toString().padStart(2,'0')}:00`;
+    } else if (timeframeDays <= 7) {
+      // 7D — show day + hour
+      return `${months[d.getMonth()]} ${d.getDate()} ${d.getHours()}h`;
+    } else if (timeframeDays <= 90) {
+      // 30D / 90D — show month + day
+      return `${months[d.getMonth()]} ${d.getDate()}`;
+    } else if (timeframeDays <= 730) {
+      // 1Y / 2Y — show month + year
+      return `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
+    } else {
+      // 5Y / ALL — show year or month+year
+      return timeframeDays > 1825
+        ? `${d.getFullYear()}`
+        : `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
+    }
   };
 
   const primaryForecast = forecasts[0];

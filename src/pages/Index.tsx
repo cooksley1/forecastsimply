@@ -368,8 +368,8 @@ export default function Index() {
                     </button>
                   ))}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-muted-foreground font-mono uppercase">Risk:</span>
+                <div className="flex items-center gap-2 group relative">
+                  <span className="text-[10px] text-muted-foreground font-mono uppercase cursor-help" title="Risk Profile adjusts stop-losses, targets & confidence thresholds across all recommendations and trade setups">Risk ⓘ:</span>
                   <input
                     type="range"
                     min={1}
@@ -380,9 +380,15 @@ export default function Index() {
                     className="w-20 accent-primary"
                   />
                   <span className="text-[10px] font-mono text-primary">{getRiskMeta(riskLevel).icon} {getRiskMeta(riskLevel).label}</span>
+                  <span className="hidden group-hover:block absolute top-full left-0 mt-1 z-50 bg-popover border border-border rounded-lg p-2 text-[10px] text-muted-foreground w-52 shadow-lg">
+                    <strong className="text-foreground">Risk Profile (1–5)</strong><br/>
+                    1 🛡️ Conservative — Tight stops, modest targets, capital preservation<br/>
+                    3 ⚖️ Moderate — Balanced risk/reward<br/>
+                    5 🔥 Aggressive — Wide stops, ambitious targets, max growth
+                  </span>
                 </div>
-                <div className="flex items-center gap-1.5 ml-auto">
-                  <span className="text-[10px] text-muted-foreground font-mono">FC {forecastPercent}%</span>
+                <div className="flex items-center gap-1.5 ml-auto group relative">
+                  <span className="text-[10px] text-muted-foreground font-mono cursor-help" title="Forecast Length controls how far ahead price projections extend as a percentage of historical data">FC ⓘ {forecastPercent}%</span>
                   <input
                     type="range"
                     min={10}
@@ -391,6 +397,10 @@ export default function Index() {
                     onChange={e => setForecastPercent(Number(e.target.value))}
                     className="w-20 accent-primary"
                   />
+                  <span className="hidden group-hover:block absolute top-full right-0 mt-1 z-50 bg-popover border border-border rounded-lg p-2 text-[10px] text-muted-foreground w-48 shadow-lg">
+                    <strong className="text-foreground">Forecast Length</strong><br/>
+                    Controls how far ahead the price projection extends. Higher % = longer forecast but lower confidence.
+                  </span>
                 </div>
               </div>
             </div>
@@ -401,7 +411,7 @@ export default function Index() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Price Chart — full width */}
               <div className="lg:col-span-2">
-                <MemoMainChart data={technicalData} />
+                <MemoMainChart data={technicalData} timeframeDays={timeframeDays} />
               </div>
 
               {/* Volume & RSI */}
