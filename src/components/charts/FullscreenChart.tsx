@@ -232,13 +232,9 @@ export function FullscreenChartModal({
       )}
 
       {/* Chart fills remaining space */}
-      <div className="flex-1 min-h-0 p-1">
-        <div className="h-full [&_.recharts-responsive-container]:!h-full">
-          <div className="bg-card border border-border rounded-xl p-2 h-full flex flex-col">
-            <div className="flex-1 min-h-0">
-              <MainChart data={data} timeframeDays={timeframeDays} activeOverlays={activeOverlays} />
-            </div>
-          </div>
+      <div className="flex-1 min-h-0 p-1 overflow-hidden">
+        <div className="h-full w-full">
+          <MainChart data={data} timeframeDays={timeframeDays} activeOverlays={activeOverlays} fullscreen />
         </div>
       </div>
     </div>

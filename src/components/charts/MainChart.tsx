@@ -12,6 +12,7 @@ interface Props {
   data: TechnicalData;
   timeframeDays?: number;
   activeOverlays?: OverlayId[];
+  fullscreen?: boolean;
 }
 
 function getFormatTime(spanDays: number) {
@@ -40,7 +41,7 @@ function getFormatTooltipLabel(spanDays: number) {
   };
 }
 
-export default function MainChart({ data, timeframeDays = 90, activeOverlays = [] }: Props) {
+export default function MainChart({ data, timeframeDays = 90, activeOverlays = [], fullscreen = false }: Props) {
   const isMobile = useIsMobile();
   const { prices, indicators, forecasts } = data;
   const overlayData = (data as any).overlayData;
@@ -237,7 +238,7 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
   const fibLevels = overlayData?.fibonacci;
 
   return (
-    <div className="bg-card border border-border rounded-xl p-3 sm:p-4">
+    <div className={`bg-card border border-border rounded-xl p-3 sm:p-4 ${fullscreen ? 'h-full flex flex-col' : ''}`}>
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div className="flex items-center gap-2">
           <h3 className="text-foreground font-semibold text-xs sm:text-sm">Price Chart</h3>
@@ -310,9 +311,9 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onWheel={handleWheel}
-        className="touch-none"
+        className={`touch-none ${fullscreen ? 'flex-1 min-h-0' : ''}`}
       >
-        <ResponsiveContainer width="100%" height={isMobile ? 240 : 350}>
+        <ResponsiveContainer width="100%" height={fullscreen ? '100%' : isMobile ? 240 : 350}>
           <ComposedChart data={visibleData} margin={{ top: 5, right: 5, left: isMobile ? 0 : 10, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(216 30% 18% / 0.5)" />
             <XAxis dataKey="time" tickFormatter={formatTime} tick={{ fill: 'hsl(213 20% 55%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono' }} axisLine={{ stroke: 'hsl(216 30% 18%)' }} interval="preserveStartEnd" minTickGap={isMobile ? 40 : 60} />
