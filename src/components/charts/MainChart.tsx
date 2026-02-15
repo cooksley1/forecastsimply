@@ -55,6 +55,11 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
   const showEMACross = activeOverlays.includes('ema_cross');
   const showIchimoku = activeOverlays.includes('ichimoku');
   const showFib = activeOverlays.includes('fibonacci');
+  const hasActiveOverlays = activeOverlays.length > 0;
+
+  // When overlays are active, fade base lines so overlays pop
+  const baseFade = hasActiveOverlays ? 0.25 : 1;
+  const priceFade = hasActiveOverlays ? 0.5 : 1;
 
   const combined = useMemo(() => {
     const chartData = prices.map((p, i) => {
@@ -353,15 +358,15 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
               </>
             )}
 
-            {/* SMAs (always shown) */}
-            <Line dataKey="sma20" stroke="hsl(38 92% 50%)" strokeWidth={1.5} dot={false} name="SMA20" />
-            <Line dataKey="sma50" stroke="hsl(25 95% 53%)" strokeWidth={1.5} dot={false} name="SMA50" />
+            {/* SMAs — fade when overlays active */}
+            <Line dataKey="sma20" stroke={`hsl(38 92% 50% / ${baseFade})`} strokeWidth={hasActiveOverlays ? 1 : 1.5} dot={false} name="SMA20" />
+            <Line dataKey="sma50" stroke={`hsl(25 95% 53% / ${baseFade})`} strokeWidth={hasActiveOverlays ? 1 : 1.5} dot={false} name="SMA50" />
             {hasSma200 && (
-              <Line dataKey="sma200" stroke="hsl(213 20% 55% / 0.6)" strokeWidth={1} strokeDasharray="8 4" dot={false} name="SMA200" />
+              <Line dataKey="sma200" stroke={`hsl(213 20% 55% / ${baseFade * 0.6})`} strokeWidth={1} strokeDasharray="8 4" dot={false} name="SMA200" />
             )}
 
-            {/* Price line */}
-            <Line dataKey="price" stroke="hsl(187 100% 47%)" strokeWidth={2} dot={false} name="Price" />
+            {/* Price line — slightly faded when overlays active so they stand out */}
+            <Line dataKey="price" stroke={`hsl(187 100% 47% / ${priceFade})`} strokeWidth={2} dot={false} name="Price" />
 
             {/* Fibonacci Retracement levels — shown on all screens */}
             {showFib && fibLevels && (
@@ -377,8 +382,8 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
             {/* Support/Resistance */}
             {!isMobile && (
               <>
-                <ReferenceLine y={indicators.support} stroke="hsl(142 71% 45%)" strokeDasharray="6 4" label={{ value: `S: ${fmtPrice(indicators.support)}`, fill: 'hsl(142 71% 45%)', fontSize: 10, fontFamily: 'JetBrains Mono' }} />
-                <ReferenceLine y={indicators.resistance} stroke="hsl(0 84% 60%)" strokeDasharray="6 4" label={{ value: `R: ${fmtPrice(indicators.resistance)}`, fill: 'hsl(0 84% 60%)', fontSize: 10, fontFamily: 'JetBrains Mono' }} />
+                <ReferenceLine y={indicators.support} stroke={`hsl(142 71% 45% / ${baseFade})`} strokeDasharray="6 4" label={{ value: `S: ${fmtPrice(indicators.support)}`, fill: `hsl(142 71% 45% / ${baseFade})`, fontSize: 10, fontFamily: 'JetBrains Mono' }} />
+                <ReferenceLine y={indicators.resistance} stroke={`hsl(0 84% 60% / ${baseFade})`} strokeDasharray="6 4" label={{ value: `R: ${fmtPrice(indicators.resistance)}`, fill: `hsl(0 84% 60% / ${baseFade})`, fontSize: 10, fontFamily: 'JetBrains Mono' }} />
               </>
             )}
 
