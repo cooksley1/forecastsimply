@@ -4,6 +4,7 @@ import WatchlistBar from '@/components/layout/WatchlistBar';
 import SearchBar from '@/components/search/SearchBar';
 import QuickPicks from '@/components/search/QuickPicks';
 import MainChart from '@/components/charts/MainChart';
+import ForecastMethodBar from '@/components/charts/ForecastMethodBar';
 import VolumeChart from '@/components/charts/VolumeChart';
 import RSIChart from '@/components/charts/RSIChart';
 import ChartControls from '@/components/charts/ChartControls';
@@ -40,7 +41,7 @@ export default function Index() {
   const [technicalData, setTechnicalData] = useState<TechnicalData | null>(null);
   const [timeframeDays, setTimeframeDays] = useState(90);
   const [forecastPercent, setForecastPercent] = useState(30);
-  const [forecastMethod, setForecastMethod] = useState<ForecastMethodId>('holt');
+  const [forecastMethods, setForecastMethods] = useState<ForecastMethodId[]>(['holt']);
   const [riskProfile, setRiskProfile] = useState<RiskProfile>('moderate');
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>(() => {
     try { return JSON.parse(localStorage.getItem('sf_watchlist') || '[]'); } catch { return []; }
@@ -102,7 +103,7 @@ export default function Index() {
       const timestamps = prices.map((p: number[]) => p[0]);
       const vols = volumes.map((v: number[]) => v[1]);
 
-      const ta = processTA(closes, timestamps, vols, forecastPercent, 'crypto', forecastMethod);
+      const ta = processTA(closes, timestamps, vols, forecastPercent, 'crypto', forecastMethods);
       currentAssetRef.current = { id: coinId, type: 'crypto' };
       setAssetInfo(info);
       setTechnicalData(ta);
@@ -113,7 +114,7 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, forecastMethod, addToWatchlist]);
+  }, [timeframeDays, forecastPercent, forecastMethods, addToWatchlist]);
 
   /* ── Stocks / ETFs ── */
   const analyseStock = useCallback(async (symbol: string, type: 'stocks' | 'etfs') => {
@@ -136,7 +137,7 @@ export default function Index() {
         exchange: chart.exchange,
       };
 
-      const ta = processTA(chart.closes, chart.timestamps, chart.volumes, forecastPercent, type, forecastMethod);
+      const ta = processTA(chart.closes, chart.timestamps, chart.volumes, forecastPercent, type, forecastMethods);
       currentAssetRef.current = { id: symbol, type };
       setAssetInfo(info);
       setTechnicalData(ta);
@@ -147,7 +148,7 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, forecastMethod, addToWatchlist]);
+  }, [timeframeDays, forecastPercent, forecastMethods, addToWatchlist]);
 
   /* ── Forex ── */
   const analyseForex = useCallback(async (pairId: string) => {
@@ -173,7 +174,7 @@ export default function Index() {
       };
 
       const emptyVols = new Array(chart.closes.length).fill(0);
-      const ta = processTA(chart.closes, chart.timestamps, emptyVols, forecastPercent, 'forex', forecastMethod);
+      const ta = processTA(chart.closes, chart.timestamps, emptyVols, forecastPercent, 'forex', forecastMethods);
       currentAssetRef.current = { id: pairId, type: 'forex' };
       setAssetInfo(info);
       setTechnicalData(ta);
@@ -184,7 +185,7 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, forecastMethod, addToWatchlist]);
+  }, [timeframeDays, forecastPercent, forecastMethods, addToWatchlist]);
 
   /* ── Auto-reanalyse when settings change ── */
   useEffect(() => {
@@ -203,7 +204,7 @@ export default function Index() {
     }, 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeframeDays, forecastPercent, forecastMethod]);
+  }, [timeframeDays, forecastPercent, forecastMethods]);
 
   /* ── Unified handlers ── */
   const handleSearch = useCallback(async (query: string) => {
@@ -326,6 +327,10 @@ export default function Index() {
               <div className="flex flex-col lg:flex-row gap-4">
                 {/* Charts — main area */}
                 <div className="flex-1 min-w-0 space-y-4">
+                  <ForecastMethodBar
+                    selectedMethods={forecastMethods}
+                    setSelectedMethods={setForecastMethods}
+                  />
                   <MainChart data={technicalData} />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <VolumeChart data={technicalData} />
@@ -341,8 +346,6 @@ export default function Index() {
                     setTimeframeDays={setTimeframeDays}
                     forecastPercent={forecastPercent}
                     setForecastPercent={setForecastPercent}
-                    forecastMethod={forecastMethod}
-                    setForecastMethod={setForecastMethod}
                     riskProfile={riskProfile}
                     setRiskProfile={setRiskProfile}
                   />

@@ -1,6 +1,6 @@
 import { sma, rsi, bollingerBands, macd, stochastic, findSupportResistance } from './indicators';
 import { computeSignal } from './signals';
-import { generateForecast } from './forecast';
+import { generateForecast, FORECAST_METHODS } from './forecast';
 import type { ForecastMethodId } from './forecast';
 import { generateRecommendations } from './recommendations';
 import { generateTradeSetups } from './tradeSetup';
@@ -46,13 +46,19 @@ function detectMarketPhase(closes: number[], sma20Arr: number[], sma50Arr: numbe
   return 'Decline';
 }
 
+const FORECAST_COLORS: Record<ForecastMethodId, string> = {
+  holt: 'hsl(142 71% 45%)',
+  ema_momentum: 'hsl(263 91% 66%)',
+  monte_carlo: 'hsl(38 92% 50%)',
+};
+
 export function processTA(
   rawCloses: number[],
   rawTimestamps: number[],
   rawVolumes: number[],
   forecastPercent: number,
   assetType: AssetType,
-  forecastMethod: ForecastMethodId = 'holt'
+  forecastMethods: ForecastMethodId[] = ['holt']
 ): TechnicalData {
   // Downsample
   const maxPoints = 200;
@@ -90,7 +96,21 @@ export function processTA(
 
   const currentPrice = closes[closes.length - 1];
   const signal = computeSignal(indicators, currentPrice);
-  const { forecast, target } = generateForecast(closes, timestamps, forecastPercent, assetType, forecastMethod);
+  const primaryMethod = forecastMethods[0] || 'holt';
+  const { forecast, target } = generateForecast(closes, timestamps, forecastPercent, assetType, primaryMethod);
+
+  // Generate all selected forecasts
+  const forecasts: import('@/types/analysis').NamedForecast[] = forecastMethods.map(methodId => {
+    const info = FORECAST_METHODS.find(m => m.id === methodId);
+    const { forecast: pts, target: t } = generateForecast(closes, timestamps, forecastPercent, assetType, methodId);
+    return {
+      methodId,
+      label: info?.shortName || methodId,
+      points: pts,
+      target: t,
+      color: FORECAST_COLORS[methodId] || 'hsl(142 71% 45%)',
+    };
+  });
   const recommendations = generateRecommendations(signal, currentPrice, support, resistance, target, assetType, currentRsi);
   const tradeSetups = generateTradeSetups(support, resistance, signal);
   const marketPhase = detectMarketPhase(closes, sma20, sma50);
@@ -119,6 +139,7 @@ export function processTA(
     tradeSetups,
     forecast,
     forecastTarget: target,
+    forecasts,
     marketPhase,
     analysisText,
   };
