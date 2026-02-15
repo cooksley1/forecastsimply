@@ -32,18 +32,28 @@ export function FullscreenChartButton({ onClick }: { onClick: () => void }) {
 }
 
 /** Try to lock orientation to landscape via Screen Orientation API */
-async function lockLandscape() {
+async function lockLandscape(): Promise<boolean> {
+  let enteredFullscreen = false;
+
   try {
-    // Request fullscreen first — orientation lock requires fullscreen on most browsers
-    await document.documentElement.requestFullscreen?.();
-  } catch { /* ignore */ }
+    if (document.documentElement.requestFullscreen) {
+      await document.documentElement.requestFullscreen();
+      enteredFullscreen = true;
+    }
+  } catch {
+    // Fullscreen not available (e.g. iframe sandbox)
+  }
 
   try {
     const orientation = screen.orientation as any;
     if (orientation?.lock) {
       await orientation.lock('landscape-primary');
     }
-  } catch { /* not supported or denied */ }
+  } catch {
+    // Orientation lock not supported or denied
+  }
+
+  return enteredFullscreen;
 }
 
 function unlockOrientation() {
@@ -67,15 +77,16 @@ export function FullscreenChartModal({
 }: Props & { onClose: () => void }) {
   const [showControls, setShowControls] = useState(false);
   const [isLandscapeNative, setIsLandscapeNative] = useState(false);
+  const [didEnterFullscreen, setDidEnterFullscreen] = useState(false);
 
   // Lock orientation on mount, unlock on unmount
   useEffect(() => {
     let mounted = true;
 
     const setup = async () => {
-      await lockLandscape();
-      // Check if we successfully got landscape
+      const gotFullscreen = await lockLandscape();
       if (mounted) {
+        setDidEnterFullscreen(gotFullscreen);
         const isLand = window.innerWidth > window.innerHeight ||
           screen.orientation?.type?.includes('landscape');
         setIsLandscapeNative(isLand);
@@ -108,17 +119,18 @@ export function FullscreenChartModal({
     onClose();
   }, [onClose]);
 
-  // Also close on fullscreen exit (e.g. swipe gesture)
+  // Only listen for fullscreen exit if we actually entered fullscreen
   useEffect(() => {
+    if (!didEnterFullscreen) return;
+
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
-        // Small delay to let orientation unlock settle
         setTimeout(() => onClose(), 100);
       }
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, [onClose]);
+  }, [onClose, didEnterFullscreen]);
 
   const toggleOverlay = (id: OverlayId) => {
     if (activeOverlays.includes(id)) {
