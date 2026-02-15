@@ -36,6 +36,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearAllCache();
         queryClient.invalidateQueries();
         console.log('[Auth] Signed in — all data caches cleared');
+
+        // Track login history
+        if (sess?.user) {
+          supabase.from('login_history').insert({
+            user_id: sess.user.id,
+            user_agent: navigator.userAgent,
+          } as any).then(({ error }) => {
+            if (error) console.warn('[Auth] Failed to log sign-in:', error.message);
+          });
+        }
       }
     });
 

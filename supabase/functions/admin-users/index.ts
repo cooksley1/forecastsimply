@@ -99,6 +99,20 @@ Deno.serve(async (req) => {
       const { data: roles } = await adminClient.from('user_roles').select('*').in('user_id', userIds);
       const { data: profiles } = await adminClient.from('profiles').select('*').in('user_id', userIds);
 
+      // Fetch last 5 logins per user
+      const { data: logins } = await adminClient
+        .from('login_history')
+        .select('*')
+        .in('user_id', userIds)
+        .order('signed_in_at', { ascending: false })
+        .limit(250);
+
+      const loginsByUser: Record<string, any[]> = {};
+      for (const l of (logins || [])) {
+        if (!loginsByUser[l.user_id]) loginsByUser[l.user_id] = [];
+        if (loginsByUser[l.user_id].length < 5) loginsByUser[l.user_id].push(l);
+      }
+
       const enriched = data.users.map(u => ({
         id: u.id,
         email: u.email,
@@ -110,6 +124,7 @@ Deno.serve(async (req) => {
         user_metadata: u.user_metadata,
         role: roles?.find(r => r.user_id === u.id)?.role || 'user',
         profile: profiles?.find(p => p.user_id === u.id) || null,
+        login_history: loginsByUser[u.id] || [],
       }));
 
       return new Response(JSON.stringify({ users: enriched, total: data.users.length }), {
