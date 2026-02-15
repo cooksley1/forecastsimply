@@ -66,6 +66,7 @@ export default function Index() {
   const [fullscreenChart, setFullscreenChart] = useState(false);
   const [dataSource, setDataSource] = useState<string>('');
   const [stockExchange, setStockExchange] = useState('ALL');
+  const [dividendOnly, setDividendOnly] = useState(false);
   const [etfExchange, setEtfExchange] = useState('ALL');
   const [secondaryCurrency, setSecCurrency] = useState<string | null>(getSecondaryCurrency());
   const [secondaryPrice, setSecondaryPrice] = useState<number | null>(null);
@@ -291,10 +292,14 @@ export default function Index() {
 
   const getQuickPicks = useCallback(() => {
     if (assetType === 'crypto') return CRYPTO_PICKS.map(p => ({ label: p.sym, id: p.id }));
-    if (assetType === 'stocks') return (STOCK_PICKS_BY_EXCHANGE[stockExchange] || []).map(p => ({ label: p.sym, id: p.sym }));
+    if (assetType === 'stocks') {
+      let picks = STOCK_PICKS_BY_EXCHANGE[stockExchange] || [];
+      if (dividendOnly) picks = picks.filter(p => p.div);
+      return picks.map(p => ({ label: p.sym, id: p.sym }));
+    }
     if (assetType === 'etfs') return (ETF_PICKS_BY_EXCHANGE[etfExchange] || []).map(p => ({ label: p.sym, id: p.sym }));
     return FOREX_PICKS.map(p => ({ label: p.name, id: `${p.from}${p.to}` }));
-  }, [assetType, stockExchange, etfExchange]);
+  }, [assetType, stockExchange, etfExchange, dividendOnly]);
 
   const handleCurrencyChange = useCallback((code: string) => {
     const newVal = code === 'none' ? null : code;
@@ -353,11 +358,26 @@ export default function Index() {
           </nav>
           {assetType === 'forex' && <ForexPairSelector onAnalyse={(pairId) => analyseForex(pairId)} loading={loading} />}
           {(assetType === 'stocks' || assetType === 'etfs') && (
-            <ExchangeSelector
-              exchanges={assetType === 'stocks' ? STOCK_EXCHANGES : ETF_EXCHANGES}
-              selected={assetType === 'stocks' ? stockExchange : etfExchange}
-              onSelect={assetType === 'stocks' ? setStockExchange : setEtfExchange}
-            />
+            <div className="flex items-center gap-2 flex-wrap">
+              <ExchangeSelector
+                exchanges={assetType === 'stocks' ? STOCK_EXCHANGES : ETF_EXCHANGES}
+                selected={assetType === 'stocks' ? stockExchange : etfExchange}
+                onSelect={assetType === 'stocks' ? setStockExchange : setEtfExchange}
+              />
+              {assetType === 'stocks' && (
+                <button
+                  onClick={() => setDividendOnly(d => !d)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                    dividendOnly
+                      ? 'bg-primary/15 border-primary/40 text-primary'
+                      : 'bg-sf-elevated border-border text-foreground hover:border-primary/40'
+                  }`}
+                >
+                  <span>💰</span>
+                  <span>Dividends</span>
+                </button>
+              )}
+            </div>
           )}
           <QuickPicks picks={getQuickPicks()} onSelect={handleQuickPick} loading={loading} />
         </div>
