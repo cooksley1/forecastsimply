@@ -1,7 +1,5 @@
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import PriceAlertDialog from '@/components/alerts/PriceAlertDialog';
-import PriceAlertsList from '@/components/alerts/PriceAlertsList';
-import PushNotificationToggle from '@/components/alerts/PushNotificationToggle';
 import type { SortCriteria } from '@/components/search/QuickPicks';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -623,17 +621,6 @@ export default function Index() {
                 <SocialShare assetInfo={assetInfo} technicalData={technicalData} />
               </div>
             </div>
-
-            {/* Price Alerts Section */}
-            {user && (
-              <div className="bg-card border border-border rounded-xl p-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold text-foreground">🔔 Price Alerts</h3>
-                </div>
-                <PushNotificationToggle />
-                <PriceAlertsList refreshKey={alertRefreshKey} />
-              </div>
-            )}
 
             {/* Timeframe bar */}
             <div className="bg-card border border-border rounded-xl p-3 space-y-2">
