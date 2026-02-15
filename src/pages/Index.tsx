@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
@@ -393,18 +394,9 @@ export default function Index() {
               </div>
             </div>
 
-            {/* Risk & FC bar */}
+            {/* Forecast bar */}
             <div className="bg-card border border-border rounded-xl p-3">
               <div className="flex items-center gap-2 flex-wrap">
-                {/* Risk slider */}
-                <div className="flex items-center gap-1 shrink-0 group relative">
-                  <span className="text-[10px] text-muted-foreground font-mono uppercase cursor-help" title="Risk Profile">Risk</span>
-                  <input type="range" min={1} max={5} step={1} value={riskLevel} onChange={e => setRiskLevel(Number(e.target.value) as RiskLevel)} className="w-16 sm:w-20 accent-primary" />
-                  <span className="text-[10px] font-mono text-primary whitespace-nowrap">{getRiskMeta(riskLevel).icon} {getRiskMeta(riskLevel).label}</span>
-                </div>
-
-                <div className="w-px h-4 bg-border shrink-0" />
-
                 {/* Forecast slider */}
                 <div className="flex items-center gap-1 shrink-0 group relative">
                   <span className="text-[10px] text-muted-foreground font-mono cursor-help" title="How far ahead to project prices">FC</span>
@@ -427,8 +419,19 @@ export default function Index() {
               <MemoVolumeChart data={technicalData} />
               <MemoRSIChart data={technicalData} />
 
-              {/* Recommendations — full width */}
-              <div className="lg:col-span-2">
+              {/* Risk Profile + Recommendations + Trade Setups */}
+              <div className="lg:col-span-2 space-y-4">
+                {/* Risk slider inline */}
+                <div className="bg-card border border-border rounded-xl p-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-[10px] text-muted-foreground font-mono uppercase cursor-help" title="Adjusts trade setup stop-loss/take-profit levels and recommendations">Risk</span>
+                      <input type="range" min={1} max={5} step={1} value={riskLevel} onChange={e => setRiskLevel(Number(e.target.value) as RiskLevel)} className="w-16 sm:w-20 accent-primary" />
+                      <span className="text-[10px] font-mono text-primary whitespace-nowrap">{getRiskMeta(riskLevel).icon} {getRiskMeta(riskLevel).label}</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">— Adjusts trade setups & recommendations</span>
+                  </div>
+                </div>
                 <MemoRecommendationPanel recommendations={technicalData.recommendations} />
               </div>
 
@@ -497,10 +500,20 @@ export default function Index() {
         )}
       </main>
 
-      <footer className="border-t border-border mt-8 py-4 px-3">
-        <div className="max-w-7xl mx-auto text-center space-y-1">
-          <p className="text-[10px] text-muted-foreground font-mono tracking-wider">ANALYSE · FORECAST · DECIDE</p>
-          <p className="text-[10px] text-muted-foreground italic">⚠️ Not financial advice. Always DYOR.</p>
+      <footer className="border-t border-border mt-8 py-6 px-3">
+        <div className="max-w-7xl mx-auto space-y-3">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+            <Link to="/about" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">About</Link>
+            <Link to="/faq" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">FAQ</Link>
+            <Link to="/contact" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">Contact</Link>
+            <Link to="/privacy" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
+            <Link to="/terms" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">Terms</Link>
+            <Link to="/disclaimer" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">Disclaimer</Link>
+          </div>
+          <div className="text-center space-y-1">
+            <p className="text-[10px] text-muted-foreground font-mono tracking-wider">ANALYSE · FORECAST · DECIDE</p>
+            <p className="text-[10px] text-muted-foreground italic">⚠️ Not financial advice. Always DYOR.</p>
+          </div>
         </div>
       </footer>
     </div>
