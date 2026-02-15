@@ -342,7 +342,7 @@ export default function Index() {
             ]).map(t => (
               <button
                 key={t.key}
-                onClick={() => { setAssetType(t.key); setTechnicalData(null); setAssetInfo(null); setError(null); currentAssetRef.current = null; setDataSource(''); }}
+                onClick={() => { setAssetType(t.key); setError(null); currentAssetRef.current = null; setDataSource(''); }}
                 className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   assetType === t.key
                     ? 'bg-primary/15 text-primary'
