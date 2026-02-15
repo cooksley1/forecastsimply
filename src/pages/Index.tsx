@@ -499,7 +499,7 @@ export default function Index() {
 
       <footer className="border-t border-border mt-8 py-4 px-3">
         <div className="max-w-7xl mx-auto text-center space-y-1">
-          <p className="text-xs text-muted-foreground font-mono">Signal Forge v6.1 — Multi-Asset Investment Analysis</p>
+          <p className="text-[10px] text-muted-foreground font-mono tracking-wider">ANALYSE · FORECAST · DECIDE</p>
           <p className="text-[10px] text-muted-foreground italic">⚠️ Not financial advice. Always DYOR.</p>
         </div>
       </footer>

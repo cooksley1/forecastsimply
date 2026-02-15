@@ -138,9 +138,9 @@ export default function IndicatorsPanel({ indicators, currentPrice }: Props) {
                 <span className="text-xs font-mono text-foreground">{row.value}</span>
                 {row.zone && (
                   <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                    row.zone === 'Oversold' || row.zone === 'Above' ? 'bg-sf-green/10 text-positive' :
-                    row.zone === 'Overbought' || row.zone === 'Below' ? 'bg-sf-red/10 text-negative' :
-                    'bg-sf-amber/10 text-neutral-signal'
+                    row.zone === 'Oversold' || row.zone === 'Above' ? 'bg-fs-green/10 text-positive' :
+                    row.zone === 'Overbought' || row.zone === 'Below' ? 'bg-fs-red/10 text-negative' :
+                    'bg-fs-amber/10 text-neutral-signal'
                   }`}>
                     {row.zone}
                   </span>
