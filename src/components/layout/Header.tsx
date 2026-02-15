@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
-import { clearAllCache } from '@/services/cache';
 import ApiKeySettings from '@/components/settings/ApiKeySettings';
 import LoginDialog from '@/components/auth/LoginDialog';
 import AccountPanel from '@/components/account/AccountPanel';
@@ -25,26 +23,12 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { isAdmin } = useAdminCheck();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const hasKey = !!getStoredApiKey();
   const logoHeader = theme === 'dark' ? logoHeaderDark : logoHeaderLight;
-
-  const [refreshStatus, setRefreshStatus] = useState('');
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    setRefreshStatus('Clearing cache…');
-    clearAllCache();
-    setRefreshStatus('Fetching fresh data…');
-    await queryClient.invalidateQueries();
-    setRefreshStatus('Done ✓');
-    setTimeout(() => { setRefreshing(false); setRefreshStatus(''); }, 1200);
-  };
 
   return (
     <>
@@ -54,25 +38,6 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
             <img src={logoHeader} alt="ForecastSimply" className="h-7 sm:h-9 shrink-0" />
 
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              {/* Refresh status toast */}
-              {refreshing && refreshStatus && (
-                <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-medium text-primary animate-pulse">
-                  <span className="inline-block w-2.5 h-2.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                  {refreshStatus}
-                </span>
-              )}
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className={`p-1.5 sm:p-2 rounded-lg border transition-all text-sm ${
-                  refreshing
-                    ? 'border-primary/30 bg-primary/10 text-primary'
-                    : 'border-border text-muted-foreground hover:text-foreground hover:border-primary/50'
-                }`}
-                title="Refresh all data"
-              >
-                <span className={refreshing ? 'inline-block animate-spin' : ''}>🔄</span>
-              </button>
               {onWatchlistSelect && (
                 <WatchlistDropdown
                   items={watchlist}
