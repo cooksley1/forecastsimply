@@ -15,7 +15,8 @@ function daysToRange(days: number): { range: string; interval: string } {
   if (days <= 180) return { range: '6mo', interval: '1d' };
   if (days <= 365) return { range: '1y', interval: '1d' };
   if (days <= 730) return { range: '2y', interval: '1wk' };
-  return { range: '5y', interval: '1wk' };
+  if (days <= 1825) return { range: '5y', interval: '1wk' };
+  return { range: 'max', interval: '1mo' };
 }
 
 async function fetchWithProxy(url: string): Promise<any> {

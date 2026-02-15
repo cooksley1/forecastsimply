@@ -1,4 +1,6 @@
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/layout/Header';
 import SearchBar from '@/components/search/SearchBar';
 import QuickPicks from '@/components/search/QuickPicks';
@@ -44,6 +46,7 @@ const MemoTopPicks = memo(TopPicks);
 const MemoBreakoutFinder = memo(BreakoutFinder);
 
 export default function Index() {
+  const { user } = useAuth();
   const [assetType, setAssetType] = useState<AssetType>('crypto');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +86,25 @@ export default function Index() {
     }
   }, []);
 
-  /* ── Crypto ── */
+  const saveToHistory = useCallback(async (info: AssetInfo, ta: TechnicalData, source: string) => {
+    if (!user) return;
+    try {
+      await supabase.from('analysis_history').insert({
+        user_id: user.id,
+        asset_id: info.id,
+        asset_type: info.assetType,
+        symbol: info.symbol,
+        name: info.name,
+        price: info.price,
+        signal_label: ta.signal.label,
+        signal_score: ta.signal.score,
+        data_source: source,
+        market_phase: ta.marketPhase,
+      });
+    } catch { /* silent */ }
+  }, [user]);
+
+
   const analyseCrypto = useCallback(async (coinId: string) => {
     setLoading(true);
     setError(null);
@@ -132,12 +153,13 @@ export default function Index() {
       setTechnicalData(ta);
       addToWatchlist(info);
       updateSecondaryPrice(livePrice);
+      saveToHistory(info, ta, result.source);
     } catch (e: any) {
       setError(e.message || 'Failed to fetch data. Try again.');
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, addToWatchlist, updateSecondaryPrice]);
+  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, addToWatchlist, updateSecondaryPrice, saveToHistory]);
 
   /* ── Stocks / ETFs ── */
   const analyseStock = useCallback(async (symbol: string, type: 'stocks' | 'etfs') => {
@@ -168,12 +190,13 @@ export default function Index() {
       setTechnicalData(ta);
       addToWatchlist(info);
       updateSecondaryPrice(lastPrice);
+      saveToHistory(info, ta, result.source);
     } catch (e: any) {
       setError(e.message || `Failed to fetch ${symbol}.`);
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, addToWatchlist, updateSecondaryPrice]);
+  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, addToWatchlist, updateSecondaryPrice, saveToHistory]);
 
   /* ── Forex ── */
   const analyseForex = useCallback(async (pairId: string) => {
@@ -195,12 +218,13 @@ export default function Index() {
       setAssetInfo(info);
       setTechnicalData(ta);
       addToWatchlist(info);
+      saveToHistory(info, ta, result.source);
     } catch (e: any) {
       setError(e.message || 'Failed to fetch forex data. Try again.');
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, addToWatchlist]);
+  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, addToWatchlist, saveToHistory]);
 
   /* ── Auto-reanalyse ── */
   useEffect(() => {
