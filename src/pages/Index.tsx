@@ -278,13 +278,15 @@ export default function Index() {
   /* ── Auto-scroll to signal when analysis loads ── */
   useEffect(() => {
     if (technicalData && assetInfo && !loading) {
-      requestAnimationFrame(() => {
+      // Use setTimeout to wait for subnav sections row to render (it appears when showAnalysis is true)
+      const timer = setTimeout(() => {
         const el = document.getElementById('section-signal');
         if (el) {
-          const y = el.getBoundingClientRect().top + window.scrollY - 140;
-          window.scrollTo({ top: y, behavior: 'smooth' });
+          const y = el.getBoundingClientRect().top + window.scrollY - 160;
+          window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
         }
-      });
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [technicalData, assetInfo, loading]);
 
