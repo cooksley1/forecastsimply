@@ -122,7 +122,7 @@ export default function BreakoutFinder({ onSelect }: Props) {
 
           if (prices.length < 30) continue;
 
-          const ta = processTA(prices, timestamps, vols, 30, 'crypto', 'holt');
+          const ta = processTA(prices, timestamps, vols, 30, 'crypto', ['holt']);
           // Use DIA price if available (exchange-aggregated, most recent), else chart last price
           const price = diaPrice?.price || prices[prices.length - 1];
 

@@ -1,6 +1,3 @@
-import { FORECAST_METHODS } from '@/analysis/forecast';
-import type { ForecastMethodId } from '@/analysis/forecast';
-
 export type RiskProfile = 'conservative' | 'moderate' | 'aggressive';
 
 interface Props {
@@ -9,8 +6,6 @@ interface Props {
   setTimeframeDays: (d: number) => void;
   forecastPercent: number;
   setForecastPercent: (p: number) => void;
-  forecastMethod: ForecastMethodId;
-  setForecastMethod: (m: ForecastMethodId) => void;
   riskProfile: RiskProfile;
   setRiskProfile: (r: RiskProfile) => void;
 }
@@ -24,11 +19,8 @@ const RISK_PROFILES: { id: RiskProfile; label: string; icon: string; desc: strin
 export default function ChartControls({
   timeframes, timeframeDays, setTimeframeDays,
   forecastPercent, setForecastPercent,
-  forecastMethod, setForecastMethod,
   riskProfile, setRiskProfile,
 }: Props) {
-  const activeMethod = FORECAST_METHODS.find(m => m.id === forecastMethod) || FORECAST_METHODS[0];
-
   return (
     <div className="bg-sf-card border border-border rounded-xl p-3 space-y-4 lg:sticky lg:top-4">
       {/* Risk Profile */}
@@ -90,34 +82,6 @@ export default function ChartControls({
           <span className="text-[10px] sm:text-xs font-mono text-foreground w-8 text-right">{forecastPercent}%</span>
         </div>
         <p className="text-[9px] text-muted-foreground/70">How far ahead to project</p>
-      </div>
-
-      {/* Forecast Method */}
-      <div className="space-y-1.5">
-        <span className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Method</span>
-        <div className="flex flex-col gap-1">
-          {FORECAST_METHODS.map(m => (
-            <button
-              key={m.id}
-              onClick={() => setForecastMethod(m.id)}
-              className={`text-left px-2 py-1.5 rounded-lg border text-[10px] sm:text-xs transition-all ${
-                forecastMethod === m.id
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground'
-              }`}
-            >
-              <div className="font-medium">{m.shortName}</div>
-              <div className="text-[9px] text-muted-foreground/70">{m.accuracy.split('.')[0]}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Active method info */}
-      <div className="border-t border-border pt-3 space-y-1">
-        <p className="text-[10px] text-primary font-medium">📐 {activeMethod.shortName}</p>
-        <p className="text-[9px] text-muted-foreground leading-relaxed">{activeMethod.description}</p>
-        <p className="text-[9px] text-muted-foreground/70">⚠️ {activeMethod.limitations}</p>
       </div>
     </div>
   );

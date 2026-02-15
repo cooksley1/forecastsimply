@@ -12,7 +12,7 @@ interface Props {
 
 export default function MainChart({ data }: Props) {
   const isMobile = useIsMobile();
-  const { prices, indicators, forecast } = data;
+  const { prices, indicators, forecasts } = data;
 
   const chartData = prices.map((p, i) => ({
     time: p.timestamp,
@@ -24,31 +24,77 @@ export default function MainChart({ data }: Props) {
     volume: p.volume,
   }));
 
-  const forecastData = forecast.map(f => ({
-    time: f.timestamp,
-    forecast: f.value,
-    fcUpper: f.upper,
-    fcLower: f.lower,
-  }));
+  // Build forecast data with a key per method
+  const lastPrice = prices[prices.length - 1];
+  const maxForecastLen = Math.max(0, ...forecasts.map(f => f.points.length));
+
+  // Bridge point connecting price to forecast
+  const bridgePoint: Record<string, any> = {
+    time: lastPrice.timestamp,
+    price: lastPrice.close,
+    sma20: undefined, sma50: undefined, bbUpper: undefined, bbLower: undefined, volume: undefined,
+  };
+  forecasts.forEach(f => {
+    bridgePoint[`fc_${f.methodId}`] = lastPrice.close;
+    bridgePoint[`fcU_${f.methodId}`] = lastPrice.close;
+    bridgePoint[`fcL_${f.methodId}`] = lastPrice.close;
+  });
+
+  const forecastPoints: Record<string, any>[] = [];
+  for (let i = 0; i < maxForecastLen; i++) {
+    const point: Record<string, any> = {
+      time: 0,
+      price: undefined,
+      sma20: undefined, sma50: undefined, bbUpper: undefined, bbLower: undefined, volume: undefined,
+    };
+    forecasts.forEach(f => {
+      if (i < f.points.length) {
+        point.time = f.points[i].timestamp;
+        point[`fc_${f.methodId}`] = f.points[i].value;
+        point[`fcU_${f.methodId}`] = f.points[i].upper;
+        point[`fcL_${f.methodId}`] = f.points[i].lower;
+      }
+    });
+    forecastPoints.push(point);
+  }
 
   const combined = [
-    ...chartData.map(d => ({ ...d, forecast: undefined as number | undefined, fcUpper: undefined as number | undefined, fcLower: undefined as number | undefined })),
-    { time: prices[prices.length - 1].timestamp, price: prices[prices.length - 1].close, forecast: prices[prices.length - 1].close, sma20: undefined, sma50: undefined, bbUpper: undefined, bbLower: undefined, volume: undefined, fcUpper: prices[prices.length - 1].close, fcLower: prices[prices.length - 1].close },
-    ...forecastData.map(d => ({ ...d, price: undefined as number | undefined, sma20: undefined, sma50: undefined, bbUpper: undefined, bbLower: undefined, volume: undefined })),
+    ...chartData.map(d => {
+      const row: Record<string, any> = { ...d };
+      forecasts.forEach(f => {
+        row[`fc_${f.methodId}`] = undefined;
+        row[`fcU_${f.methodId}`] = undefined;
+        row[`fcL_${f.methodId}`] = undefined;
+      });
+      return row;
+    }),
+    bridgePoint,
+    ...forecastPoints,
   ];
 
   const formatTime = (ts: number) => {
     const d = new Date(ts);
-    const day = d.getDate();
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${months[d.getMonth()]} ${day}`;
+    return `${months[d.getMonth()]} ${d.getDate()}`;
   };
+
+  // Only show confidence band for the first (primary) forecast to avoid clutter
+  const primaryForecast = forecasts[0];
 
   return (
     <div className="bg-sf-card border border-border rounded-xl p-3 sm:p-4">
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <h3 className="text-foreground font-semibold text-xs sm:text-sm">Price Chart</h3>
-        <span className="text-[10px] sm:text-xs font-mono px-2 py-0.5 rounded bg-accent/15 text-accent">{data.marketPhase}</span>
+        <div className="flex items-center gap-2">
+          {/* Legend for active forecast methods */}
+          {forecasts.map(f => (
+            <span key={f.methodId} className="flex items-center gap-1 text-[9px] sm:text-[10px] font-mono">
+              <span className="w-3 h-0.5 rounded-full inline-block" style={{ backgroundColor: f.color }} />
+              {f.label}
+            </span>
+          ))}
+          <span className="text-[10px] sm:text-xs font-mono px-2 py-0.5 rounded bg-accent/15 text-accent">{data.marketPhase}</span>
+        </div>
       </div>
       <ResponsiveContainer width="100%" height={isMobile ? 240 : 350}>
         <ComposedChart data={combined} margin={{ top: 5, right: 5, left: isMobile ? 0 : 10, bottom: 5 }}>
@@ -73,9 +119,27 @@ export default function MainChart({ data }: Props) {
               <ReferenceLine y={indicators.resistance} stroke="hsl(0 84% 60%)" strokeDasharray="6 4" label={{ value: `R: ${fmtPrice(indicators.resistance)}`, fill: 'hsl(0 84% 60%)', fontSize: 10, fontFamily: 'JetBrains Mono' }} />
             </>
           )}
-          <Area dataKey="fcUpper" stroke="none" fill="hsl(263 91% 66% / 0.08)" />
-          <Area dataKey="fcLower" stroke="none" fill="transparent" />
-          <Line dataKey="forecast" stroke="hsl(142 71% 45%)" strokeWidth={2.5} strokeDasharray="6 4" dot={false} name="Forecast" />
+
+          {/* Confidence band for primary forecast only */}
+          {primaryForecast && (
+            <>
+              <Area dataKey={`fcU_${primaryForecast.methodId}`} stroke="none" fill={`${primaryForecast.color.replace(')', ' / 0.06)')}`} />
+              <Area dataKey={`fcL_${primaryForecast.methodId}`} stroke="none" fill="transparent" />
+            </>
+          )}
+
+          {/* Forecast lines for all selected methods */}
+          {forecasts.map(f => (
+            <Line
+              key={f.methodId}
+              dataKey={`fc_${f.methodId}`}
+              stroke={f.color}
+              strokeWidth={2.5}
+              strokeDasharray="6 4"
+              dot={false}
+              name={f.label}
+            />
+          ))}
         </ComposedChart>
       </ResponsiveContainer>
     </div>

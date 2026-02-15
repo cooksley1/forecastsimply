@@ -58,6 +58,14 @@ export interface ForecastPoint {
   lower: number;
 }
 
+export interface NamedForecast {
+  methodId: string;
+  label: string;
+  points: ForecastPoint[];
+  target: number;
+  color: string;
+}
+
 export interface TechnicalData {
   prices: { timestamp: number; close: number; volume?: number }[];
   indicators: Indicators;
@@ -66,6 +74,7 @@ export interface TechnicalData {
   tradeSetups: TradeSetup[];
   forecast: ForecastPoint[];
   forecastTarget: number;
+  forecasts: NamedForecast[];
   marketPhase: string;
   analysisText: string;
 }
