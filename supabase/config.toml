@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.send-digest]
 verify_jwt = false
+
+[functions.check-price-alerts]
+verify_jwt = false
+
+[functions.get-vapid-key]
+verify_jwt = false
