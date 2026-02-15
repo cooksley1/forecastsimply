@@ -239,7 +239,7 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
 
   return (
     <div className={`bg-card border border-border rounded-xl p-3 sm:p-4 ${fullscreen ? 'h-full flex flex-col' : ''}`}>
-      <div className="flex items-center justify-between mb-2 sm:mb-3">
+      <div className="flex items-center justify-between mb-2 sm:mb-3 pr-8 sm:pr-0">
         <div className="flex items-center gap-2">
           <h3 className="text-foreground font-semibold text-xs sm:text-sm">Price Chart</h3>
           {isZoomed && (
