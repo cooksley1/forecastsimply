@@ -109,3 +109,43 @@ export function findSupportResistance(closes: number[]) {
 
   return { support, resistance };
 }
+
+/** ATR approximation from close prices (when OHLC not available) */
+export function calcATR(closes: number[], period = 14): number[] {
+  const tr: number[] = [0];
+  for (let i = 1; i < closes.length; i++) {
+    tr.push(Math.abs(closes[i] - closes[i - 1]));
+  }
+  const atr: number[] = [];
+  for (let i = 0; i < tr.length; i++) {
+    if (i < period) { atr.push(NaN); continue; }
+    let sum = 0;
+    for (let j = i - period + 1; j <= i; j++) sum += tr[j];
+    atr.push(sum / period);
+  }
+  return atr;
+}
+
+/** On-Balance Volume */
+export function calcOBV(closes: number[], volumes: number[]): number[] {
+  const obv: number[] = [0];
+  for (let i = 1; i < closes.length; i++) {
+    if (closes[i] > closes[i - 1]) obv.push(obv[i - 1] + (volumes[i] || 0));
+    else if (closes[i] < closes[i - 1]) obv.push(obv[i - 1] - (volumes[i] || 0));
+    else obv.push(obv[i - 1]);
+  }
+  return obv;
+}
+
+/** Volume Weighted Average Price */
+export function calcVWAP(closes: number[], volumes: number[]): number[] {
+  const vwap: number[] = [];
+  let cumPV = 0;
+  let cumVol = 0;
+  for (let i = 0; i < closes.length; i++) {
+    cumPV += closes[i] * (volumes[i] || 0);
+    cumVol += (volumes[i] || 0);
+    vwap.push(cumVol > 0 ? cumPV / cumVol : closes[i]);
+  }
+  return vwap;
+}

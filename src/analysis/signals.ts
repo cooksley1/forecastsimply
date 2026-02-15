@@ -1,9 +1,44 @@
 import type { Signal, SignalLabel, SignalColor } from '@/types/analysis';
 import type { Indicators } from '@/types/analysis';
+import type { AssetType } from '@/types/assets';
 
-export function computeSignal(indicators: Indicators, currentPrice: number): Signal {
+function avg(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+function detectOBVDivergence(closes: number[], obv: number[], lookback = 20): number {
+  if (closes.length < lookback || obv.length < lookback) return 0;
+
+  const recentCloses = closes.slice(-lookback);
+  const recentOBV = obv.slice(-lookback);
+  const halfLen = Math.floor(lookback / 2);
+
+  const priceFirst = avg(recentCloses.slice(0, halfLen));
+  const priceSecond = avg(recentCloses.slice(halfLen));
+  const obvFirst = avg(recentOBV.slice(0, halfLen));
+  const obvSecond = avg(recentOBV.slice(halfLen));
+
+  const priceTrend = priceSecond > priceFirst ? 1 : -1;
+  const obvTrend = obvSecond > obvFirst ? 1 : -1;
+
+  // Bearish divergence: price rising but OBV falling
+  if (priceTrend > 0 && obvTrend < 0) return -1;
+  // Bullish divergence: price falling but OBV rising
+  if (priceTrend < 0 && obvTrend > 0) return 1;
+
+  return 0;
+}
+
+export function computeSignal(
+  indicators: Indicators,
+  currentPrice: number,
+  closes?: number[],
+  volumes?: number[],
+  assetType?: AssetType,
+): Signal {
   let score = 0;
-  const { currentRsi, sma20, sma50, bbUpper, bbLower, macdHistogram, stochasticK } = indicators;
+  const { currentRsi, sma20, sma50, bbUpper, bbLower, macdHistogram, stochasticK, obv, vwap, sma200 } = indicators;
 
   // RSI
   if (currentRsi < 25) score += 3;
@@ -46,6 +81,19 @@ export function computeSignal(indicators: Indicators, currentPrice: number): Sig
   if (lastK !== undefined) {
     if (lastK < 20) score += 1;
     else if (lastK > 80) score -= 1;
+  }
+
+  // OBV divergence (if volumes available)
+  if (obv && obv.length > 0 && closes && volumes && volumes.some(v => v > 0)) {
+    const obvScore = detectOBVDivergence(closes, obv);
+    score += obvScore;
+  }
+
+  // VWAP (stocks & ETFs only)
+  if ((assetType === 'stocks' || assetType === 'etfs') && vwap && vwap.length > 0) {
+    const currentVWAP = vwap[vwap.length - 1];
+    if (currentPrice > currentVWAP * 1.005) score += 1;
+    else if (currentPrice < currentVWAP * 0.995) score -= 1;
   }
 
   // Clamp
