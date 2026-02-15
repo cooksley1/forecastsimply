@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { AssetType } from '@/types/assets';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAdminCheck } from '@/hooks/useAdminCheck';
 import ApiKeySettings from '@/components/settings/ApiKeySettings';
 import LoginDialog from '@/components/auth/LoginDialog';
 import { getStoredApiKey } from '@/components/settings/ApiKeySettings';
@@ -23,6 +25,8 @@ export default function Header({ active, onSelect }: Props) {
   const [loginOpen, setLoginOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { isAdmin } = useAdminCheck();
+  const navigate = useNavigate();
   const hasKey = !!getStoredApiKey();
 
   return (
@@ -42,6 +46,16 @@ export default function Header({ active, onSelect }: Props) {
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* Admin link */}
+              {isAdmin && (
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="p-1.5 sm:p-2 rounded-lg border border-destructive/30 text-destructive bg-destructive/10 hover:bg-destructive/20 transition-all text-sm"
+                  title="Admin Panel"
+                >
+                  🛡️
+                </button>
+              )}
               {/* Theme toggle */}
               <button
                 onClick={toggleTheme}
