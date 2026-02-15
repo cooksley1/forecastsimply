@@ -8,7 +8,7 @@ interface PickItem {
   signal?: { label: string; score: number; confidence: number };
 }
 
-export type SortCriteria = 'default' | 'yield' | 'signal-best' | 'signal-worst' | 'name';
+export type SortCriteria = 'default' | 'yield' | 'signal-best' | 'signal-worst' | 'confidence' | 'growth' | 'strong-buys' | 'buy-above';
 
 interface Props {
   picks: PickItem[];
@@ -47,12 +47,15 @@ function yieldBadge(y: number): { cls: string } {
   return { cls: 'text-muted-foreground/50' };
 }
 
-const SORT_OPTIONS: { value: SortCriteria; label: string; icon: string }[] = [
+const SORT_OPTIONS: { value: SortCriteria; label: string; icon: string; needsRank?: boolean }[] = [
   { value: 'default', label: 'Default', icon: '📋' },
-  { value: 'signal-best', label: 'Best Signal', icon: '🟢' },
-  { value: 'signal-worst', label: 'Worst Signal', icon: '🔴' },
-  { value: 'yield', label: 'Dividend Yield', icon: '💰' },
-  { value: 'name', label: 'Name A–Z', icon: '🔤' },
+  { value: 'signal-best', label: 'Best Signal', icon: '🟢', needsRank: true },
+  { value: 'signal-worst', label: 'Worst Signal', icon: '🔴', needsRank: true },
+  { value: 'confidence', label: 'Highest Confidence', icon: '🎯', needsRank: true },
+  { value: 'strong-buys', label: 'Strong Buys Only', icon: '💪', needsRank: true },
+  { value: 'buy-above', label: 'All Buys', icon: '📈', needsRank: true },
+  { value: 'yield', label: 'Highest Yield', icon: '💰' },
+  { value: 'growth', label: 'Growth (Low/No Div)', icon: '🌱' },
 ];
 
 export default function QuickPicks({
@@ -70,16 +73,25 @@ export default function QuickPicks({
   const [expanded, setExpanded] = useState(false);
   const hasRanked = picks.some(p => p.signal);
 
-  // Sort picks
-  const sorted = [...picks];
+  // Sort & filter picks
+  let sorted = [...picks];
   if (sortBy === 'yield') {
     sorted.sort((a, b) => (b.divYield ?? 0) - (a.divYield ?? 0));
-  } else if (sortBy === 'signal-best' && hasRanked) {
+  } else if (sortBy === 'signal-best') {
     sorted.sort((a, b) => (b.signal?.score ?? -999) - (a.signal?.score ?? -999));
-  } else if (sortBy === 'signal-worst' && hasRanked) {
+  } else if (sortBy === 'signal-worst') {
     sorted.sort((a, b) => (a.signal?.score ?? 999) - (b.signal?.score ?? 999));
-  } else if (sortBy === 'name') {
-    sorted.sort((a, b) => (a.name ?? a.label).localeCompare(b.name ?? b.label));
+  } else if (sortBy === 'confidence') {
+    sorted.sort((a, b) => (b.signal?.confidence ?? 0) - (a.signal?.confidence ?? 0));
+  } else if (sortBy === 'strong-buys') {
+    sorted = sorted.filter(p => p.signal?.label === 'Strong Buy');
+    sorted.sort((a, b) => (b.signal?.confidence ?? 0) - (a.signal?.confidence ?? 0));
+  } else if (sortBy === 'buy-above') {
+    sorted = sorted.filter(p => p.signal?.label === 'Strong Buy' || p.signal?.label === 'Buy');
+    sorted.sort((a, b) => (b.signal?.score ?? 0) - (a.signal?.score ?? 0));
+  } else if (sortBy === 'growth') {
+    sorted = sorted.filter(p => (p.divYield ?? 0) < 1);
+    sorted.sort((a, b) => (a.divYield ?? 0) - (b.divYield ?? 0));
   }
 
   const visible = expanded ? sorted : sorted.slice(0, maxVisible);
@@ -110,14 +122,20 @@ export default function QuickPicks({
             <div className="relative">
               <select
                 value={sortBy}
-                onChange={e => onSortChange(e.target.value as SortCriteria)}
+                onChange={e => {
+                  const val = e.target.value as SortCriteria;
+                  onSortChange(val);
+                  // Auto-trigger ranking if selecting a rank-dependent sort and not yet ranked
+                  const opt = SORT_OPTIONS.find(o => o.value === val);
+                  if (opt?.needsRank && !hasRanked && onRank && !ranking) {
+                    onRank();
+                  }
+                }}
                 className="appearance-none pl-2 pr-7 py-1.5 rounded-lg border border-border bg-sf-elevated text-xs font-medium text-foreground cursor-pointer hover:border-primary/40 transition-all"
               >
                 {SORT_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value} disabled={
-                    (o.value === 'signal-best' || o.value === 'signal-worst') && !hasRanked
-                  }>
-                    {o.icon} {o.label}{(o.value === 'signal-best' || o.value === 'signal-worst') && !hasRanked ? ' (rank first)' : ''}
+                  <option key={o.value} value={o.value}>
+                    {o.icon} {o.label}{o.needsRank && !hasRanked ? ' ⟡' : ''}
                   </option>
                 ))}
               </select>
@@ -133,6 +151,11 @@ export default function QuickPicks({
         </div>
 
         {/* Card grid */}
+        {sorted.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic py-3 text-center">
+            {hasRanked ? 'No stocks match this filter. Try a different sort.' : 'No stocks available for this filter.'}
+          </p>
+        ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {visible.map((p, i) => (
             <button
@@ -176,6 +199,7 @@ export default function QuickPicks({
             </button>
           ))}
         </div>
+        )}
 
         {/* Show more / less */}
         {hasMore && (
