@@ -52,7 +52,7 @@ export default function SearchBar({ onSearch, placeholder = 'Search...', loading
       <button
         onClick={handleRefresh}
         disabled={refreshing}
-        className={`p-2.5 rounded-lg border transition-all text-sm shrink-0 ${
+        className={`flex items-center gap-1 px-2.5 py-2.5 rounded-lg border transition-all text-xs font-medium shrink-0 ${
           refreshing
             ? 'border-primary/30 bg-primary/10 text-primary'
             : 'border-border text-muted-foreground hover:text-foreground hover:border-primary/50'
@@ -60,6 +60,7 @@ export default function SearchBar({ onSearch, placeholder = 'Search...', loading
         title="Refresh all data"
       >
         <span className={refreshing ? 'inline-block animate-spin' : ''}>🔄</span>
+        <span className="hidden sm:inline">{refreshing ? 'Refreshing…' : 'Refresh'}</span>
       </button>
     </div>
   );
