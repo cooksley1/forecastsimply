@@ -70,6 +70,7 @@ export default function Index() {
   const riskProfile = riskLevelToProfile(riskLevel);
   const [activeOverlays, setActiveOverlays] = useState<OverlayId[]>([]);
   const [fullscreenChart, setFullscreenChart] = useState(false);
+  const isNewSearchRef = useRef(false);
   const [dataSource, setDataSource] = useState<string>('');
   const [stockExchange, setStockExchange] = useState('US');
   const [dividendOnly, setDividendOnly] = useState(false);
@@ -141,6 +142,7 @@ export default function Index() {
 
 
   const analyseCrypto = useCallback(async (coinId: string) => {
+    isNewSearchRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -198,6 +200,7 @@ export default function Index() {
 
   /* ── Stocks / ETFs ── */
   const analyseStock = useCallback(async (symbol: string, type: 'stocks' | 'etfs') => {
+    isNewSearchRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -235,6 +238,7 @@ export default function Index() {
 
   /* ── Forex ── */
   const analyseForex = useCallback(async (pairId: string) => {
+    isNewSearchRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -275,10 +279,10 @@ export default function Index() {
     return () => clearTimeout(timer);
   }, [timeframeDays, forecastPercent, forecastMethods, riskLevel]);
 
-  /* ── Auto-scroll to signal when analysis loads ── */
+  /* ── Auto-scroll to signal when analysis loads (only on fresh search, not param tweaks) ── */
   useEffect(() => {
-    if (technicalData && assetInfo && !loading) {
-      // Use setTimeout to wait for subnav sections row to render (it appears when showAnalysis is true)
+    if (technicalData && assetInfo && !loading && isNewSearchRef.current) {
+      isNewSearchRef.current = false;
       const timer = setTimeout(() => {
         const el = document.getElementById('section-signal');
         if (el) {
