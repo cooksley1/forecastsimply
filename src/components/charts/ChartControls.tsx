@@ -97,6 +97,21 @@ export default function ChartControls({
             </button>
           ))}
         </div>
+        {/* Timeframe explanation */}
+        <div className="bg-muted/40 border border-border/50 rounded-lg p-2 space-y-1">
+          <p className="text-[9px] sm:text-[10px] text-muted-foreground leading-relaxed">
+            <span className="font-semibold text-foreground/80">⚠️ Why does advice change?</span>{' '}
+            {timeframeDays <= 7
+              ? 'Short timeframes (≤1W) capture recent momentum — ideal for day/swing trades. Indicators react quickly, signals flip faster, and noise is higher.'
+              : timeframeDays <= 30
+              ? 'Medium timeframes (1M) balance trend clarity with recency. Good for swing trades and position entries. Signals are more stable than shorter windows.'
+              : timeframeDays <= 90
+              ? '3-month windows reveal intermediate trends and mean-reversion setups. Indicators smooth out daily noise, giving steadier buy/sell signals.'
+              : timeframeDays <= 180
+              ? '6-month data captures full market cycles and seasonal patterns. Signals here suit position traders and DCA timing strategies.'
+              : 'Long timeframes (1Y+) show the big picture — secular trends and major support/resistance. Best for long-term investors. Short-term fluctuations are filtered out.'}
+          </p>
+        </div>
       </div>
 
       {/* Forecast Length */}
