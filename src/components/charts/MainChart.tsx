@@ -259,14 +259,43 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
         </div>
       </div>
 
-      {/* Active overlay legend */}
+      {/* Active overlay legend — richer with color swatches */}
       {activeOverlays.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap mb-2">
-          {showBB && <span className="text-[9px] font-mono" style={{ color: 'hsl(213 70% 60%)' }}>📏 BB</span>}
-          {showVWAP && <span className="text-[9px] font-mono" style={{ color: 'hsl(280 70% 60%)' }}>⚖️ VWAP</span>}
-          {showEMACross && <span className="text-[9px] font-mono" style={{ color: 'hsl(340 80% 55%)' }}>✂️ EMA12/26</span>}
-          {showIchimoku && <span className="text-[9px] font-mono" style={{ color: 'hsl(160 60% 45%)' }}>☁️ Ichimoku</span>}
-          {showFib && <span className="text-[9px] font-mono" style={{ color: 'hsl(45 90% 55%)' }}>🔢 Fib</span>}
+        <div className="flex items-center gap-3 flex-wrap mb-2 px-1 py-1.5 rounded-lg bg-muted/30 border border-border/50">
+          <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-wider">Active:</span>
+          {showBB && (
+            <span className="flex items-center gap-1.5 text-[10px] font-mono font-medium" style={{ color: 'hsl(213 70% 60%)' }}>
+              <span className="w-4 h-1 rounded-full inline-block" style={{ backgroundColor: 'hsl(213 70% 60%)', opacity: 0.7, border: '1px dashed hsl(213 70% 60%)' }} />
+              Bollinger Bands
+            </span>
+          )}
+          {showVWAP && (
+            <span className="flex items-center gap-1.5 text-[10px] font-mono font-medium" style={{ color: 'hsl(280 70% 60%)' }}>
+              <span className="w-4 h-0.5 rounded-full inline-block" style={{ backgroundColor: 'hsl(280 70% 60%)' }} />
+              VWAP
+            </span>
+          )}
+          {showEMACross && (
+            <span className="flex items-center gap-1.5 text-[10px] font-mono font-medium" style={{ color: 'hsl(340 80% 55%)' }}>
+              <span className="flex gap-0.5">
+                <span className="w-2 h-0.5 rounded-full inline-block" style={{ backgroundColor: 'hsl(340 80% 55%)' }} />
+                <span className="w-2 h-0.5 rounded-full inline-block" style={{ backgroundColor: 'hsl(340 50% 40%)' }} />
+              </span>
+              EMA 12/26
+            </span>
+          )}
+          {showIchimoku && (
+            <span className="flex items-center gap-1.5 text-[10px] font-mono font-medium" style={{ color: 'hsl(160 60% 55%)' }}>
+              <span className="w-4 h-2 rounded inline-block" style={{ background: 'linear-gradient(to bottom, hsl(160 60% 45% / 0.4), hsl(0 60% 45% / 0.3))', border: '1px solid hsl(160 60% 45% / 0.5)' }} />
+              Ichimoku
+            </span>
+          )}
+          {showFib && (
+            <span className="flex items-center gap-1.5 text-[10px] font-mono font-medium" style={{ color: 'hsl(45 90% 55%)' }}>
+              <span className="w-4 h-0.5 inline-block" style={{ borderBottom: '2px dashed hsl(45 90% 55%)' }} />
+              Fibonacci
+            </span>
+          )}
         </div>
       )}
 
@@ -289,38 +318,38 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
               formatter={(value: number, name: string) => [fmtPrice(value), name]}
             />
 
-            {/* Ichimoku Cloud (render first so it's behind price) */}
+            {/* Ichimoku Cloud — bolder fills and lines */}
             {showIchimoku && (
               <>
-                <Area dataKey="senkouA" stroke="none" fill="hsl(160 60% 45% / 0.08)" />
-                <Area dataKey="senkouB" stroke="none" fill="hsl(0 60% 45% / 0.06)" />
-                <Line dataKey="tenkan" stroke="hsl(160 60% 55%)" strokeWidth={1} dot={false} name="Tenkan" />
-                <Line dataKey="kijun" stroke="hsl(0 60% 55%)" strokeWidth={1} dot={false} name="Kijun" />
-                <Line dataKey="senkouA" stroke="hsl(160 60% 45% / 0.4)" strokeWidth={1} strokeDasharray="4 4" dot={false} name="Senkou A" />
-                <Line dataKey="senkouB" stroke="hsl(0 60% 45% / 0.4)" strokeWidth={1} strokeDasharray="4 4" dot={false} name="Senkou B" />
+                <Area dataKey="senkouA" stroke="none" fill="hsl(160 60% 45% / 0.15)" />
+                <Area dataKey="senkouB" stroke="none" fill="hsl(0 60% 45% / 0.12)" />
+                <Line dataKey="tenkan" stroke="hsl(160 70% 60%)" strokeWidth={2} dot={false} name="Tenkan (9)" />
+                <Line dataKey="kijun" stroke="hsl(0 70% 60%)" strokeWidth={2} dot={false} name="Kijun (26)" />
+                <Line dataKey="senkouA" stroke="hsl(160 60% 50% / 0.6)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Senkou A" />
+                <Line dataKey="senkouB" stroke="hsl(0 60% 50% / 0.6)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Senkou B" />
               </>
             )}
 
-            {/* Bollinger Bands */}
+            {/* Bollinger Bands — stronger fill and thicker lines */}
             {showBB && (
               <>
-                <Area dataKey="bbUpper" stroke="none" fill="hsl(213 70% 60% / 0.08)" />
+                <Area dataKey="bbUpper" stroke="none" fill="hsl(213 70% 60% / 0.15)" />
                 <Area dataKey="bbLower" stroke="none" fill="transparent" />
-                <Line dataKey="bbUpper" stroke="hsl(213 70% 60% / 0.5)" strokeWidth={1} strokeDasharray="4 4" dot={false} name="BB Upper" />
-                <Line dataKey="bbLower" stroke="hsl(213 70% 60% / 0.5)" strokeWidth={1} strokeDasharray="4 4" dot={false} name="BB Lower" />
+                <Line dataKey="bbUpper" stroke="hsl(213 70% 65%)" strokeWidth={1.5} strokeDasharray="6 3" dot={false} name="BB Upper" />
+                <Line dataKey="bbLower" stroke="hsl(213 70% 65%)" strokeWidth={1.5} strokeDasharray="6 3" dot={false} name="BB Lower" />
               </>
             )}
 
-            {/* VWAP */}
+            {/* VWAP — thicker */}
             {showVWAP && (
-              <Line dataKey="vwap" stroke="hsl(280 70% 60%)" strokeWidth={1.5} dot={false} name="VWAP" />
+              <Line dataKey="vwap" stroke="hsl(280 70% 60%)" strokeWidth={2.5} dot={false} name="VWAP" />
             )}
 
-            {/* EMA 12/26 */}
+            {/* EMA 12/26 — thicker, more distinct colors */}
             {showEMACross && (
               <>
-                <Line dataKey="ema12" stroke="hsl(340 80% 55%)" strokeWidth={1.5} dot={false} name="EMA12" />
-                <Line dataKey="ema26" stroke="hsl(340 50% 40%)" strokeWidth={1.5} dot={false} name="EMA26" />
+                <Line dataKey="ema12" stroke="hsl(340 80% 60%)" strokeWidth={2} dot={false} name="EMA 12 (fast)" />
+                <Line dataKey="ema26" stroke="hsl(340 45% 50%)" strokeWidth={2} strokeDasharray="8 4" dot={false} name="EMA 26 (slow)" />
               </>
             )}
 
@@ -334,14 +363,14 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
             {/* Price line */}
             <Line dataKey="price" stroke="hsl(187 100% 47%)" strokeWidth={2} dot={false} name="Price" />
 
-            {/* Fibonacci Retracement levels */}
-            {showFib && fibLevels && !isMobile && (
+            {/* Fibonacci Retracement levels — shown on all screens */}
+            {showFib && fibLevels && (
               <>
-                <ReferenceLine y={fibLevels.level236} stroke="hsl(45 90% 55% / 0.4)" strokeDasharray="4 4" label={{ value: '23.6%', fill: 'hsl(45 90% 55%)', fontSize: 9, fontFamily: 'JetBrains Mono' }} />
-                <ReferenceLine y={fibLevels.level382} stroke="hsl(45 90% 55% / 0.5)" strokeDasharray="4 4" label={{ value: '38.2%', fill: 'hsl(45 90% 55%)', fontSize: 9, fontFamily: 'JetBrains Mono' }} />
-                <ReferenceLine y={fibLevels.level500} stroke="hsl(45 90% 55% / 0.6)" strokeDasharray="6 4" label={{ value: '50%', fill: 'hsl(45 90% 55%)', fontSize: 9, fontFamily: 'JetBrains Mono' }} />
-                <ReferenceLine y={fibLevels.level618} stroke="hsl(45 90% 55% / 0.7)" strokeDasharray="6 4" label={{ value: '61.8%', fill: 'hsl(45 90% 55%)', fontSize: 10, fontFamily: 'JetBrains Mono' }} />
-                <ReferenceLine y={fibLevels.level786} stroke="hsl(45 90% 55% / 0.4)" strokeDasharray="4 4" label={{ value: '78.6%', fill: 'hsl(45 90% 55%)', fontSize: 9, fontFamily: 'JetBrains Mono' }} />
+                <ReferenceLine y={fibLevels.level236} stroke="hsl(45 90% 55% / 0.5)" strokeWidth={1.5} strokeDasharray="4 4" label={{ value: isMobile ? '23.6' : '23.6%', fill: 'hsl(45 90% 55%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono', position: 'right' }} />
+                <ReferenceLine y={fibLevels.level382} stroke="hsl(45 90% 55% / 0.6)" strokeWidth={1.5} strokeDasharray="4 4" label={{ value: isMobile ? '38.2' : '38.2%', fill: 'hsl(45 90% 55%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono', position: 'right' }} />
+                <ReferenceLine y={fibLevels.level500} stroke="hsl(45 90% 60% / 0.7)" strokeWidth={2} strokeDasharray="6 4" label={{ value: '50%', fill: 'hsl(45 90% 60%)', fontSize: isMobile ? 9 : 11, fontFamily: 'JetBrains Mono', fontWeight: 600, position: 'right' }} />
+                <ReferenceLine y={fibLevels.level618} stroke="hsl(45 90% 55% / 0.8)" strokeWidth={2} strokeDasharray="6 4" label={{ value: '61.8%', fill: 'hsl(45 90% 55%)', fontSize: isMobile ? 9 : 11, fontFamily: 'JetBrains Mono', fontWeight: 700, position: 'right' }} />
+                <ReferenceLine y={fibLevels.level786} stroke="hsl(45 90% 55% / 0.5)" strokeWidth={1.5} strokeDasharray="4 4" label={{ value: isMobile ? '78.6' : '78.6%', fill: 'hsl(45 90% 55%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono', position: 'right' }} />
               </>
             )}
 

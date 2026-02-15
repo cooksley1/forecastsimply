@@ -96,15 +96,21 @@ export default function AnalysisOverlayBar({ selected, setSelected }: Props) {
             <button
               key={o.id}
               onClick={() => toggle(o.id)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-medium transition-all border ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all border-2 ${
                 active
-                  ? 'border-current bg-current/10'
-                  : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground opacity-50'
+                  ? 'shadow-md ring-1 ring-current/20'
+                  : 'border-border/50 text-muted-foreground hover:text-foreground hover:border-muted-foreground opacity-40 hover:opacity-70'
               }`}
-              style={active ? { color: o.color, borderColor: o.color, backgroundColor: `${o.color.replace(')', ' / 0.1)')}` } : undefined}
+              style={active ? {
+                color: o.color,
+                borderColor: o.color,
+                backgroundColor: `${o.color.replace(')', ' / 0.15)')}`,
+                boxShadow: `0 0 12px ${o.color.replace(')', ' / 0.2)')}`,
+              } : undefined}
             >
-              <span className="text-[10px]">{o.icon}</span>
+              <span className={`text-xs ${active ? 'scale-110' : ''} transition-transform`}>{o.icon}</span>
               {o.name}
+              {active && <span className="w-1.5 h-1.5 rounded-full ml-0.5" style={{ backgroundColor: o.color }} />}
             </button>
           );
         })}
