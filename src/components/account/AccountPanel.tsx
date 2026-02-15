@@ -30,6 +30,13 @@ interface UserPrefs {
   theme: string;
 }
 
+interface NewsletterPrefs {
+  crypto: boolean;
+  stocks: boolean;
+  etfs: boolean;
+  forex: boolean;
+}
+
 const DEFAULT_PREFS: UserPrefs = {
   risk_profile: 'moderate',
   forecast_percent: 30,
@@ -38,10 +45,17 @@ const DEFAULT_PREFS: UserPrefs = {
   theme: 'dark',
 };
 
+const DIGEST_CATEGORIES: { key: keyof NewsletterPrefs; icon: string; label: string }[] = [
+  { key: 'crypto', icon: '🪙', label: 'CryptoSimply Digest' },
+  { key: 'stocks', icon: '📈', label: 'StockSimply Digest' },
+  { key: 'etfs', icon: '📊', label: 'ETFSimply Digest' },
+  { key: 'forex', icon: '💱', label: 'ForexSimply Digest' },
+];
+
 export default function AccountPanel({ open, onClose }: Props) {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'history'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'history' | 'newsletter'>('profile');
   const [history, setHistory] = useState<AnalysisRecord[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [displayName, setDisplayName] = useState('');
@@ -50,16 +64,21 @@ export default function AccountPanel({ open, onClose }: Props) {
   const [prefs, setPrefs] = useState<UserPrefs>(DEFAULT_PREFS);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
 
+  // Newsletter state
+  const [nlSubscribed, setNlSubscribed] = useState(false);
+  const [nlPrefs, setNlPrefs] = useState<NewsletterPrefs>({ crypto: true, stocks: true, etfs: true, forex: true });
+  const [nlLoading, setNlLoading] = useState(false);
+  const [nlMsg, setNlMsg] = useState('');
+
   useEffect(() => {
     if (open && user) {
       supabase.from('profiles').select('display_name').eq('user_id', user.id).maybeSingle()
         .then(({ data }) => {
           setDisplayName(data?.display_name || user.user_metadata?.full_name || '');
         });
-      // Load preferences
       supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle()
         .then(({ data }) => {
-           if (data) {
+          if (data) {
             setPrefs({
               risk_profile: data.risk_profile,
               forecast_percent: data.forecast_percent,
@@ -70,6 +89,26 @@ export default function AccountPanel({ open, onClose }: Props) {
           }
           setPrefsLoaded(true);
         });
+      // Load newsletter subscription
+      if (user.email) {
+        supabase.from('newsletter_subscribers').select('*').eq('email', user.email).maybeSingle()
+          .then(({ data }) => {
+            if (data && !data.unsubscribed_at) {
+              setNlSubscribed(true);
+              if (data.preferences) {
+                const p = data.preferences as any;
+                setNlPrefs({
+                  crypto: p.crypto !== false,
+                  stocks: p.stocks !== false,
+                  etfs: p.etfs !== false,
+                  forex: p.forex !== false,
+                });
+              }
+            } else {
+              setNlSubscribed(false);
+            }
+          });
+      }
     }
   }, [open, user]);
 
@@ -104,7 +143,6 @@ export default function AccountPanel({ open, onClose }: Props) {
   const handleSavePrefs = async () => {
     setSaving(true);
     setSaveMsg('');
-    // Upsert preferences
     const { error } = await supabase.from('user_preferences')
       .upsert({
         user_id: user.id,
@@ -120,6 +158,59 @@ export default function AccountPanel({ open, onClose }: Props) {
     setPrefs(p => ({ ...p, [key]: value }));
   };
 
+  const handleNewsletterToggle = async (subscribe: boolean) => {
+    if (!user.email) return;
+    setNlLoading(true);
+    setNlMsg('');
+
+    if (subscribe) {
+      const { error } = await supabase.from('newsletter_subscribers')
+        .upsert({
+          email: user.email!,
+          user_id: user.id,
+          preferences: nlPrefs as unknown as Record<string, boolean>,
+          unsubscribed_at: null,
+        }, { onConflict: 'email' });
+      setNlLoading(false);
+      if (error) {
+        setNlMsg('Failed to subscribe');
+      } else {
+        setNlSubscribed(true);
+        setNlMsg('Subscribed! 🎉');
+      }
+    } else {
+      const { error } = await supabase.from('newsletter_subscribers')
+        .update({ unsubscribed_at: new Date().toISOString() })
+        .eq('email', user.email);
+      setNlLoading(false);
+      if (error) {
+        setNlMsg('Failed to unsubscribe');
+      } else {
+        setNlSubscribed(false);
+        setNlMsg('Unsubscribed');
+      }
+    }
+    setTimeout(() => setNlMsg(''), 3000);
+  };
+
+  const handleSaveNlPrefs = async () => {
+    if (!user.email) return;
+    setNlLoading(true);
+    setNlMsg('');
+    const { error } = await supabase.from('newsletter_subscribers')
+      .update({ preferences: nlPrefs as unknown as Record<string, boolean> })
+      .eq('email', user.email);
+    setNlLoading(false);
+    setNlMsg(error ? 'Failed to save' : 'Preferences saved ✓');
+    setTimeout(() => setNlMsg(''), 2000);
+  };
+
+  const allSelected = Object.values(nlPrefs).every(Boolean);
+  const toggleAll = () => {
+    const newVal = !allSelected;
+    setNlPrefs({ crypto: newVal, stocks: newVal, etfs: newVal, forex: newVal });
+  };
+
   const handleSignOut = async () => {
     await signOut();
     onClose();
@@ -127,7 +218,8 @@ export default function AccountPanel({ open, onClose }: Props) {
 
   const tabs = [
     { key: 'profile' as const, label: '👤 Profile' },
-    { key: 'preferences' as const, label: '⚙️ Preferences' },
+    { key: 'preferences' as const, label: '⚙️ Prefs' },
+    { key: 'newsletter' as const, label: '📬 Digest' },
     { key: 'history' as const, label: '📊 History' },
   ];
 
@@ -156,7 +248,7 @@ export default function AccountPanel({ open, onClose }: Props) {
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className={`px-3 py-2 text-[10px] sm:text-xs font-medium border-b-2 transition-all ${
+              className={`px-2.5 py-2 text-[10px] sm:text-xs font-medium border-b-2 transition-all ${
                 activeTab === t.key ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -244,14 +336,81 @@ export default function AccountPanel({ open, onClose }: Props) {
               </select>
             </div>
 
-            {/* API Keys managed via localStorage in API Settings dialog */}
-
             <div className="flex items-center gap-2">
               <button onClick={handleSavePrefs} disabled={saving} className="px-3 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50">
                 {saving ? 'Saving...' : 'Save Preferences'}
               </button>
               {saveMsg && <span className="text-[10px] text-positive">{saveMsg}</span>}
             </div>
+          </div>
+        )}
+
+        {/* Newsletter / Digest Tab */}
+        {activeTab === 'newsletter' && (
+          <div className="space-y-4">
+            <div className="text-center space-y-1">
+              <p className="text-xs text-foreground font-medium">📬 Weekly Market Digests</p>
+              <p className="text-[10px] text-muted-foreground">AI-curated insights sent to <span className="text-primary font-mono">{user.email}</span></p>
+            </div>
+
+            {/* Subscribe / Unsubscribe toggle */}
+            <div className="flex items-center justify-between bg-secondary/50 rounded-lg px-4 py-3">
+              <span className="text-xs font-medium text-foreground">
+                {nlSubscribed ? '✅ Subscribed' : 'Not subscribed'}
+              </span>
+              <button
+                onClick={() => handleNewsletterToggle(!nlSubscribed)}
+                disabled={nlLoading}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 ${
+                  nlSubscribed
+                    ? 'border border-destructive/30 text-destructive hover:bg-destructive/10'
+                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                }`}
+              >
+                {nlLoading ? '...' : nlSubscribed ? 'Unsubscribe' : 'Subscribe'}
+              </button>
+            </div>
+
+            {/* Per-category toggles */}
+            {nlSubscribed && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground font-mono uppercase">Choose Digests</span>
+                  <button
+                    onClick={toggleAll}
+                    className="text-[10px] text-primary hover:underline"
+                  >
+                    {allSelected ? 'Deselect all' : 'Select all'}
+                  </button>
+                </div>
+                {DIGEST_CATEGORIES.map(cat => (
+                  <label
+                    key={cat.key}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg bg-background border border-border hover:border-primary/30 transition-all cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={nlPrefs[cat.key]}
+                      onChange={e => setNlPrefs(p => ({ ...p, [cat.key]: e.target.checked }))}
+                      className="accent-primary w-3.5 h-3.5"
+                    />
+                    <span className="text-sm">{cat.icon}</span>
+                    <span className="text-xs font-medium text-foreground">{cat.label}</span>
+                  </label>
+                ))}
+                <button
+                  onClick={handleSaveNlPrefs}
+                  disabled={nlLoading}
+                  className="w-full px-3 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50"
+                >
+                  {nlLoading ? 'Saving...' : 'Save Digest Preferences'}
+                </button>
+              </div>
+            )}
+
+            {nlMsg && (
+              <p className={`text-[10px] text-center ${nlMsg.includes('Failed') ? 'text-destructive' : 'text-primary'}`}>{nlMsg}</p>
+            )}
           </div>
         )}
 
