@@ -327,41 +327,41 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
             {/* Ichimoku Cloud — bolder fills and lines */}
             {showIchimoku && (
               <>
-                <Area dataKey="senkouA" stroke="none" fill="hsl(160 60% 45% / 0.15)" />
-                <Area dataKey="senkouB" stroke="none" fill="hsl(0 60% 45% / 0.12)" />
-                <Line dataKey="tenkan" stroke="hsl(160 70% 60%)" strokeWidth={2} dot={false} name="Tenkan (9)" />
-                <Line dataKey="kijun" stroke="hsl(0 70% 60%)" strokeWidth={2} dot={false} name="Kijun (26)" />
-                <Line dataKey="senkouA" stroke="hsl(160 60% 50% / 0.6)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Senkou A" />
-                <Line dataKey="senkouB" stroke="hsl(0 60% 50% / 0.6)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Senkou B" />
+                <Area dataKey="senkouA" stroke="none" fill="hsl(160 60% 45% / 0.30)" />
+                <Area dataKey="senkouB" stroke="none" fill="hsl(0 60% 45% / 0.25)" />
+                <Line dataKey="tenkan" stroke="hsl(160 80% 65%)" strokeWidth={2.5} dot={false} name="Tenkan (9)" />
+                <Line dataKey="kijun" stroke="hsl(0 80% 65%)" strokeWidth={2.5} dot={false} name="Kijun (26)" />
+                <Line dataKey="senkouA" stroke="hsl(160 70% 55% / 0.8)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Senkou A" />
+                <Line dataKey="senkouB" stroke="hsl(0 70% 55% / 0.8)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Senkou B" />
               </>
             )}
 
             {/* Bollinger Bands — stronger fill and thicker lines */}
             {showBB && (
               <>
-                <Area dataKey="bbUpper" stroke="none" fill="hsl(213 70% 60% / 0.15)" />
+                <Area dataKey="bbUpper" stroke="none" fill="hsl(213 70% 60% / 0.25)" />
                 <Area dataKey="bbLower" stroke="none" fill="transparent" />
-                <Line dataKey="bbUpper" stroke="hsl(213 70% 65%)" strokeWidth={1.5} strokeDasharray="6 3" dot={false} name="BB Upper" />
-                <Line dataKey="bbLower" stroke="hsl(213 70% 65%)" strokeWidth={1.5} strokeDasharray="6 3" dot={false} name="BB Lower" />
+                <Line dataKey="bbUpper" stroke="hsl(213 80% 70%)" strokeWidth={2} strokeDasharray="6 3" dot={false} name="BB Upper" />
+                <Line dataKey="bbLower" stroke="hsl(213 80% 70%)" strokeWidth={2} strokeDasharray="6 3" dot={false} name="BB Lower" />
               </>
             )}
 
             {/* VWAP — thicker */}
             {showVWAP && (
-              <Line dataKey="vwap" stroke="hsl(280 70% 60%)" strokeWidth={2.5} dot={false} name="VWAP" />
+              <Line dataKey="vwap" stroke="hsl(280 80% 65%)" strokeWidth={3} dot={false} name="VWAP" />
             )}
 
             {/* EMA 12/26 — thicker, more distinct colors */}
             {showEMACross && (
               <>
-                <Line dataKey="ema12" stroke="hsl(340 80% 60%)" strokeWidth={2} dot={false} name="EMA 12 (fast)" />
-                <Line dataKey="ema26" stroke="hsl(340 45% 50%)" strokeWidth={2} strokeDasharray="8 4" dot={false} name="EMA 26 (slow)" />
+                <Line dataKey="ema12" stroke="hsl(340 90% 65%)" strokeWidth={2.5} dot={false} name="EMA 12 (fast)" />
+                <Line dataKey="ema26" stroke="hsl(340 55% 55%)" strokeWidth={2.5} strokeDasharray="8 4" dot={false} name="EMA 26 (slow)" />
               </>
             )}
 
             {/* SMAs — fade when overlays active */}
-            <Line dataKey="sma20" stroke={`hsl(38 92% 50% / ${baseFade})`} strokeWidth={hasActiveOverlays ? 1 : 1.5} dot={false} name="SMA20" />
-            <Line dataKey="sma50" stroke={`hsl(25 95% 53% / ${baseFade})`} strokeWidth={hasActiveOverlays ? 1 : 1.5} dot={false} name="SMA50" />
+            <Line dataKey="sma20" stroke={`hsl(38 92% 55% / ${baseFade})`} strokeWidth={hasActiveOverlays ? 1.5 : 2} dot={false} name="SMA20" />
+            <Line dataKey="sma50" stroke={`hsl(25 95% 58% / ${baseFade})`} strokeWidth={hasActiveOverlays ? 1.5 : 2} dot={false} name="SMA50" />
             {hasSma200 && (
               <Line dataKey="sma200" stroke={`hsl(213 20% 55% / ${baseFade * 0.6})`} strokeWidth={1} strokeDasharray="8 4" dot={false} name="SMA200" />
             )}
@@ -372,11 +372,11 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
             {/* Fibonacci Retracement levels — shown on all screens */}
             {showFib && fibLevels && (
               <>
-                <ReferenceLine y={fibLevels.level236} stroke="hsl(45 90% 55% / 0.5)" strokeWidth={1.5} strokeDasharray="4 4" label={{ value: isMobile ? '23.6' : '23.6%', fill: 'hsl(45 90% 55%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono', position: 'right' }} />
-                <ReferenceLine y={fibLevels.level382} stroke="hsl(45 90% 55% / 0.6)" strokeWidth={1.5} strokeDasharray="4 4" label={{ value: isMobile ? '38.2' : '38.2%', fill: 'hsl(45 90% 55%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono', position: 'right' }} />
-                <ReferenceLine y={fibLevels.level500} stroke="hsl(45 90% 60% / 0.7)" strokeWidth={2} strokeDasharray="6 4" label={{ value: '50%', fill: 'hsl(45 90% 60%)', fontSize: isMobile ? 9 : 11, fontFamily: 'JetBrains Mono', fontWeight: 600, position: 'right' }} />
-                <ReferenceLine y={fibLevels.level618} stroke="hsl(45 90% 55% / 0.8)" strokeWidth={2} strokeDasharray="6 4" label={{ value: '61.8%', fill: 'hsl(45 90% 55%)', fontSize: isMobile ? 9 : 11, fontFamily: 'JetBrains Mono', fontWeight: 700, position: 'right' }} />
-                <ReferenceLine y={fibLevels.level786} stroke="hsl(45 90% 55% / 0.5)" strokeWidth={1.5} strokeDasharray="4 4" label={{ value: isMobile ? '78.6' : '78.6%', fill: 'hsl(45 90% 55%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono', position: 'right' }} />
+                <ReferenceLine y={fibLevels.level236} stroke="hsl(45 90% 60% / 0.7)" strokeWidth={1.5} strokeDasharray="4 4" label={{ value: isMobile ? '23.6' : '23.6%', fill: 'hsl(45 90% 60%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono', position: 'right' }} />
+                <ReferenceLine y={fibLevels.level382} stroke="hsl(45 90% 60% / 0.8)" strokeWidth={1.5} strokeDasharray="4 4" label={{ value: isMobile ? '38.2' : '38.2%', fill: 'hsl(45 90% 60%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono', position: 'right' }} />
+                <ReferenceLine y={fibLevels.level500} stroke="hsl(45 90% 65% / 0.9)" strokeWidth={2} strokeDasharray="6 4" label={{ value: '50%', fill: 'hsl(45 90% 65%)', fontSize: isMobile ? 9 : 11, fontFamily: 'JetBrains Mono', fontWeight: 600, position: 'right' }} />
+                <ReferenceLine y={fibLevels.level618} stroke="hsl(45 90% 60%)" strokeWidth={2} strokeDasharray="6 4" label={{ value: '61.8%', fill: 'hsl(45 90% 60%)', fontSize: isMobile ? 9 : 11, fontFamily: 'JetBrains Mono', fontWeight: 700, position: 'right' }} />
+                <ReferenceLine y={fibLevels.level786} stroke="hsl(45 90% 60% / 0.7)" strokeWidth={1.5} strokeDasharray="4 4" label={{ value: isMobile ? '78.6' : '78.6%', fill: 'hsl(45 90% 60%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono', position: 'right' }} />
               </>
             )}
 
