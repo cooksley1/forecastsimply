@@ -330,12 +330,16 @@ export default function Index() {
   }, [analyseCrypto, analyseStock, analyseForex]);
 
   const getQuickPicks = useCallback(() => {
-    let items: { label: string; id: string; signal?: { label: string; score: number; confidence: number } }[] = [];
+    let items: { label: string; id: string; name?: string; divYield?: number; signal?: { label: string; score: number; confidence: number } }[] = [];
     if (assetType === 'crypto') items = CRYPTO_PICKS.map(p => ({ label: p.sym, id: p.id }));
     else if (assetType === 'stocks') {
       let picks = STOCK_PICKS_BY_EXCHANGE[stockExchange] || [];
-      if (dividendOnly) picks = picks.filter(p => p.div);
-      items = picks.map(p => ({ label: p.sym, id: p.sym }));
+      if (dividendOnly) {
+        picks = picks.filter(p => p.div);
+        // Sort by yield descending when dividend filter is active
+        picks = [...picks].sort((a, b) => b.yield - a.yield);
+      }
+      items = picks.map(p => ({ label: p.sym, id: p.sym, name: p.name, divYield: p.yield }));
     } else if (assetType === 'etfs') {
       items = (ETF_PICKS_BY_EXCHANGE[etfExchange] || []).map(p => ({ label: p.sym, id: p.sym }));
     } else {
@@ -348,9 +352,9 @@ export default function Index() {
       return r ? { ...item, signal: r } : item;
     });
 
-    // Sort by confidence descending if any have signals
-    if (withSignals.some(p => p.signal)) {
-      withSignals.sort((a, b) => (b.signal?.confidence ?? -999) - (a.signal?.confidence ?? -999));
+    // Sort by score descending if any have signals (and not in dividend-sort mode)
+    if (withSignals.some(p => p.signal) && !dividendOnly) {
+      withSignals.sort((a, b) => (b.signal?.score ?? -999) - (a.signal?.score ?? -999));
     }
 
     return withSignals;
@@ -461,22 +465,30 @@ export default function Index() {
                 selected={assetType === 'stocks' ? stockExchange : etfExchange}
                 onSelect={assetType === 'stocks' ? setStockExchange : setEtfExchange}
               />
-              {assetType === 'stocks' && (
-                <button
-                  onClick={() => setDividendOnly(d => !d)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                    dividendOnly
-                      ? 'bg-primary/15 border-primary/40 text-primary'
-                      : 'bg-sf-elevated border-border text-foreground hover:border-primary/40'
-                  }`}
-                >
-                  <span>💰</span>
-                  <span>Dividends</span>
-                </button>
-              )}
+              {assetType === 'stocks' && (() => {
+                const allPicks = STOCK_PICKS_BY_EXCHANGE[stockExchange] || [];
+                const divCount = allPicks.filter(p => p.div).length;
+                const avgYield = divCount > 0
+                  ? (allPicks.filter(p => p.div).reduce((s, p) => s + p.yield, 0) / divCount).toFixed(1)
+                  : '0';
+                return (
+                  <button
+                    onClick={() => setDividendOnly(d => !d)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                      dividendOnly
+                        ? 'bg-primary/15 border-primary/40 text-primary'
+                        : 'bg-sf-elevated border-border text-foreground hover:border-primary/40'
+                    }`}
+                  >
+                    <span>💰</span>
+                    <span>Dividends</span>
+                    <span className="text-[9px] opacity-70">({divCount} · avg {avgYield}%)</span>
+                  </button>
+                );
+              })()}
             </div>
           )}
-          <QuickPicks picks={getQuickPicks()} onSelect={handleQuickPick} loading={loading} onRank={handleRankPicks} ranking={ranking} />
+          <QuickPicks picks={getQuickPicks()} onSelect={handleQuickPick} loading={loading} onRank={handleRankPicks} ranking={ranking} showDividends={assetType === 'stocks' && dividendOnly} />
         </div>
 
         {loading && (
