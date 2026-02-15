@@ -26,9 +26,9 @@ export default function StickySubNav({ assetType, onAssetChange, showSections }:
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
-      // Offset for header (56px) + subnav (~70px)
-      const y = el.getBoundingClientRect().top + window.scrollY - 130;
-      window.scrollTo({ top: y, behavior: 'smooth' });
+      // Offset for header (56px) + subnav with sections (~90px)
+      const y = el.getBoundingClientRect().top + window.scrollY - 160;
+      window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
     }
   };
 
