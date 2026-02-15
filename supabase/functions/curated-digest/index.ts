@@ -124,13 +124,13 @@ Format your response as JSON with this structure:
   "greeting": "Short personalised greeting",
   "market_summary": "2-3 sentence market overview",
   "insights": [
-    {"asset": "SYMBOL", "name": "Asset Name", "type": "crypto|stocks|etfs|forex", "insight": "Brief actionable insight", "sentiment": "bullish|bearish|neutral"}
+    {"asset": "SYMBOL", "name": "Asset Name", "type": "crypto|stocks|etfs|forex", "insight": "Brief actionable insight", "sentiment": "bullish|bearish|neutral", "market": "AU|US|UK|HK|EU|CA|JP"}
   ],
   "recommendations": ["Recommendation 1", "Recommendation 2", "Recommendation 3"],
   "watchlist_alerts": ["Alert about watchlist item if relevant"]
 }
 
-Keep insights to 3-5 items max. Focus on assets the user has analysed or is watching. If no history, give general market tips.`,
+Keep insights to 3-5 items max. Focus on assets the user has analysed or is watching. If no history, give general market tips. For stocks/etfs include the "market" field indicating which region.`,
           },
           {
             role: "user",

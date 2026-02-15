@@ -26,7 +26,21 @@ interface NewsletterPrefs {
   stocks: boolean;
   etfs: boolean;
   forex: boolean;
+  markets?: string[];
 }
+
+const MARKET_OPTIONS: { key: string; label: string; flag: string }[] = [
+  { key: 'AU', label: 'Australia (ASX)', flag: '🇦🇺' },
+  { key: 'US', label: 'United States', flag: '🇺🇸' },
+  { key: 'UK', label: 'United Kingdom (LSE)', flag: '🇬🇧' },
+  { key: 'HK', label: 'Hong Kong (HKSE)', flag: '🇭🇰' },
+  { key: 'EU', label: 'Europe (XETRA)', flag: '🇪🇺' },
+  { key: 'CA', label: 'Canada (TSE)', flag: '🇨🇦' },
+  { key: 'JP', label: 'Japan (JPX)', flag: '🇯🇵' },
+];
+
+const DEFAULT_MARKETS = ['AU'];
+const WORLD_MARKETS = ['AU', 'US', 'UK', 'HK'];
 
 const DEFAULT_PREFS: UserPrefs = {
   risk_profile: 'moderate',
@@ -62,7 +76,7 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
 
   // Newsletter state
   const [nlSubscribed, setNlSubscribed] = useState(false);
-  const [nlPrefs, setNlPrefs] = useState<NewsletterPrefs>({ crypto: true, stocks: true, etfs: true, forex: true });
+  const [nlPrefs, setNlPrefs] = useState<NewsletterPrefs>({ crypto: true, stocks: true, etfs: true, forex: true, markets: DEFAULT_MARKETS });
   const [nlLoading, setNlLoading] = useState(false);
   const [nlMsg, setNlMsg] = useState('');
 
@@ -98,6 +112,7 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
                   stocks: p.stocks !== false,
                   etfs: p.etfs !== false,
                   forex: p.forex !== false,
+                  markets: Array.isArray(p.markets) ? p.markets : DEFAULT_MARKETS,
                 });
               }
             } else {
@@ -149,7 +164,7 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
         .upsert({
           email: user.email!,
           user_id: user.id,
-          preferences: nlPrefs as unknown as Record<string, boolean>,
+          preferences: nlPrefs as any,
           unsubscribed_at: null,
         }, { onConflict: 'email' });
       setNlLoading(false);
@@ -179,18 +194,31 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
     setNlLoading(true);
     setNlMsg('');
     const { error } = await supabase.from('newsletter_subscribers')
-      .update({ preferences: nlPrefs as unknown as Record<string, boolean> })
+      .update({ preferences: nlPrefs as any })
       .eq('email', user.email);
     setNlLoading(false);
     setNlMsg(error ? 'Failed to save' : 'Preferences saved ✓');
     setTimeout(() => setNlMsg(''), 2000);
   };
 
-  const allSelected = Object.values(nlPrefs).every(Boolean);
-  const toggleAll = () => {
-    const newVal = !allSelected;
-    setNlPrefs({ crypto: newVal, stocks: newVal, etfs: newVal, forex: newVal });
+  const allDigestsSelected = nlPrefs.crypto && nlPrefs.stocks && nlPrefs.etfs && nlPrefs.forex;
+  const toggleAllDigests = () => {
+    const newVal = !allDigestsSelected;
+    setNlPrefs(p => ({ ...p, crypto: newVal, stocks: newVal, etfs: newVal, forex: newVal }));
   };
+
+  const allMarketsSelected = nlPrefs.markets?.length === MARKET_OPTIONS.length;
+  const toggleAllMarkets = () => {
+    setNlPrefs(p => ({ ...p, markets: allMarketsSelected ? DEFAULT_MARKETS : MARKET_OPTIONS.map(m => m.key) }));
+  };
+  const toggleMarket = (key: string) => {
+    setNlPrefs(p => {
+      const current = p.markets || DEFAULT_MARKETS;
+      const next = current.includes(key) ? current.filter(m => m !== key) : [...current, key];
+      return { ...p, markets: next.length === 0 ? DEFAULT_MARKETS : next };
+    });
+  };
+  const setWorldMarkets = () => setNlPrefs(p => ({ ...p, markets: WORLD_MARKETS }));
 
   const handleSignOut = async () => {
     await signOut();
@@ -358,10 +386,10 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-muted-foreground font-mono uppercase">Choose Digests</span>
                   <button
-                    onClick={toggleAll}
+                    onClick={toggleAllDigests}
                     className="text-[10px] text-primary hover:underline"
                   >
-                    {allSelected ? 'Deselect all' : 'Select all'}
+                    {allDigestsSelected ? 'Deselect all' : 'Select all'}
                   </button>
                 </div>
                 {DIGEST_CATEGORIES.map(cat => (
@@ -371,7 +399,7 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
                   >
                     <input
                       type="checkbox"
-                      checked={nlPrefs[cat.key]}
+                      checked={!!nlPrefs[cat.key]}
                       onChange={e => setNlPrefs(p => ({ ...p, [cat.key]: e.target.checked }))}
                       className="accent-primary w-3.5 h-3.5"
                     />
@@ -379,10 +407,42 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
                     <span className="text-xs font-medium text-foreground">{cat.label}</span>
                   </label>
                 ))}
+
+                {/* Market selection */}
+                <div className="mt-3 pt-3 border-t border-border">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] text-muted-foreground font-mono uppercase">Markets / Regions</span>
+                    <div className="flex gap-2">
+                      <button onClick={setWorldMarkets} className="text-[10px] text-primary hover:underline">World</button>
+                      <button onClick={toggleAllMarkets} className="text-[10px] text-primary hover:underline">
+                        {allMarketsSelected ? 'Reset' : 'All'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {MARKET_OPTIONS.map(m => (
+                      <label
+                        key={m.key}
+                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-background border border-border hover:border-primary/30 transition-all cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={(nlPrefs.markets || DEFAULT_MARKETS).includes(m.key)}
+                          onChange={() => toggleMarket(m.key)}
+                          className="accent-primary w-3 h-3"
+                        />
+                        <span className="text-xs">{m.flag}</span>
+                        <span className="text-[10px] font-medium text-foreground truncate">{m.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-[9px] text-muted-foreground mt-1.5">Default: 🇦🇺 Australia · World = AU, US, UK, HK</p>
+                </div>
+
                 <button
                   onClick={handleSaveNlPrefs}
                   disabled={nlLoading}
-                  className="w-full px-3 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50"
+                  className="w-full px-3 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50 mt-2"
                 >
                   {nlLoading ? 'Saving...' : 'Save Digest Preferences'}
                 </button>
