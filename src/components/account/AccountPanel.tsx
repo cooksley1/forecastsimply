@@ -28,9 +28,6 @@ interface UserPrefs {
   default_timeframe_days: number;
   secondary_currency: string | null;
   theme: string;
-  cg_api_key: string | null;
-  av_api_key: string | null;
-  fmp_api_key: string | null;
 }
 
 const DEFAULT_PREFS: UserPrefs = {
@@ -39,9 +36,6 @@ const DEFAULT_PREFS: UserPrefs = {
   default_timeframe_days: 90,
   secondary_currency: null,
   theme: 'dark',
-  cg_api_key: null,
-  av_api_key: null,
-  fmp_api_key: null,
 };
 
 export default function AccountPanel({ open, onClose }: Props) {
@@ -65,16 +59,13 @@ export default function AccountPanel({ open, onClose }: Props) {
       // Load preferences
       supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle()
         .then(({ data }) => {
-          if (data) {
+           if (data) {
             setPrefs({
               risk_profile: data.risk_profile,
               forecast_percent: data.forecast_percent,
               default_timeframe_days: data.default_timeframe_days,
               secondary_currency: data.secondary_currency,
               theme: data.theme,
-              cg_api_key: data.cg_api_key,
-              av_api_key: data.av_api_key,
-              fmp_api_key: data.fmp_api_key,
             });
           }
           setPrefsLoaded(true);
@@ -253,22 +244,7 @@ export default function AccountPanel({ open, onClose }: Props) {
               </select>
             </div>
 
-            {/* API Keys */}
-            <div className="pt-2 border-t border-border space-y-3">
-              <p className="text-[10px] text-muted-foreground font-mono uppercase">API Keys (optional)</p>
-              <div>
-                <label className="text-[10px] text-muted-foreground block mb-1">CoinGecko API Key</label>
-                <input type="password" value={prefs.cg_api_key || ''} onChange={e => updatePref('cg_api_key', e.target.value || null)} placeholder="Optional" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none" />
-              </div>
-              <div>
-                <label className="text-[10px] text-muted-foreground block mb-1">Alpha Vantage API Key</label>
-                <input type="password" value={prefs.av_api_key || ''} onChange={e => updatePref('av_api_key', e.target.value || null)} placeholder="Optional" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none" />
-              </div>
-              <div>
-                <label className="text-[10px] text-muted-foreground block mb-1">FMP API Key</label>
-                <input type="password" value={prefs.fmp_api_key || ''} onChange={e => updatePref('fmp_api_key', e.target.value || null)} placeholder="Optional" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none" />
-              </div>
-            </div>
+            {/* API Keys managed via localStorage in API Settings dialog */}
 
             <div className="flex items-center gap-2">
               <button onClick={handleSavePrefs} disabled={saving} className="px-3 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50">
