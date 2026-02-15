@@ -68,6 +68,8 @@ export default function Index() {
   const [stockExchange, setStockExchange] = useState('ALL');
   const [dividendOnly, setDividendOnly] = useState(false);
   const [etfExchange, setEtfExchange] = useState('ALL');
+  const [ranking, setRanking] = useState(false);
+  const [rankedPicks, setRankedPicks] = useState<Record<string, { label: string; score: number; confidence: number }>>({});
   const [secondaryCurrency, setSecCurrency] = useState<string | null>(getSecondaryCurrency());
   const [secondaryPrice, setSecondaryPrice] = useState<number | null>(null);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>(() => {
@@ -328,15 +330,73 @@ export default function Index() {
   }, [analyseCrypto, analyseStock, analyseForex]);
 
   const getQuickPicks = useCallback(() => {
-    if (assetType === 'crypto') return CRYPTO_PICKS.map(p => ({ label: p.sym, id: p.id }));
-    if (assetType === 'stocks') {
+    let items: { label: string; id: string; signal?: { label: string; score: number; confidence: number } }[] = [];
+    if (assetType === 'crypto') items = CRYPTO_PICKS.map(p => ({ label: p.sym, id: p.id }));
+    else if (assetType === 'stocks') {
       let picks = STOCK_PICKS_BY_EXCHANGE[stockExchange] || [];
       if (dividendOnly) picks = picks.filter(p => p.div);
-      return picks.map(p => ({ label: p.sym, id: p.sym }));
+      items = picks.map(p => ({ label: p.sym, id: p.sym }));
+    } else if (assetType === 'etfs') {
+      items = (ETF_PICKS_BY_EXCHANGE[etfExchange] || []).map(p => ({ label: p.sym, id: p.sym }));
+    } else {
+      items = FOREX_PICKS.map(p => ({ label: p.name, id: `${p.from}${p.to}` }));
     }
-    if (assetType === 'etfs') return (ETF_PICKS_BY_EXCHANGE[etfExchange] || []).map(p => ({ label: p.sym, id: p.sym }));
-    return FOREX_PICKS.map(p => ({ label: p.name, id: `${p.from}${p.to}` }));
-  }, [assetType, stockExchange, etfExchange, dividendOnly]);
+
+    // Attach signal data if ranked
+    const withSignals = items.map(item => {
+      const r = rankedPicks[item.id];
+      return r ? { ...item, signal: r } : item;
+    });
+
+    // Sort by confidence descending if any have signals
+    if (withSignals.some(p => p.signal)) {
+      withSignals.sort((a, b) => (b.signal?.confidence ?? -999) - (a.signal?.confidence ?? -999));
+    }
+
+    return withSignals;
+  }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks]);
+
+  const handleRankPicks = useCallback(async () => {
+    setRanking(true);
+    const picks = getQuickPicks();
+    const results: Record<string, { label: string; score: number; confidence: number }> = {};
+
+    const fetchOne = async (pick: { id: string }) => {
+      try {
+        let closes: number[], timestamps: number[], volumes: number[];
+        if (assetType === 'crypto') {
+          const result = await fetchCryptoHistory(pick.id, 90);
+          closes = result.priceData.closes;
+          timestamps = result.priceData.timestamps;
+          volumes = result.priceData.volumes || [];
+        } else if (assetType === 'forex') {
+          const from = pick.id.slice(0, 3);
+          const to = pick.id.slice(3, 6);
+          const result = await fetchForexHistory(from, to, 90);
+          closes = result.data.closes;
+          timestamps = result.data.timestamps;
+          volumes = result.data.volumes || [];
+        } else {
+          const result = await fetchEquityHistory(pick.id, 90);
+          closes = result.data.closes;
+          timestamps = result.data.timestamps;
+          volumes = result.data.volumes || [];
+        }
+        const ta = processTA(closes, timestamps, volumes, 30, assetType, ['holt'], 3);
+        results[pick.id] = { label: ta.signal.label, score: ta.signal.score, confidence: ta.signal.confidence };
+      } catch {
+        // skip failed ones
+      }
+    };
+
+    // Run in batches of 4 to avoid overwhelming APIs
+    for (let i = 0; i < picks.length; i += 4) {
+      await Promise.all(picks.slice(i, i + 4).map(fetchOne));
+    }
+
+    setRankedPicks(results);
+    setRanking(false);
+  }, [getQuickPicks, assetType]);
 
   const handleCurrencyChange = useCallback((code: string) => {
     const newVal = code === 'none' ? null : code;
@@ -381,7 +441,7 @@ export default function Index() {
             ]).map(t => (
               <button
                 key={t.key}
-                onClick={() => { setAssetType(t.key); setError(null); currentAssetRef.current = null; setDataSource(''); }}
+                onClick={() => { setAssetType(t.key); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); }}
                 className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   assetType === t.key
                     ? 'bg-primary/15 text-primary'
@@ -416,7 +476,7 @@ export default function Index() {
               )}
             </div>
           )}
-          <QuickPicks picks={getQuickPicks()} onSelect={handleQuickPick} loading={loading} />
+          <QuickPicks picks={getQuickPicks()} onSelect={handleQuickPick} loading={loading} onRank={handleRankPicks} ranking={ranking} />
         </div>
 
         {loading && (
