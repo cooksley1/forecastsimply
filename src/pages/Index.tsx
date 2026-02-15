@@ -259,6 +259,10 @@ export default function Index() {
   }, [timeframeDays, forecastPercent, forecastMethods, riskLevel]);
 
   /* ── Handlers ── */
+  const EXCHANGE_SUFFIXES: Record<string, string> = {
+    US: '', ASX: '.AX', LSE: '.L', TSE: '.TO', XETRA: '.DE', HKSE: '.HK', JPX: '.T',
+  };
+
   const handleSearch = useCallback(async (query: string) => {
     if (assetType === 'crypto') {
       setLoading(true);
@@ -267,14 +271,47 @@ export default function Index() {
         if (results.length > 0) await analyseCrypto(results[0].id);
         else { setError(`Symbol '${query}' not found.`); setLoading(false); }
       } catch (e: any) { setError(e.message); setLoading(false); }
-    } else if (assetType === 'stocks') await analyseStock(query.toUpperCase().trim(), 'stocks');
-    else if (assetType === 'etfs') await analyseStock(query.toUpperCase().trim(), 'etfs');
-    else if (assetType === 'forex') {
+    } else if (assetType === 'stocks' || assetType === 'etfs') {
+      const raw = query.toUpperCase().trim();
+      const type = assetType;
+      const exchange = type === 'stocks' ? stockExchange : etfExchange;
+      const suffix = EXCHANGE_SUFFIXES[exchange];
+
+      // If a specific exchange is selected and the query doesn't already have a suffix, try with suffix first
+      if (exchange !== 'ALL' && suffix !== undefined && !raw.includes('.')) {
+        const tickerWithSuffix = suffix ? `${raw}${suffix}` : raw;
+        try {
+          await analyseStock(tickerWithSuffix, type);
+          return;
+        } catch {
+          // Try raw ticker as fallback, then suggest alternatives
+        }
+      }
+
+      // Try raw ticker
+      try {
+        await analyseStock(raw, type);
+      } catch (primaryError: any) {
+        // If a specific exchange was selected and raw failed too, suggest other exchanges
+        if (exchange !== 'ALL' && !raw.includes('.')) {
+          const suggestions: string[] = [];
+          const suffixEntries = Object.entries(EXCHANGE_SUFFIXES).filter(([k]) => k !== exchange);
+          for (const [ex, suf] of suffixEntries) {
+            suggestions.push(suf ? `${raw}${suf}` : raw);
+          }
+          setError(
+            `'${raw}' not found on ${exchange}. Try searching with a full ticker like: ${suggestions.slice(0, 4).join(', ')}`
+          );
+        } else {
+          setError(primaryError.message || `Failed to fetch ${raw}.`);
+        }
+      }
+    } else if (assetType === 'forex') {
       const clean = query.toUpperCase().replace(/[^A-Z]/g, '');
       if (clean.length === 6) await analyseForex(clean);
       else setError('Enter a 6-character pair like AUDUSD');
     }
-  }, [assetType, analyseCrypto, analyseStock, analyseForex]);
+  }, [assetType, stockExchange, etfExchange, analyseCrypto, analyseStock, analyseForex]);
 
   const handleQuickPick = useCallback((id: string) => {
     if (assetType === 'crypto') analyseCrypto(id);
