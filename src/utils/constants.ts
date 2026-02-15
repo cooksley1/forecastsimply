@@ -75,11 +75,14 @@ export const FOREX_PICKS = [
 ];
 
 export const CRYPTO_TIMEFRAMES = [
+  { label: '1H', days: 0.042 },
+  { label: '4H', days: 0.167 },
   { label: '24H', days: 1 },
   { label: '7D', days: 7 },
   { label: '30D', days: 30 },
   { label: '90D', days: 90 },
   { label: '1Y', days: 365 },
+  { label: 'ALL', days: 99999 },
 ];
 
 export const STOCK_TIMEFRAMES = [
