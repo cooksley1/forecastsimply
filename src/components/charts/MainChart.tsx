@@ -87,26 +87,18 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
   const formatTime = (ts: number) => {
     const d = new Date(ts);
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    if (spanDays < 0.25) {
-      // Under 6 hours — HH:MM
-      return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-    } else if (spanDays < 2) {
-      // Under 2 days — HH:MM
-      return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-    } else if (spanDays < 14) {
-      // Under 2 weeks — day + abbreviated month
-      return `${months[d.getMonth()]} ${d.getDate()}`;
+    if (spanDays < 2) {
+      // Under 2 days — just hours
+      return `${d.getHours().toString().padStart(2,'0')}:00`;
     } else if (spanDays < 180) {
       // Under 6 months — month + day
       return `${months[d.getMonth()]} ${d.getDate()}`;
     } else if (spanDays < 900) {
       // Under ~2.5 years — month + short year
       return `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
+    } else if (spanDays < 2000) {
+      return `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
     } else {
-      // Long range — just year, or quarter+year if under 5 years
-      if (spanDays < 2000) {
-        return `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
-      }
       return `${d.getFullYear()}`;
     }
   };
