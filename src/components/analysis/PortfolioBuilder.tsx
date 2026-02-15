@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { RiskProfile } from '@/components/charts/ChartControls';
+import { getRiskMeta, riskLevelToProfile, type RiskLevel } from '@/components/charts/ChartControls';
 import { fmtPrice } from '@/utils/format';
 
 interface Props {
@@ -22,12 +23,27 @@ const PORTFOLIOS: Record<RiskProfile, Allocation[]> = {
     { name: 'Bitcoin', ticker: 'BTC', percent: 10, type: 'crypto', reason: 'Small crypto exposure for growth' },
     { name: 'Cash Reserve', ticker: 'CASH', percent: 5, type: 'etfs', reason: 'Emergency buffer, buying dips' },
   ],
+  'moderate-conservative': [
+    { name: 'S&P 500 ETF', ticker: 'VOO', percent: 35, type: 'etfs', reason: 'Core US equities position' },
+    { name: 'Bond ETF', ticker: 'BND', percent: 20, type: 'etfs', reason: 'Income & stability anchor' },
+    { name: 'Gold ETF', ticker: 'GLD', percent: 10, type: 'etfs', reason: 'Inflation hedge' },
+    { name: 'International ETF', ticker: 'VEU', percent: 15, type: 'etfs', reason: 'Global diversification' },
+    { name: 'Bitcoin', ticker: 'BTC', percent: 15, type: 'crypto', reason: 'Moderate crypto allocation' },
+    { name: 'Cash Reserve', ticker: 'CASH', percent: 5, type: 'etfs', reason: 'Liquidity buffer' },
+  ],
   moderate: [
     { name: 'S&P 500 ETF', ticker: 'VOO', percent: 30, type: 'etfs', reason: 'Core US equities position' },
     { name: 'Nasdaq 100 ETF', ticker: 'QQQ', percent: 20, type: 'etfs', reason: 'Tech-heavy growth allocation' },
     { name: 'Bitcoin', ticker: 'BTC', percent: 20, type: 'crypto', reason: 'Digital gold, long-term growth' },
     { name: 'Ethereum', ticker: 'ETH', percent: 15, type: 'crypto', reason: 'Smart contract platform leader' },
     { name: 'International ETF', ticker: 'VEU', percent: 15, type: 'etfs', reason: 'Global diversification' },
+  ],
+  'moderate-aggressive': [
+    { name: 'Bitcoin', ticker: 'BTC', percent: 25, type: 'crypto', reason: 'High-conviction crypto holding' },
+    { name: 'Nasdaq 100 ETF', ticker: 'QQQ', percent: 25, type: 'etfs', reason: 'Tech growth exposure' },
+    { name: 'Ethereum', ticker: 'ETH', percent: 20, type: 'crypto', reason: 'DeFi ecosystem leader' },
+    { name: 'Solana', ticker: 'SOL', percent: 10, type: 'crypto', reason: 'High-speed L1 momentum' },
+    { name: 'Small Cap Growth', ticker: 'VBK', percent: 20, type: 'etfs', reason: 'High-growth small companies' },
   ],
   aggressive: [
     { name: 'Bitcoin', ticker: 'BTC', percent: 30, type: 'crypto', reason: 'Highest conviction crypto asset' },
@@ -39,8 +55,10 @@ const PORTFOLIOS: Record<RiskProfile, Allocation[]> = {
 };
 
 const PROFILE_LABELS: Record<RiskProfile, { label: string; desc: string; color: string }> = {
-  conservative: { label: '🛡️ Conservative', desc: 'Focus on capital preservation with steady growth. Target: 5-10% annual returns.', color: 'text-positive' },
-  moderate: { label: '⚖️ Moderate', desc: 'Balanced approach mixing stability with growth. Target: 10-20% annual returns.', color: 'text-primary' },
+  conservative: { label: '🛡️ Conservative', desc: 'Focus on capital preservation with steady growth. Target: 5-8% annual returns.', color: 'text-positive' },
+  'moderate-conservative': { label: '🔒 Mod-Conservative', desc: 'Stability-first with measured growth. Target: 8-12% annual returns.', color: 'text-positive' },
+  moderate: { label: '⚖️ Moderate', desc: 'Balanced approach mixing stability with growth. Target: 10-18% annual returns.', color: 'text-primary' },
+  'moderate-aggressive': { label: '📈 Mod-Aggressive', desc: 'Growth-focused with controlled risk. Target: 15-25% annual returns.', color: 'text-warning' },
   aggressive: { label: '🔥 Aggressive', desc: 'Maximum growth potential, higher volatility. Target: 20%+ annual returns.', color: 'text-warning' },
 };
 

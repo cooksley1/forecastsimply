@@ -1,4 +1,21 @@
-export type RiskProfile = 'conservative' | 'moderate' | 'aggressive';
+export type RiskLevel = 1 | 2 | 3 | 4 | 5;
+export type RiskProfile = 'conservative' | 'moderate-conservative' | 'moderate' | 'moderate-aggressive' | 'aggressive';
+
+const RISK_META: { level: RiskLevel; profile: RiskProfile; label: string; icon: string; desc: string }[] = [
+  { level: 1, profile: 'conservative', label: 'Conservative', icon: '🛡️', desc: 'Capital preservation' },
+  { level: 2, profile: 'moderate-conservative', label: 'Mod-Conservative', icon: '🔒', desc: 'Steady growth' },
+  { level: 3, profile: 'moderate', label: 'Moderate', icon: '⚖️', desc: 'Balanced' },
+  { level: 4, profile: 'moderate-aggressive', label: 'Mod-Aggressive', icon: '📈', desc: 'Growth-focused' },
+  { level: 5, profile: 'aggressive', label: 'Aggressive', icon: '🔥', desc: 'Max returns' },
+];
+
+export function riskLevelToProfile(level: RiskLevel): RiskProfile {
+  return RISK_META.find(r => r.level === level)!.profile;
+}
+
+export function getRiskMeta(level: RiskLevel) {
+  return RISK_META.find(r => r.level === level)!;
+}
 
 interface Props {
   timeframes: { label: string; days: number }[];
@@ -6,44 +23,59 @@ interface Props {
   setTimeframeDays: (d: number) => void;
   forecastPercent: number;
   setForecastPercent: (p: number) => void;
-  riskProfile: RiskProfile;
-  setRiskProfile: (r: RiskProfile) => void;
+  riskLevel: RiskLevel;
+  setRiskLevel: (r: RiskLevel) => void;
 }
-
-const RISK_PROFILES: { id: RiskProfile; label: string; icon: string; desc: string }[] = [
-  { id: 'conservative', label: 'Conservative', icon: '🛡️', desc: 'Lower risk, steady returns' },
-  { id: 'moderate', label: 'Moderate', icon: '⚖️', desc: 'Balanced risk & reward' },
-  { id: 'aggressive', label: 'Aggressive', icon: '🔥', desc: 'Higher risk, bigger moves' },
-];
 
 export default function ChartControls({
   timeframes, timeframeDays, setTimeframeDays,
   forecastPercent, setForecastPercent,
-  riskProfile, setRiskProfile,
+  riskLevel, setRiskLevel,
 }: Props) {
+  const meta = getRiskMeta(riskLevel);
+
   return (
     <div className="bg-sf-card border border-border rounded-xl p-3 space-y-4 lg:sticky lg:top-4">
-      {/* Risk Profile */}
-      <div className="space-y-1.5">
+      {/* Risk Profile - 5-point slider */}
+      <div className="space-y-2">
         <span className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Risk Profile</span>
-        <div className="flex flex-col gap-1">
-          {RISK_PROFILES.map(r => (
-            <button
-              key={r.id}
-              onClick={() => setRiskProfile(r.id)}
-              className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs transition-all text-left ${
-                riskProfile === r.id
-                  ? 'bg-primary/10 border border-primary text-primary'
-                  : 'border border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30'
-              }`}
-            >
-              <span>{r.icon}</span>
-              <div>
-                <div className="font-medium">{r.label}</div>
-                <div className="text-muted-foreground/70 text-[9px]">{r.desc}</div>
-              </div>
-            </button>
-          ))}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <input
+              type="range"
+              min={1}
+              max={5}
+              step={1}
+              value={riskLevel}
+              onChange={e => setRiskLevel(Number(e.target.value) as RiskLevel)}
+              className="flex-1 accent-primary"
+            />
+          </div>
+          {/* Scale indicators */}
+          <div className="flex justify-between px-0.5">
+            {RISK_META.map(r => (
+              <button
+                key={r.level}
+                onClick={() => setRiskLevel(r.level)}
+                className={`flex flex-col items-center gap-0.5 transition-all ${
+                  riskLevel === r.level ? 'scale-110' : 'opacity-50 hover:opacity-80'
+                }`}
+                title={`${r.label}: ${r.desc}`}
+              >
+                <span className="text-sm">{r.icon}</span>
+                <span className={`text-[8px] font-mono leading-tight ${
+                  riskLevel === r.level ? 'text-primary font-semibold' : 'text-muted-foreground'
+                }`}>
+                  {r.level}
+                </span>
+              </button>
+            ))}
+          </div>
+          {/* Active label */}
+          <div className="text-center">
+            <span className="text-[10px] sm:text-xs font-medium text-primary">{meta.icon} {meta.label}</span>
+            <span className="text-[9px] text-muted-foreground/70 ml-1.5">— {meta.desc}</span>
+          </div>
         </div>
       </div>
 

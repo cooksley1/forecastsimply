@@ -9,7 +9,8 @@ import ForecastMethodBar from '@/components/charts/ForecastMethodBar';
 import VolumeChart from '@/components/charts/VolumeChart';
 import RSIChart from '@/components/charts/RSIChart';
 import ChartControls from '@/components/charts/ChartControls';
-import type { RiskProfile } from '@/components/charts/ChartControls';
+import type { RiskProfile, RiskLevel } from '@/components/charts/ChartControls';
+import { riskLevelToProfile, getRiskMeta } from '@/components/charts/ChartControls';
 import SignalPanel from '@/components/analysis/SignalPanel';
 import RecommendationPanel from '@/components/analysis/RecommendationPanel';
 import TradeSetupPanel from '@/components/analysis/TradeSetupPanel';
@@ -51,7 +52,8 @@ export default function Index() {
   const [timeframeDays, setTimeframeDays] = useState(90);
   const [forecastPercent, setForecastPercent] = useState(30);
   const [forecastMethods, setForecastMethods] = useState<ForecastMethodId[]>(['holt']);
-  const [riskProfile, setRiskProfile] = useState<RiskProfile>('moderate');
+  const [riskLevel, setRiskLevel] = useState<RiskLevel>(3);
+  const riskProfile = riskLevelToProfile(riskLevel);
   const [dataSource, setDataSource] = useState<string>('');
   const [secondaryCurrency, setSecCurrency] = useState<string | null>(getSecondaryCurrency());
   const [secondaryPrice, setSecondaryPrice] = useState<number | null>(null);
@@ -347,19 +349,18 @@ export default function Index() {
                     </button>
                   ))}
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <span className="text-[10px] text-muted-foreground font-mono uppercase">Risk:</span>
-                  {(['conservative', 'moderate', 'aggressive'] as RiskProfile[]).map(r => (
-                    <button
-                      key={r}
-                      onClick={() => setRiskProfile(r)}
-                      className={`px-2 py-1 rounded text-[10px] font-mono transition-all ${
-                        riskProfile === r ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {r === 'conservative' ? '🛡️' : r === 'moderate' ? '⚖️' : '🔥'}
-                    </button>
-                  ))}
+                  <input
+                    type="range"
+                    min={1}
+                    max={5}
+                    step={1}
+                    value={riskLevel}
+                    onChange={e => setRiskLevel(Number(e.target.value) as RiskLevel)}
+                    className="w-20 accent-primary"
+                  />
+                  <span className="text-[10px] font-mono text-primary">{getRiskMeta(riskLevel).icon} {getRiskMeta(riskLevel).label}</span>
                 </div>
                 <div className="flex items-center gap-1.5 ml-auto">
                   <span className="text-[10px] text-muted-foreground font-mono">FC {forecastPercent}%</span>
