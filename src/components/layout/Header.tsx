@@ -9,8 +9,8 @@ import AccountPanel from '@/components/account/AccountPanel';
 import WatchlistDropdown from '@/components/layout/WatchlistDropdown';
 import { getStoredApiKey } from '@/components/settings/ApiKeySettings';
 import type { WatchlistItem } from '@/types/assets';
-import logoHeaderDark from '@/assets/logo-header.svg';
-import logoHeaderLight from '@/assets/logo-header-light.svg';
+import logoStackedDark from '@/assets/logo-stacked.svg';
+import logoStackedLight from '@/assets/logo-stacked-light.svg';
 
 interface Props {
   watchlist?: WatchlistItem[];
@@ -29,14 +29,14 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
   const { isAdmin } = useAdminCheck();
   const navigate = useNavigate();
   const hasKey = !!getStoredApiKey();
-  const logoHeader = theme === 'dark' ? logoHeaderDark : logoHeaderLight;
+  const logo = theme === 'dark' ? logoStackedDark : logoStackedLight;
 
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-border bg-background px-2 sm:px-4 py-2 sm:py-3 overflow-hidden" style={{ height: '56px', position: 'sticky' }}>
         <div className="max-w-7xl mx-auto h-full">
           <div className="flex items-center justify-between h-full">
-            <img src={logoHeader} alt="ForecastSimply" className="h-7 sm:h-9 shrink-0" />
+            <img src={logo} alt="ForecastSimply" className="h-9 sm:h-11 shrink-0" />
 
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               {onWatchlistSelect && (

@@ -5,15 +5,14 @@ import LoginDialog from '@/components/auth/LoginDialog';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import { useState } from 'react';
 import SEO from '@/components/SEO';
-import logoHeaderDark from '@/assets/logo-header.svg';
-import logoHeaderLight from '@/assets/logo-header-light.svg';
-import logoStacked from '@/assets/logo-stacked.svg';
+import logoStackedDark from '@/assets/logo-stacked.svg';
+import logoStackedLight from '@/assets/logo-stacked-light.svg';
 
 export default function Landing() {
   const { user, loading } = useAuth();
   const { theme } = useTheme();
   const [loginOpen, setLoginOpen] = useState(false);
-  const logoHeader = theme === 'dark' ? logoHeaderDark : logoHeaderLight;
+  const logo = theme === 'dark' ? logoStackedDark : logoStackedLight;
 
   // If logged in, redirect to main app instead of showing blank
   if (user) return <Navigate to="/" replace />;
@@ -28,7 +27,7 @@ export default function Landing() {
       {/* Header */}
       <header className="border-b border-border px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <img src={logoHeader} alt="ForecastSimply" className="h-8 sm:h-9" />
+          <img src={logo} alt="ForecastSimply" className="h-10 sm:h-11" />
           <div className="flex items-center gap-2">
             <Link to="/about" className="text-xs text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">About</Link>
             <Link to="/faq" className="text-xs text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">FAQ</Link>

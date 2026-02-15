@@ -1,0 +1,31 @@
+<svg viewBox="0 0 300 200" width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="fg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#94a3b8"/>
+      <stop offset="50%" stop-color="#0099aa"/>
+      <stop offset="100%" stop-color="#16a34a"/>
+    </linearGradient>
+    <linearGradient id="cb" x1="0%" y1="0%" x2="0%" y2="1">
+      <stop offset="0%" stop-color="#16a34a" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#16a34a" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="gl">
+      <feGaussianBlur stdDeviation="2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Icon centred -->
+  <rect x="112" y="10" width="76" height="76" rx="16" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  <path d="M124,52 Q138,48 148,44 Q158,40 166,34 Q170,32 176,28 L176,40 Q170,43 166,45 Q158,48 148,50 Q138,52 124,54 Z" fill="url(#cb)"/>
+  <path d="M124,54 Q130,56 136,52 Q142,48 146,50 Q150,52 154,48" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+  <path d="M154,48 Q162,40 170,32 Q173,29 176,26" fill="none" stroke="url(#fg)" stroke-width="2" stroke-linecap="round" filter="url(#gl)"/>
+  <circle cx="154" cy="48" r="3.5" fill="#0099aa" filter="url(#gl)"/>
+  <circle cx="154" cy="48" r="1.8" fill="#f8fafc"/>
+  <circle cx="176" cy="26" r="3.5" fill="#16a34a" filter="url(#gl)"/>
+  <circle cx="176" cy="26" r="1.8" fill="#f8fafc"/>
+  <line x1="122" y1="68" x2="178" y2="68" stroke="#e2e8f0" stroke-width="0.8"/>
+  <!-- Wordmark -->
+  <text x="150" y="120" text-anchor="middle" font-family="'Outfit', 'Manrope', sans-serif" font-size="28" font-weight="700" fill="#1e293b" letter-spacing="-0.5">Forecast<tspan font-weight="300" fill="#94a3b8">Simply</tspan></text>
+  <!-- Tagline -->
+  <text x="150" y="142" text-anchor="middle" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="8" fill="#94a3b8" letter-spacing="2.5">ANALYSE · FORECAST · DECIDE</text>
+</svg>
