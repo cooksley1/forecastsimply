@@ -34,6 +34,14 @@ export default function About() {
               <h3 className="text-foreground font-semibold">🚀 Breakout Finder</h3>
               <p className="text-xs">Automated scanning of trending assets to identify potential breakout opportunities.</p>
             </div>
+            <div className="bg-card border border-border rounded-xl p-4 space-y-2">
+              <h3 className="text-foreground font-semibold">🔔 Price Alerts</h3>
+              <p className="text-xs">Set target prices or percentage moves and get notified via push notifications or email fallback.</p>
+            </div>
+            <div className="bg-card border border-border rounded-xl p-4 space-y-2">
+              <h3 className="text-foreground font-semibold">📬 Weekly Digest</h3>
+              <p className="text-xs">AI-curated weekly market insights, watchlist alerts, and top recommendations delivered to your inbox.</p>
+            </div>
           </div>
 
           <h2 className="text-lg font-semibold text-foreground pt-4">Our Mission</h2>
