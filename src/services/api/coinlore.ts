@@ -19,18 +19,26 @@ export interface CoinLoreTicker {
   rank: number;
 }
 
-/** Fetch top N coins by market cap (max 100 per call) */
+/** Fetch top N coins by market cap (paginated, 100 per call) */
 export async function getTopTickers(limit = 50): Promise<CoinLoreTicker[]> {
   const key = `cl_top_${limit}`;
   const cached = getCached<CoinLoreTicker[]>(key, CACHE_TTL);
   if (cached) return cached;
 
-  const res = await fetch(`${BASE}/tickers/?start=0&limit=${limit}`);
-  if (!res.ok) throw new Error(`CoinLore ${res.status}`);
-  const data = await res.json();
-  const tickers: CoinLoreTicker[] = data.data || [];
-  setCache(key, tickers);
-  return tickers;
+  const all: CoinLoreTicker[] = [];
+  const pageSize = 100;
+  for (let start = 0; start < limit; start += pageSize) {
+    const batchLimit = Math.min(pageSize, limit - start);
+    const res = await fetch(`${BASE}/tickers/?start=${start}&limit=${batchLimit}`);
+    if (!res.ok) throw new Error(`CoinLore ${res.status}`);
+    const data = await res.json();
+    const tickers: CoinLoreTicker[] = data.data || [];
+    all.push(...tickers);
+    if (tickers.length < batchLimit) break;
+  }
+
+  setCache(key, all);
+  return all;
 }
 
 /** Fetch a specific coin by CoinLore ID */

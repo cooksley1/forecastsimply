@@ -75,11 +75,11 @@ export default function BreakoutFinder({ onSelect }: Props) {
     setScannedCount(0);
 
     try {
-      // Step 1: Fetch top 100 coins from CoinLore (single fast call, no rate limits)
-      setScanStatus('Fetching top 100 coins from CoinLore...');
+      // Step 1: Fetch top 300 coins from CoinLore (3 paginated calls, no rate limits)
+      setScanStatus('Fetching top 300 coins from CoinLore...');
       let tickers: CoinLoreTicker[] = [];
       try {
-        tickers = await getTopTickers(100);
+        tickers = await getTopTickers(300);
       } catch { /* fallback to empty */ }
 
       // Step 2: Pre-screen — score each coin using CoinLore data only
@@ -246,7 +246,7 @@ export default function BreakoutFinder({ onSelect }: Props) {
         <div>
           <h3 className="text-sm sm:text-base font-semibold text-foreground">🚀 Breakout Finder</h3>
           <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-            Pre-screens 100 coins via CoinLore, verifies prices via DIA, then deep-analyses with CoinGecko charts
+            Pre-screens 300 coins via CoinLore, verifies prices via DIA, then deep-analyses with CoinGecko charts
           </p>
         </div>
         <div className="flex gap-2">
@@ -371,7 +371,7 @@ export default function BreakoutFinder({ onSelect }: Props) {
 
       {result === null && !scanning && (
         <p className="text-[10px] text-muted-foreground/60 text-center py-2">
-          Screens 100 coins via CoinLore instantly, then deep-analyses the best candidates with full TA
+          Screens 300 coins via CoinLore instantly, then deep-analyses the best candidates with full TA
         </p>
       )}
     </div>
