@@ -623,7 +623,17 @@ export default function Index() {
             </div>
 
             <ForecastMethodBar selectedMethods={forecastMethods} setSelectedMethods={setForecastMethods} />
-            <AnalysisOverlayBar selected={activeOverlays} setSelected={setActiveOverlays} />
+            <AnalysisOverlayBar selected={activeOverlays} setSelected={(ids) => {
+              setActiveOverlays(ids);
+              // Scroll to chart when an overlay is toggled
+              setTimeout(() => {
+                const el = document.getElementById('section-chart');
+                if (el) {
+                  const y = el.getBoundingClientRect().top + window.scrollY - 160;
+                  window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+                }
+              }, 50);
+            }} />
 
             {/* Card Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

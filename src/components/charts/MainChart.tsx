@@ -327,8 +327,8 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
             {/* Ichimoku Cloud — bolder fills and lines */}
             {showIchimoku && (
               <>
-                <Area dataKey="senkouA" stroke="none" fill="hsl(160 60% 45% / 0.30)" />
-                <Area dataKey="senkouB" stroke="none" fill="hsl(0 60% 45% / 0.25)" />
+                <Area dataKey="senkouA" stroke="none" fill="hsl(160 60% 45% / 0.40)" />
+                <Area dataKey="senkouB" stroke="none" fill="hsl(0 60% 45% / 0.35)" />
                 <Line dataKey="tenkan" stroke="hsl(160 80% 65%)" strokeWidth={2.5} dot={false} name="Tenkan (9)" />
                 <Line dataKey="kijun" stroke="hsl(0 80% 65%)" strokeWidth={2.5} dot={false} name="Kijun (26)" />
                 <Line dataKey="senkouA" stroke="hsl(160 70% 55% / 0.8)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Senkou A" />
@@ -339,7 +339,7 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
             {/* Bollinger Bands — stronger fill and thicker lines */}
             {showBB && (
               <>
-                <Area dataKey="bbUpper" stroke="none" fill="hsl(213 70% 60% / 0.25)" />
+                <Area dataKey="bbUpper" stroke="none" fill="hsl(213 70% 60% / 0.30)" />
                 <Area dataKey="bbLower" stroke="none" fill="transparent" />
                 <Line dataKey="bbUpper" stroke="hsl(213 80% 70%)" strokeWidth={2} strokeDasharray="6 3" dot={false} name="BB Upper" />
                 <Line dataKey="bbLower" stroke="hsl(213 80% 70%)" strokeWidth={2} strokeDasharray="6 3" dot={false} name="BB Lower" />
@@ -391,7 +391,7 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
             {/* Forecast bands */}
             {primaryForecast && (
               <>
-                <Area dataKey={`fcU_${primaryForecast.methodId}`} stroke="none" fill={`${primaryForecast.color.replace(')', ' / 0.06)')}`} />
+                <Area dataKey={`fcU_${primaryForecast.methodId}`} stroke="none" fill={`${primaryForecast.color.replace(')', ' / 0.12)')}`} />
                 <Area dataKey={`fcL_${primaryForecast.methodId}`} stroke="none" fill="transparent" />
               </>
             )}
