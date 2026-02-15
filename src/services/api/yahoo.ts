@@ -2,6 +2,9 @@ import { getCached, setCache } from '../cache';
 
 const CACHE_TTL = 10 * 60 * 1000; // 10 min
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
 const CORS_PROXIES = [
   'https://api.allorigins.win/raw?url=',
   'https://corsproxy.io/?',
@@ -92,9 +95,33 @@ export async function getStockChart(symbol: string, days: number): Promise<Yahoo
   if (cached) return cached;
 
   const { range, interval } = daysToRange(days);
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}&includePrePost=false`;
 
-  const data = await fetchWithProxy(url);
+  let data: any = null;
+
+  // Try edge function proxy first (most reliable, no CORS issues)
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      const proxyUrl = `${SUPABASE_URL}/functions/v1/yahoo-proxy?symbol=${encodeURIComponent(symbol)}&range=${range}&interval=${interval}`;
+      const res = await fetch(proxyUrl, {
+        headers: { 'apikey': SUPABASE_ANON_KEY },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (res.ok) {
+        const parsed = await res.json();
+        if (parsed?.chart?.result || parsed?.chart?.error) {
+          data = parsed;
+        }
+      }
+    } catch (e: any) {
+      console.warn('Yahoo edge proxy failed:', e.message);
+    }
+  }
+
+  // Fallback to CORS proxies if edge function failed
+  if (!data) {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}&includePrePost=false`;
+    data = await fetchWithProxy(url);
+  }
 
   if (data?.chart?.error) {
     throw new Error(data.chart.error.description || `Yahoo API error for ${symbol}`);
