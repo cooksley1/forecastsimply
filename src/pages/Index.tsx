@@ -42,6 +42,7 @@ import ExchangeSelector, { STOCK_EXCHANGES, ETF_EXCHANGES } from '@/components/s
 import StickySubNav from '@/components/layout/StickySubNav';
 import { useExchangeScreener } from '@/hooks/useExchangeScreener';
 import SocialShare from '@/components/SocialShare';
+import ReportButton from '@/components/analysis/ReportButton';
 import SmartFeed from '@/components/SmartFeed';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import type { AssetType, AssetInfo, WatchlistItem } from '@/types/assets';
@@ -619,6 +620,7 @@ export default function Index() {
                   🔔 Alert
                 </button>
                 <SocialShare assetInfo={assetInfo} technicalData={technicalData} />
+                <ReportButton assetInfo={assetInfo} technicalData={technicalData} timeframeDays={timeframeDays} riskLevel={riskLevel} dataSource={dataSource} />
               </div>
             </div>
 
