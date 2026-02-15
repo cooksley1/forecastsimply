@@ -4,12 +4,14 @@ import {
   Area, ComposedChart, ReferenceLine,
 } from 'recharts';
 import type { TechnicalData } from '@/types/analysis';
+import type { OverlayId } from './AnalysisOverlayBar';
 import { fmtPrice } from '@/utils/format';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Props {
   data: TechnicalData;
   timeframeDays?: number;
+  activeOverlays?: OverlayId[];
 }
 
 function getFormatTime(spanDays: number) {
@@ -22,8 +24,6 @@ function getFormatTime(spanDays: number) {
       return `${d.getHours().toString().padStart(2,'0')}:00`;
     } else if (spanDays < 60) {
       return `${months[d.getMonth()]} ${d.getDate()}`;
-    } else if (spanDays < 365) {
-      return `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
     } else {
       return `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
     }
@@ -40,15 +40,21 @@ function getFormatTooltipLabel(spanDays: number) {
   };
 }
 
-export default function MainChart({ data, timeframeDays = 90 }: Props) {
+export default function MainChart({ data, timeframeDays = 90, activeOverlays = [] }: Props) {
   const isMobile = useIsMobile();
   const { prices, indicators, forecasts } = data;
+  const overlayData = (data as any).overlayData;
 
-  // Zoom state: start/end as fraction of combined array [0, 1]
   const [zoomStart, setZoomStart] = useState(0);
   const [zoomEnd, setZoomEnd] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
   const pinchRef = useRef<{ startDist: number; startZoomStart: number; startZoomEnd: number } | null>(null);
+
+  const showBB = activeOverlays.includes('bollinger');
+  const showVWAP = activeOverlays.includes('vwap');
+  const showEMACross = activeOverlays.includes('ema_cross');
+  const showIchimoku = activeOverlays.includes('ichimoku');
+  const showFib = activeOverlays.includes('fibonacci');
 
   const combined = useMemo(() => {
     const chartData = prices.map((p, i) => {
@@ -57,12 +63,29 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
         price: p.close,
         sma20: isNaN(indicators.sma20[i]) ? undefined : indicators.sma20[i],
         sma50: isNaN(indicators.sma50[i]) ? undefined : indicators.sma50[i],
-        bbUpper: isNaN(indicators.bbUpper[i]) ? undefined : indicators.bbUpper[i],
-        bbLower: isNaN(indicators.bbLower[i]) ? undefined : indicators.bbLower[i],
         volume: p.volume,
       };
       if (indicators.sma200 && indicators.sma200[i] !== undefined && !isNaN(indicators.sma200[i])) {
         row.sma200 = indicators.sma200[i];
+      }
+      // Overlay data
+      if (showBB) {
+        row.bbUpper = isNaN(indicators.bbUpper[i]) ? undefined : indicators.bbUpper[i];
+        row.bbLower = isNaN(indicators.bbLower[i]) ? undefined : indicators.bbLower[i];
+      }
+      if (showVWAP && overlayData?.vwap) {
+        row.vwap = overlayData.vwap[i];
+      }
+      if (showEMACross && overlayData?.emaPair) {
+        row.ema12 = overlayData.emaPair.ema12[i];
+        row.ema26 = overlayData.emaPair.ema26[i];
+      }
+      if (showIchimoku && overlayData?.ichimoku) {
+        const ichi = overlayData.ichimoku;
+        row.tenkan = isNaN(ichi.tenkan[i]) ? undefined : ichi.tenkan[i];
+        row.kijun = isNaN(ichi.kijun[i]) ? undefined : ichi.kijun[i];
+        row.senkouA = isNaN(ichi.senkouA[i]) ? undefined : ichi.senkouA[i];
+        row.senkouB = isNaN(ichi.senkouB[i]) ? undefined : ichi.senkouB[i];
       }
       return row;
     });
@@ -74,6 +97,7 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
       time: lastPrice.timestamp,
       price: lastPrice.close,
       sma20: undefined, sma50: undefined, sma200: undefined, bbUpper: undefined, bbLower: undefined, volume: undefined,
+      vwap: undefined, ema12: undefined, ema26: undefined, tenkan: undefined, kijun: undefined, senkouA: undefined, senkouB: undefined,
     };
     forecasts.forEach(f => {
       bridgePoint[`fc_${f.methodId}`] = lastPrice.close;
@@ -84,9 +108,9 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
     const forecastPoints: Record<string, any>[] = [];
     for (let i = 0; i < maxForecastLen; i++) {
       const point: Record<string, any> = {
-        time: 0,
-        price: undefined,
+        time: 0, price: undefined,
         sma20: undefined, sma50: undefined, sma200: undefined, bbUpper: undefined, bbLower: undefined, volume: undefined,
+        vwap: undefined, ema12: undefined, ema26: undefined, tenkan: undefined, kijun: undefined, senkouA: undefined, senkouB: undefined,
       };
       forecasts.forEach(f => {
         if (i < f.points.length) {
@@ -112,7 +136,7 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
       bridgePoint,
       ...forecastPoints,
     ];
-  }, [prices, indicators, forecasts]);
+  }, [prices, indicators, forecasts, showBB, showVWAP, showEMACross, showIchimoku, overlayData]);
 
   // Reset zoom when data changes
   const prevDataLen = useRef(combined.length);
@@ -124,14 +148,12 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
     }
   }
 
-  // Slice visible data based on zoom
   const visibleData = useMemo(() => {
     const startIdx = Math.floor(zoomStart * combined.length);
     const endIdx = Math.ceil(zoomEnd * combined.length);
     return combined.slice(Math.max(0, startIdx), Math.min(combined.length, endIdx));
   }, [combined, zoomStart, zoomEnd]);
 
-  // Compute span from visible data
   const firstTs = visibleData[0]?.time || 0;
   const lastTs = visibleData[visibleData.length - 1]?.time || 0;
   const spanDays = (lastTs - firstTs) / 86_400_000;
@@ -142,10 +164,8 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
   // Pinch-to-zoom handlers
   const getTouchDist = (touches: React.TouchList) => {
     if (touches.length < 2) return 0;
-    const t0 = touches.item(0)!;
-    const t1 = touches.item(1)!;
-    const dx = t1.clientX - t0.clientX;
-    const dy = t1.clientY - t0.clientY;
+    const dx = touches.item(1)!.clientX - touches.item(0)!.clientX;
+    const dy = touches.item(1)!.clientY - touches.item(0)!.clientY;
     return Math.sqrt(dx * dx + dy * dy);
   };
 
@@ -153,20 +173,14 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
     if (touches.length < 2) return 0.5;
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return 0.5;
-    const t0 = touches.item(0)!;
-    const t1 = touches.item(1)!;
-    const cx = (t0.clientX + t1.clientX) / 2;
+    const cx = (touches.item(0)!.clientX + touches.item(1)!.clientX) / 2;
     return Math.max(0, Math.min(1, (cx - rect.left) / rect.width));
   };
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       e.preventDefault();
-      pinchRef.current = {
-        startDist: getTouchDist(e.touches),
-        startZoomStart: zoomStart,
-        startZoomEnd: zoomEnd,
-      };
+      pinchRef.current = { startDist: getTouchDist(e.touches), startZoomStart: zoomStart, startZoomEnd: zoomEnd };
     }
   }, [zoomStart, zoomEnd]);
 
@@ -174,72 +188,56 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
     if (e.touches.length === 2 && pinchRef.current) {
       e.preventDefault();
       const currentDist = getTouchDist(e.touches);
-      const scale = pinchRef.current.startDist / currentDist; // >1 = pinch in (zoom out), <1 = pinch out (zoom in)
+      const scale = pinchRef.current.startDist / currentDist;
       const center = getTouchCenter(e.touches);
-
       const origRange = pinchRef.current.startZoomEnd - pinchRef.current.startZoomStart;
       const newRange = Math.max(0.02, Math.min(1, origRange * scale));
-
       const origCenter = pinchRef.current.startZoomStart + origRange * center;
       let newStart = origCenter - newRange * center;
       let newEnd = newStart + newRange;
-
-      // Clamp
       if (newStart < 0) { newStart = 0; newEnd = newRange; }
       if (newEnd > 1) { newEnd = 1; newStart = 1 - newRange; }
-
       setZoomStart(Math.max(0, newStart));
       setZoomEnd(Math.min(1, newEnd));
     }
   }, []);
 
-  const handleTouchEnd = useCallback(() => {
-    pinchRef.current = null;
-  }, []);
+  const handleTouchEnd = useCallback(() => { pinchRef.current = null; }, []);
 
-  // Mouse wheel zoom (desktop)
   const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (!e.ctrlKey && !e.metaKey) return; // Only zoom with Ctrl/Cmd + scroll
+    if (!e.ctrlKey && !e.metaKey) return;
     e.preventDefault();
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
     const mouseX = (e.clientX - rect.left) / rect.width;
     const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
-
     const range = zoomEnd - zoomStart;
     const newRange = Math.max(0.02, Math.min(1, range * zoomFactor));
     const center = zoomStart + range * mouseX;
-
     let newStart = center - newRange * mouseX;
     let newEnd = newStart + newRange;
-
     if (newStart < 0) { newStart = 0; newEnd = newRange; }
     if (newEnd > 1) { newEnd = 1; newStart = 1 - newRange; }
-
     setZoomStart(Math.max(0, newStart));
     setZoomEnd(Math.min(1, newEnd));
   }, [zoomStart, zoomEnd]);
 
   const isZoomed = zoomStart > 0.001 || zoomEnd < 0.999;
-
-  const resetZoom = useCallback(() => {
-    setZoomStart(0);
-    setZoomEnd(1);
-  }, []);
+  const resetZoom = useCallback(() => { setZoomStart(0); setZoomEnd(1); }, []);
 
   const primaryForecast = forecasts[0];
   const hasSma200 = indicators.sma200 && indicators.sma200.some(v => !isNaN(v));
 
+  // Fibonacci levels
+  const fibLevels = overlayData?.fibonacci;
+
   return (
-    <div className="bg-sf-card border border-border rounded-xl p-3 sm:p-4">
+    <div className="bg-card border border-border rounded-xl p-3 sm:p-4">
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div className="flex items-center gap-2">
           <h3 className="text-foreground font-semibold text-xs sm:text-sm">Price Chart</h3>
           {isZoomed && (
-            <button
-              onClick={resetZoom}
-              className="text-[9px] font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded hover:bg-primary/20 transition-colors"
-            >
+            <button onClick={resetZoom} className="text-[9px] font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded hover:bg-primary/20 transition-colors">
               Reset Zoom
             </button>
           )}
@@ -260,6 +258,18 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
           <span className="text-[10px] sm:text-xs font-mono px-2 py-0.5 rounded bg-accent/15 text-accent">{data.marketPhase}</span>
         </div>
       </div>
+
+      {/* Active overlay legend */}
+      {activeOverlays.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap mb-2">
+          {showBB && <span className="text-[9px] font-mono" style={{ color: 'hsl(213 70% 60%)' }}>📏 BB</span>}
+          {showVWAP && <span className="text-[9px] font-mono" style={{ color: 'hsl(280 70% 60%)' }}>⚖️ VWAP</span>}
+          {showEMACross && <span className="text-[9px] font-mono" style={{ color: 'hsl(340 80% 55%)' }}>✂️ EMA12/26</span>}
+          {showIchimoku && <span className="text-[9px] font-mono" style={{ color: 'hsl(160 60% 45%)' }}>☁️ Ichimoku</span>}
+          {showFib && <span className="text-[9px] font-mono" style={{ color: 'hsl(45 90% 55%)' }}>🔢 Fib</span>}
+        </div>
+      )}
+
       <div
         ref={containerRef}
         onTouchStart={handleTouchStart}
@@ -278,16 +288,64 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
               labelFormatter={formatTooltipLabel}
               formatter={(value: number, name: string) => [fmtPrice(value), name]}
             />
-            <Area dataKey="bbUpper" stroke="none" fill="hsl(213 20% 55% / 0.08)" />
-            <Area dataKey="bbLower" stroke="none" fill="transparent" />
-            <Line dataKey="bbUpper" stroke="hsl(213 20% 55% / 0.3)" strokeWidth={1} strokeDasharray="4 4" dot={false} />
-            <Line dataKey="bbLower" stroke="hsl(213 20% 55% / 0.3)" strokeWidth={1} strokeDasharray="4 4" dot={false} />
+
+            {/* Ichimoku Cloud (render first so it's behind price) */}
+            {showIchimoku && (
+              <>
+                <Area dataKey="senkouA" stroke="none" fill="hsl(160 60% 45% / 0.08)" />
+                <Area dataKey="senkouB" stroke="none" fill="hsl(0 60% 45% / 0.06)" />
+                <Line dataKey="tenkan" stroke="hsl(160 60% 55%)" strokeWidth={1} dot={false} name="Tenkan" />
+                <Line dataKey="kijun" stroke="hsl(0 60% 55%)" strokeWidth={1} dot={false} name="Kijun" />
+                <Line dataKey="senkouA" stroke="hsl(160 60% 45% / 0.4)" strokeWidth={1} strokeDasharray="4 4" dot={false} name="Senkou A" />
+                <Line dataKey="senkouB" stroke="hsl(0 60% 45% / 0.4)" strokeWidth={1} strokeDasharray="4 4" dot={false} name="Senkou B" />
+              </>
+            )}
+
+            {/* Bollinger Bands */}
+            {showBB && (
+              <>
+                <Area dataKey="bbUpper" stroke="none" fill="hsl(213 70% 60% / 0.08)" />
+                <Area dataKey="bbLower" stroke="none" fill="transparent" />
+                <Line dataKey="bbUpper" stroke="hsl(213 70% 60% / 0.5)" strokeWidth={1} strokeDasharray="4 4" dot={false} name="BB Upper" />
+                <Line dataKey="bbLower" stroke="hsl(213 70% 60% / 0.5)" strokeWidth={1} strokeDasharray="4 4" dot={false} name="BB Lower" />
+              </>
+            )}
+
+            {/* VWAP */}
+            {showVWAP && (
+              <Line dataKey="vwap" stroke="hsl(280 70% 60%)" strokeWidth={1.5} dot={false} name="VWAP" />
+            )}
+
+            {/* EMA 12/26 */}
+            {showEMACross && (
+              <>
+                <Line dataKey="ema12" stroke="hsl(340 80% 55%)" strokeWidth={1.5} dot={false} name="EMA12" />
+                <Line dataKey="ema26" stroke="hsl(340 50% 40%)" strokeWidth={1.5} dot={false} name="EMA26" />
+              </>
+            )}
+
+            {/* SMAs (always shown) */}
             <Line dataKey="sma20" stroke="hsl(38 92% 50%)" strokeWidth={1.5} dot={false} name="SMA20" />
             <Line dataKey="sma50" stroke="hsl(25 95% 53%)" strokeWidth={1.5} dot={false} name="SMA50" />
             {hasSma200 && (
               <Line dataKey="sma200" stroke="hsl(213 20% 55% / 0.6)" strokeWidth={1} strokeDasharray="8 4" dot={false} name="SMA200" />
             )}
+
+            {/* Price line */}
             <Line dataKey="price" stroke="hsl(187 100% 47%)" strokeWidth={2} dot={false} name="Price" />
+
+            {/* Fibonacci Retracement levels */}
+            {showFib && fibLevels && !isMobile && (
+              <>
+                <ReferenceLine y={fibLevels.level236} stroke="hsl(45 90% 55% / 0.4)" strokeDasharray="4 4" label={{ value: '23.6%', fill: 'hsl(45 90% 55%)', fontSize: 9, fontFamily: 'JetBrains Mono' }} />
+                <ReferenceLine y={fibLevels.level382} stroke="hsl(45 90% 55% / 0.5)" strokeDasharray="4 4" label={{ value: '38.2%', fill: 'hsl(45 90% 55%)', fontSize: 9, fontFamily: 'JetBrains Mono' }} />
+                <ReferenceLine y={fibLevels.level500} stroke="hsl(45 90% 55% / 0.6)" strokeDasharray="6 4" label={{ value: '50%', fill: 'hsl(45 90% 55%)', fontSize: 9, fontFamily: 'JetBrains Mono' }} />
+                <ReferenceLine y={fibLevels.level618} stroke="hsl(45 90% 55% / 0.7)" strokeDasharray="6 4" label={{ value: '61.8%', fill: 'hsl(45 90% 55%)', fontSize: 10, fontFamily: 'JetBrains Mono' }} />
+                <ReferenceLine y={fibLevels.level786} stroke="hsl(45 90% 55% / 0.4)" strokeDasharray="4 4" label={{ value: '78.6%', fill: 'hsl(45 90% 55%)', fontSize: 9, fontFamily: 'JetBrains Mono' }} />
+              </>
+            )}
+
+            {/* Support/Resistance */}
             {!isMobile && (
               <>
                 <ReferenceLine y={indicators.support} stroke="hsl(142 71% 45%)" strokeDasharray="6 4" label={{ value: `S: ${fmtPrice(indicators.support)}`, fill: 'hsl(142 71% 45%)', fontSize: 10, fontFamily: 'JetBrains Mono' }} />
@@ -295,6 +353,7 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
               </>
             )}
 
+            {/* Forecast bands */}
             {primaryForecast && (
               <>
                 <Area dataKey={`fcU_${primaryForecast.methodId}`} stroke="none" fill={`${primaryForecast.color.replace(')', ' / 0.06)')}`} />
@@ -303,15 +362,7 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
             )}
 
             {forecasts.map(f => (
-              <Line
-                key={f.methodId}
-                dataKey={`fc_${f.methodId}`}
-                stroke={f.color}
-                strokeWidth={2.5}
-                strokeDasharray="6 4"
-                dot={false}
-                name={f.label}
-              />
+              <Line key={f.methodId} dataKey={`fc_${f.methodId}`} stroke={f.color} strokeWidth={2.5} strokeDasharray="6 4" dot={false} name={f.label} />
             ))}
           </ComposedChart>
         </ResponsiveContainer>
@@ -319,14 +370,9 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
       {isZoomed && (
         <div className="mt-1 flex items-center gap-2">
           <div className="flex-1 h-1 bg-muted rounded-full relative">
-            <div
-              className="absolute h-full bg-primary/40 rounded-full"
-              style={{ left: `${zoomStart * 100}%`, width: `${(zoomEnd - zoomStart) * 100}%` }}
-            />
+            <div className="absolute h-full bg-primary/40 rounded-full" style={{ left: `${zoomStart * 100}%`, width: `${(zoomEnd - zoomStart) * 100}%` }} />
           </div>
-          <span className="text-[9px] font-mono text-muted-foreground">
-            {Math.round((zoomEnd - zoomStart) * 100)}%
-          </span>
+          <span className="text-[9px] font-mono text-muted-foreground">{Math.round((zoomEnd - zoomStart) * 100)}%</span>
         </div>
       )}
     </div>

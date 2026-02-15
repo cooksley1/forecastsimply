@@ -1,4 +1,4 @@
-import { sma, rsi, bollingerBands, macd, stochastic, findSupportResistance, calcATR, calcOBV, calcVWAP } from './indicators';
+import { sma, ema, rsi, bollingerBands, macd, stochastic, findSupportResistance, calcATR, calcOBV, calcVWAP, ichimoku, fibonacciLevels, emaPair } from './indicators';
 import { computeSignal } from './signals';
 import { generateForecast, FORECAST_METHODS } from './forecast';
 import type { ForecastMethodId } from './forecast';
@@ -187,9 +187,13 @@ export function processTA(
   const atrValues = calcATR(closes);
   const hasVolume = volumes.some(v => v > 0);
   const obvValues = hasVolume ? calcOBV(closes, volumes) : undefined;
-  const vwapValues = (assetType === 'stocks' || assetType === 'etfs') && hasVolume
-    ? calcVWAP(closes, volumes)
-    : undefined;
+  const vwapValues = hasVolume ? calcVWAP(closes, volumes) : undefined;
+  
+  // Analysis overlay data
+  const ichimokuData = ichimoku(closes);
+  const fibLevels = fibonacciLevels(closes);
+  const emaPairData = emaPair(closes);
+  const volumeSma20 = sma(volumes, 20);
 
   // SMA200 (if enough data)
   const sma200Values = closes.length >= 200
@@ -274,5 +278,12 @@ export function processTA(
     forecasts,
     marketPhase,
     analysisText,
-  };
+    overlayData: {
+      vwap: vwapValues,
+      ichimoku: ichimokuData,
+      fibonacci: fibLevels,
+      emaPair: emaPairData,
+      volumeSma20,
+    },
+  } as TechnicalData & { overlayData: any };
 }

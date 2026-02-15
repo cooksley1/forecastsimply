@@ -9,6 +9,8 @@ import ForexPairSelector from '@/components/search/ForexPairSelector';
 import GuidedDiscovery from '@/components/search/GuidedDiscovery';
 import MainChart from '@/components/charts/MainChart';
 import ForecastMethodBar from '@/components/charts/ForecastMethodBar';
+import AnalysisOverlayBar from '@/components/charts/AnalysisOverlayBar';
+import type { OverlayId } from '@/components/charts/AnalysisOverlayBar';
 import VolumeChart from '@/components/charts/VolumeChart';
 import RSIChart from '@/components/charts/RSIChart';
 import ChartControls from '@/components/charts/ChartControls';
@@ -58,6 +60,7 @@ export default function Index() {
   const [forecastMethods, setForecastMethods] = useState<ForecastMethodId[]>(['holt']);
   const [riskLevel, setRiskLevel] = useState<RiskLevel>(3);
   const riskProfile = riskLevelToProfile(riskLevel);
+  const [activeOverlays, setActiveOverlays] = useState<OverlayId[]>([]);
   const [dataSource, setDataSource] = useState<string>('');
   const [secondaryCurrency, setSecCurrency] = useState<string | null>(getSecondaryCurrency());
   const [secondaryPrice, setSecondaryPrice] = useState<number | null>(null);
@@ -407,12 +410,13 @@ export default function Index() {
             </div>
 
             <ForecastMethodBar selectedMethods={forecastMethods} setSelectedMethods={setForecastMethods} />
+            <AnalysisOverlayBar selected={activeOverlays} setSelected={setActiveOverlays} />
 
             {/* Card Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Price Chart — full width */}
               <div className="lg:col-span-2">
-                <MemoMainChart data={technicalData} timeframeDays={timeframeDays} />
+                <MemoMainChart data={technicalData} timeframeDays={timeframeDays} activeOverlays={activeOverlays} />
               </div>
 
               {/* Volume & RSI */}
