@@ -41,7 +41,7 @@ export default function WatchlistDropdown({ items, onSelect, onRemove, onClear }
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-1 z-50 w-72 sm:w-80 bg-card border border-border rounded-xl shadow-xl overflow-hidden">
+        <div className="fixed right-2 sm:absolute sm:right-0 top-full mt-1 z-[60] w-[calc(100vw-1rem)] sm:w-80 max-w-80 bg-card border border-border rounded-xl shadow-xl overflow-hidden">
           {items.length === 0 ? (
             <div className="p-4 text-center text-xs text-muted-foreground">
               No items yet. Search & analyse an asset to add it.
