@@ -561,9 +561,9 @@ export default function Index() {
               </div>
             </div>
 
-            {/* Timeframe bar */}
+            {/* Timeframe + Forecast bar (combined) */}
             <div className="bg-card border border-border rounded-xl p-3">
-              <div className="flex items-center gap-1 overflow-x-auto">
+              <div className="flex items-center gap-1 flex-wrap">
                 <span className="text-[10px] text-muted-foreground font-mono uppercase shrink-0">TF:</span>
                 {timeframes.map(tf => (
                   <button
@@ -576,18 +576,10 @@ export default function Index() {
                     {tf.label}
                   </button>
                 ))}
-              </div>
-            </div>
-
-            {/* Forecast bar */}
-            <div className="bg-card border border-border rounded-xl p-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Forecast slider */}
-                <div className="flex items-center gap-1 shrink-0 group relative">
-                  <span className="text-[10px] text-muted-foreground font-mono cursor-help" title="How far ahead to project prices">FC</span>
-                  <input type="range" min={10} max={80} value={forecastPercent} onChange={e => setForecastPercent(Number(e.target.value))} className="w-16 sm:w-20 accent-primary" />
-                  <span className="text-[10px] font-mono text-muted-foreground">{forecastPercent}%</span>
-                </div>
+                <span className="w-px h-4 bg-border shrink-0 mx-1" />
+                <span className="text-[10px] text-muted-foreground font-mono shrink-0" title="How far ahead to project prices">FC</span>
+                <input type="range" min={10} max={80} value={forecastPercent} onChange={e => setForecastPercent(Number(e.target.value))} className="w-14 sm:w-20 accent-primary" />
+                <span className="text-[10px] font-mono text-muted-foreground">{forecastPercent}%</span>
               </div>
             </div>
 
