@@ -455,6 +455,7 @@ export default function Index() {
         {/* AI Smart Feed — only for logged-in users */}
         {!showAnalysis && (
           <SmartFeed
+            assetType={assetType}
             onSelectAsset={(id, type) => {
               if (type === 'crypto') analyseCrypto(id);
               else if (type === 'stocks') analyseStock(id, 'stocks');
