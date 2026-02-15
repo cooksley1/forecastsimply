@@ -162,6 +162,18 @@ Deno.serve(async (req) => {
       if (action === 'ban') {
         const user_id = validateUUID(body.user_id, 'user_id');
         const duration = validateDuration(body.duration);
+
+        // Prevent banning admin users
+        if (duration > 0) {
+          const { data: targetRole } = await adminClient
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user_id)
+            .eq('role', 'admin')
+            .maybeSingle();
+          if (targetRole) throw new Error('Cannot ban an admin user. Remove admin role first.');
+        }
+
         const ban_duration = duration === 0 ? 'none' : `${duration}h`;
         const { data, error } = await adminClient.auth.admin.updateUserById(user_id, { ban_duration });
         if (error) throw error;
