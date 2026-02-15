@@ -113,7 +113,7 @@ export default function WatchlistDropdown({ items, onSelect, onRemove, onClear }
                       )}
                       <button
                         onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
-                        className="text-muted-foreground hover:text-destructive text-xs opacity-0 group-hover:opacity-100 transition-all p-0.5"
+                        className="text-muted-foreground hover:text-destructive text-xs transition-all p-1 rounded hover:bg-destructive/10"
                         title="Remove from watchlist"
                       >
                         ✕
