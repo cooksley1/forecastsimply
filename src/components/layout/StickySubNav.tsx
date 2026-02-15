@@ -28,7 +28,7 @@ export default function StickySubNav({ assetType, onAssetChange, showSections }:
   };
 
   return (
-    <div className="sticky top-0 z-40 bg-background/90 backdrop-blur-md border-b border-border/60">
+    <div className="sticky top-[56px] z-40 bg-background/90 backdrop-blur-md border-b border-border/60">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-1.5 space-y-1">
         {/* Row 1: Asset tabs — always fits in one row */}
         <div className="flex justify-between gap-1">

@@ -48,7 +48,7 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
 
   return (
     <>
-      <header className="border-b border-border bg-background px-3 sm:px-4 py-2 sm:py-3" style={{ height: '56px' }}>
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-md px-3 sm:px-4 py-2 sm:py-3" style={{ height: '56px' }}>
         <div className="max-w-7xl mx-auto h-full">
           <div className="flex items-center justify-between h-full">
             <img src={logoHeader} alt="ForecastSimply" className="h-8 sm:h-9" />
