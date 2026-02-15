@@ -30,22 +30,37 @@ export const STOCK_PICKS_ASX = [
   { sym: 'CSL.AX', name: 'CSL' },
   { sym: 'WES.AX', name: 'Wesfarmers' },
   { sym: 'NAB.AX', name: 'NAB' },
+  { sym: 'WBC.AX', name: 'Westpac' },
+  { sym: 'ANZ.AX', name: 'ANZ' },
+  { sym: 'FMG.AX', name: 'Fortescue' },
+  { sym: 'WOW.AX', name: 'Woolworths' },
+  { sym: 'TLS.AX', name: 'Telstra' },
 ];
 
 export const ETF_PICKS_US = [
   { sym: 'SPY', name: 'S&P 500 ETF' },
-  { sym: 'QQQ', name: 'NASDAQ-100' },
+  { sym: 'QQQ', name: 'NASDAQ-100 ETF' },
   { sym: 'VTI', name: 'Total US Market' },
-  { sym: 'VOO', name: 'Vanguard S&P' },
+  { sym: 'VOO', name: 'Vanguard S&P 500' },
   { sym: 'ARKK', name: 'ARK Innovation' },
+  { sym: 'VGT', name: 'Vanguard IT' },
+  { sym: 'SCHD', name: 'Schwab Dividend' },
+  { sym: 'VYM', name: 'Vanguard High Div' },
+  { sym: 'BND', name: 'Vanguard Total Bond' },
+  { sym: 'IVV', name: 'iShares Core S&P 500' },
 ];
 
 export const ETF_PICKS_ASX = [
-  { sym: 'VGS.AX', name: 'Vanguard Intl' },
-  { sym: 'VAS.AX', name: 'Vanguard AU' },
-  { sym: 'IVV.AX', name: 'iShares S&P 500' },
-  { sym: 'VDHG.AX', name: 'Vanguard Div' },
-  { sym: 'A200.AX', name: 'BetaShares 200' },
+  { sym: 'VGS.AX', name: 'Vanguard Intl Shares' },
+  { sym: 'VAS.AX', name: 'Vanguard AU Shares' },
+  { sym: 'IVV.AX', name: 'iShares S&P 500 (AUD)' },
+  { sym: 'VDHG.AX', name: 'Vanguard Diversified' },
+  { sym: 'A200.AX', name: 'BetaShares ASX 200' },
+  { sym: 'VTS.AX', name: 'Vanguard US Total' },
+  { sym: 'IOZ.AX', name: 'iShares ASX 200' },
+  { sym: 'ETHI.AX', name: 'BetaShares Ethical' },
+  { sym: 'NDQ.AX', name: 'BetaShares NASDAQ' },
+  { sym: 'HACK.AX', name: 'BetaShares Cybersecurity' },
 ];
 
 export const FOREX_PICKS = [

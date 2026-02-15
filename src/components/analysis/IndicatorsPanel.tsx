@@ -14,7 +14,7 @@ interface IndicatorRow {
 }
 
 export default function IndicatorsPanel({ indicators, currentPrice }: Props) {
-  const last = (arr: number[]) => arr.filter(v => !isNaN(v)).pop();
+  const last = (arr: number[] | undefined) => arr?.filter(v => !isNaN(v)).pop();
 
   const rows: IndicatorRow[] = [
     {
@@ -27,51 +27,99 @@ export default function IndicatorsPanel({ indicators, currentPrice }: Props) {
       label: 'SMA 20',
       value: last(indicators.sma20) ? fmtPrice(last(indicators.sma20)!) : 'N/A',
       zone: currentPrice > (last(indicators.sma20) || 0) ? 'Above' : 'Below',
-      explain: 'Simple Moving Average of the last 20 periods. When the price is above the SMA, the short-term trend is generally up. Below = short-term downtrend.',
+      explain: 'Simple Moving Average of the last 20 periods. When the price is above the SMA, the short-term trend is generally up.',
     },
     {
       label: 'SMA 50',
       value: last(indicators.sma50) ? fmtPrice(last(indicators.sma50)!) : 'N/A',
       zone: currentPrice > (last(indicators.sma50) || 0) ? 'Above' : 'Below',
-      explain: 'Simple Moving Average of the last 50 periods. This tracks the medium-term trend. Price above = bullish. When SMA 20 crosses above SMA 50, it\'s called a "Golden Cross" (bullish signal).',
+      explain: 'Simple Moving Average of the last 50 periods. When SMA 20 crosses above SMA 50, it\'s called a "Golden Cross" (bullish signal).',
     },
+  ];
+
+  // SMA 200 (if available)
+  const sma200Val = last(indicators.sma200);
+  if (sma200Val) {
+    rows.push({
+      label: 'SMA 200',
+      value: fmtPrice(sma200Val),
+      zone: currentPrice > sma200Val ? 'Above' : 'Below',
+      explain: 'Long-term trend indicator. Price above SMA 200 = long-term bullish structure. Below = bearish. A key level watched by institutions.',
+    });
+  }
+
+  rows.push(
     {
       label: 'BB Upper',
       value: last(indicators.bbUpper) ? fmtPrice(last(indicators.bbUpper)!) : 'N/A',
-      explain: 'Bollinger Band upper limit. When price touches or breaks above this, the asset may be overbought. Think of it as a ceiling the price tends to bounce off.',
+      explain: 'Bollinger Band upper limit. When price touches or breaks above this, the asset may be overbought.',
     },
     {
       label: 'BB Lower',
       value: last(indicators.bbLower) ? fmtPrice(last(indicators.bbLower)!) : 'N/A',
-      explain: 'Bollinger Band lower limit. When price touches or breaks below this, the asset may be oversold. Think of it as a floor the price tends to bounce off.',
+      explain: 'Bollinger Band lower limit. When price touches or breaks below this, the asset may be oversold.',
     },
     {
       label: 'MACD',
       value: last(indicators.macdLine)?.toFixed(4) || 'N/A',
-      explain: 'Moving Average Convergence Divergence — measures the gap between fast and slow moving averages. Positive = upward momentum. Negative = downward momentum. A rising MACD is bullish.',
+      explain: 'Moving Average Convergence Divergence — measures the gap between fast and slow moving averages. Positive = upward momentum.',
     },
     {
       label: 'MACD Signal',
       value: last(indicators.macdSignal)?.toFixed(4) || 'N/A',
-      explain: 'The signal line is a smoothed version of MACD. When MACD crosses above the signal line, it\'s a buy signal. When it crosses below, it\'s a sell signal.',
+      explain: 'The signal line is a smoothed version of MACD. When MACD crosses above the signal line, it\'s a buy signal.',
     },
     {
       label: 'Stochastic %K',
       value: last(indicators.stochasticK)?.toFixed(1) || 'N/A',
       zone: (last(indicators.stochasticK) || 50) < 20 ? 'Oversold' : (last(indicators.stochasticK) || 50) > 80 ? 'Overbought' : 'Neutral',
-      explain: 'Compares the closing price to the recent price range on a 0-100 scale. Below 20 = oversold (potential bounce up). Above 80 = overbought (potential drop). Works best in sideways markets.',
+      explain: 'Compares the closing price to the recent price range on a 0-100 scale. Below 20 = oversold. Above 80 = overbought.',
     },
+  );
+
+  // ATR
+  const atrVal = last(indicators.atr);
+  if (atrVal) {
+    rows.push({
+      label: 'ATR (14)',
+      value: fmtPrice(atrVal),
+      explain: 'Average True Range measures volatility. Higher ATR = more volatile price action. Used to set dynamic stop-losses (typically 2× ATR from entry).',
+    });
+  }
+
+  // OBV
+  const obvVal = last(indicators.obv);
+  if (obvVal !== undefined) {
+    rows.push({
+      label: 'OBV',
+      value: obvVal > 1e9 ? `${(obvVal / 1e9).toFixed(2)}B` : obvVal > 1e6 ? `${(obvVal / 1e6).toFixed(2)}M` : obvVal.toFixed(0),
+      explain: 'On-Balance Volume tracks cumulative volume flow. Rising OBV with rising price confirms uptrend. Divergence between OBV and price can signal a reversal.',
+    });
+  }
+
+  // VWAP
+  const vwapVal = last(indicators.vwap);
+  if (vwapVal) {
+    rows.push({
+      label: 'VWAP',
+      value: fmtPrice(vwapVal),
+      zone: currentPrice > vwapVal ? 'Above' : 'Below',
+      explain: 'Volume Weighted Average Price — the average price weighted by volume. Price above VWAP = institutional buying zone. Below = selling zone.',
+    });
+  }
+
+  rows.push(
     {
       label: 'Support',
       value: fmtPrice(indicators.support),
-      explain: 'The price level where buying pressure historically prevents the price from falling further. Think of it as a "floor" — the price tends to bounce up from here.',
+      explain: 'The price level where buying pressure historically prevents the price from falling further.',
     },
     {
       label: 'Resistance',
       value: fmtPrice(indicators.resistance),
-      explain: 'The price level where selling pressure historically prevents the price from rising further. Think of it as a "ceiling" — the price tends to bounce down from here.',
+      explain: 'The price level where selling pressure historically prevents the price from rising further.',
     },
-  ];
+  );
 
   return (
     <div className="bg-sf-card border border-border rounded-xl p-3 sm:p-5">

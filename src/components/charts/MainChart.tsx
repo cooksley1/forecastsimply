@@ -14,25 +14,30 @@ export default function MainChart({ data }: Props) {
   const isMobile = useIsMobile();
   const { prices, indicators, forecasts } = data;
 
-  const chartData = prices.map((p, i) => ({
-    time: p.timestamp,
-    price: p.close,
-    sma20: isNaN(indicators.sma20[i]) ? undefined : indicators.sma20[i],
-    sma50: isNaN(indicators.sma50[i]) ? undefined : indicators.sma50[i],
-    bbUpper: isNaN(indicators.bbUpper[i]) ? undefined : indicators.bbUpper[i],
-    bbLower: isNaN(indicators.bbLower[i]) ? undefined : indicators.bbLower[i],
-    volume: p.volume,
-  }));
+  const chartData = prices.map((p, i) => {
+    const row: Record<string, any> = {
+      time: p.timestamp,
+      price: p.close,
+      sma20: isNaN(indicators.sma20[i]) ? undefined : indicators.sma20[i],
+      sma50: isNaN(indicators.sma50[i]) ? undefined : indicators.sma50[i],
+      bbUpper: isNaN(indicators.bbUpper[i]) ? undefined : indicators.bbUpper[i],
+      bbLower: isNaN(indicators.bbLower[i]) ? undefined : indicators.bbLower[i],
+      volume: p.volume,
+    };
+    // SMA200
+    if (indicators.sma200 && indicators.sma200[i] !== undefined && !isNaN(indicators.sma200[i])) {
+      row.sma200 = indicators.sma200[i];
+    }
+    return row;
+  });
 
-  // Build forecast data with a key per method
   const lastPrice = prices[prices.length - 1];
   const maxForecastLen = Math.max(0, ...forecasts.map(f => f.points.length));
 
-  // Bridge point connecting price to forecast
   const bridgePoint: Record<string, any> = {
     time: lastPrice.timestamp,
     price: lastPrice.close,
-    sma20: undefined, sma50: undefined, bbUpper: undefined, bbLower: undefined, volume: undefined,
+    sma20: undefined, sma50: undefined, sma200: undefined, bbUpper: undefined, bbLower: undefined, volume: undefined,
   };
   forecasts.forEach(f => {
     bridgePoint[`fc_${f.methodId}`] = lastPrice.close;
@@ -45,7 +50,7 @@ export default function MainChart({ data }: Props) {
     const point: Record<string, any> = {
       time: 0,
       price: undefined,
-      sma20: undefined, sma50: undefined, bbUpper: undefined, bbLower: undefined, volume: undefined,
+      sma20: undefined, sma50: undefined, sma200: undefined, bbUpper: undefined, bbLower: undefined, volume: undefined,
     };
     forecasts.forEach(f => {
       if (i < f.points.length) {
@@ -78,21 +83,26 @@ export default function MainChart({ data }: Props) {
     return `${months[d.getMonth()]} ${d.getDate()}`;
   };
 
-  // Only show confidence band for the first (primary) forecast to avoid clutter
   const primaryForecast = forecasts[0];
+  const hasSma200 = indicators.sma200 && indicators.sma200.some(v => !isNaN(v));
 
   return (
     <div className="bg-sf-card border border-border rounded-xl p-3 sm:p-4">
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <h3 className="text-foreground font-semibold text-xs sm:text-sm">Price Chart</h3>
-        <div className="flex items-center gap-2">
-          {/* Legend for active forecast methods */}
+        <div className="flex items-center gap-2 flex-wrap">
           {forecasts.map(f => (
             <span key={f.methodId} className="flex items-center gap-1 text-[9px] sm:text-[10px] font-mono">
               <span className="w-3 h-0.5 rounded-full inline-block" style={{ backgroundColor: f.color }} />
               {f.label}
             </span>
           ))}
+          {hasSma200 && (
+            <span className="flex items-center gap-1 text-[9px] sm:text-[10px] font-mono text-muted-foreground">
+              <span className="w-3 h-0.5 rounded-full inline-block border-b border-dashed border-muted-foreground" />
+              SMA200
+            </span>
+          )}
           <span className="text-[10px] sm:text-xs font-mono px-2 py-0.5 rounded bg-accent/15 text-accent">{data.marketPhase}</span>
         </div>
       </div>
@@ -112,6 +122,9 @@ export default function MainChart({ data }: Props) {
           <Line dataKey="bbLower" stroke="hsl(213 20% 55% / 0.3)" strokeWidth={1} strokeDasharray="4 4" dot={false} />
           <Line dataKey="sma20" stroke="hsl(38 92% 50%)" strokeWidth={1.5} dot={false} name="SMA20" />
           <Line dataKey="sma50" stroke="hsl(25 95% 53%)" strokeWidth={1.5} dot={false} name="SMA50" />
+          {hasSma200 && (
+            <Line dataKey="sma200" stroke="hsl(213 20% 55% / 0.6)" strokeWidth={1} strokeDasharray="8 4" dot={false} name="SMA200" />
+          )}
           <Line dataKey="price" stroke="hsl(187 100% 47%)" strokeWidth={2} dot={false} name="Price" />
           {!isMobile && (
             <>
@@ -120,7 +133,6 @@ export default function MainChart({ data }: Props) {
             </>
           )}
 
-          {/* Confidence band for primary forecast only */}
           {primaryForecast && (
             <>
               <Area dataKey={`fcU_${primaryForecast.methodId}`} stroke="none" fill={`${primaryForecast.color.replace(')', ' / 0.06)')}`} />
@@ -128,7 +140,6 @@ export default function MainChart({ data }: Props) {
             </>
           )}
 
-          {/* Forecast lines for all selected methods */}
           {forecasts.map(f => (
             <Line
               key={f.methodId}
