@@ -91,15 +91,21 @@ export default function SmartFeed({ assetType, onSelectAsset }: Props) {
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       <button
         onClick={() => {
-          if (!expanded && !digest && !loading) fetchDigest();
-          else setExpanded(e => !e);
+          if (!expanded && !digest && !loading) {
+            setExpanded(true);
+            fetchDigest();
+          } else {
+            setExpanded(e => !e);
+          }
         }}
         className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-secondary/30 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm">{icon}</span>
+          <span className={`text-sm ${loading ? 'animate-bounce' : ''}`}>{icon}</span>
           <h3 className="text-xs font-semibold text-foreground font-mono">{label}</h3>
-          {loading && <span className="text-[10px] text-muted-foreground">⏳</span>}
+          {loading && (
+            <span className="text-[10px] text-primary font-mono animate-pulse">Loading…</span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {expanded && (
@@ -117,9 +123,17 @@ export default function SmartFeed({ assetType, onSelectAsset }: Props) {
       {expanded && (
         <div className="border-t border-border p-4 space-y-3">
           {loading && !digest && (
-            <div className="text-center py-6 space-y-2">
-              <div className="text-2xl animate-pulse-glow">🧠</div>
-              <p className="text-xs text-muted-foreground">Generating your personalised digest...</p>
+            <div className="text-center py-8 space-y-3">
+              <div className="text-3xl animate-bounce">🧠</div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-foreground">Generating your personalised digest</p>
+                <p className="text-[10px] text-muted-foreground animate-pulse">Analysing markets & your portfolio…</p>
+              </div>
+              <div className="flex justify-center gap-1 pt-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
             </div>
           )}
 
