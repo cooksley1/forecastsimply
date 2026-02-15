@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
+import { SUPPORTED_CURRENCIES } from '@/utils/currencyConversion';
 
 interface Props {
   open: boolean;
@@ -17,24 +18,66 @@ interface AnalysisRecord {
   price: number;
   asset_type: string;
   created_at: string;
+  market_phase: string | null;
+  data_source: string | null;
 }
+
+interface UserPrefs {
+  risk_profile: string;
+  forecast_percent: number;
+  default_timeframe_days: number;
+  secondary_currency: string | null;
+  theme: string;
+  cg_api_key: string | null;
+  av_api_key: string | null;
+  fmp_api_key: string | null;
+}
+
+const DEFAULT_PREFS: UserPrefs = {
+  risk_profile: 'moderate',
+  forecast_percent: 30,
+  default_timeframe_days: 90,
+  secondary_currency: null,
+  theme: 'dark',
+  cg_api_key: null,
+  av_api_key: null,
+  fmp_api_key: null,
+};
 
 export default function AccountPanel({ open, onClose }: Props) {
   const { user, signOut } = useAuth();
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'history'>('profile');
   const [history, setHistory] = useState<AnalysisRecord[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
+  const [prefs, setPrefs] = useState<UserPrefs>(DEFAULT_PREFS);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
 
   useEffect(() => {
     if (open && user) {
-      // Load profile
       supabase.from('profiles').select('display_name').eq('user_id', user.id).maybeSingle()
         .then(({ data }) => {
           setDisplayName(data?.display_name || user.user_metadata?.full_name || '');
+        });
+      // Load preferences
+      supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            setPrefs({
+              risk_profile: data.risk_profile,
+              forecast_percent: data.forecast_percent,
+              default_timeframe_days: data.default_timeframe_days,
+              secondary_currency: data.secondary_currency,
+              theme: data.theme,
+              cg_api_key: data.cg_api_key,
+              av_api_key: data.av_api_key,
+              fmp_api_key: data.fmp_api_key,
+            });
+          }
+          setPrefsLoaded(true);
         });
     }
   }, [open, user]);
@@ -46,7 +89,7 @@ export default function AccountPanel({ open, onClose }: Props) {
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(20)
+        .limit(50)
         .then(({ data }) => {
           setHistory((data as AnalysisRecord[]) || []);
           setLoadingHistory(false);
@@ -65,6 +108,25 @@ export default function AccountPanel({ open, onClose }: Props) {
     setSaving(false);
     setSaveMsg(error ? 'Failed to save' : 'Saved ✓');
     setTimeout(() => setSaveMsg(''), 2000);
+  };
+
+  const handleSavePrefs = async () => {
+    setSaving(true);
+    setSaveMsg('');
+    // Upsert preferences
+    const { error } = await supabase.from('user_preferences')
+      .upsert({
+        user_id: user.id,
+        ...prefs,
+      }, { onConflict: 'user_id' });
+    setSaving(false);
+    setSaveMsg(error ? `Failed: ${error.message}` : 'Preferences saved ✓');
+    if (prefs.theme !== theme) setTheme(prefs.theme as 'dark' | 'light');
+    setTimeout(() => setSaveMsg(''), 2000);
+  };
+
+  const updatePref = <K extends keyof UserPrefs>(key: K, value: UserPrefs[K]) => {
+    setPrefs(p => ({ ...p, [key]: value }));
   };
 
   const handleSignOut = async () => {
@@ -129,23 +191,13 @@ export default function AccountPanel({ open, onClose }: Props) {
               <div className="text-xs text-muted-foreground bg-background border border-border rounded-lg px-3 py-2">{user.email}</div>
             </div>
             <div>
-              <label className="text-[10px] text-muted-foreground font-mono uppercase block mb-1">Provider</label>
-              <div className="text-xs text-muted-foreground bg-background border border-border rounded-lg px-3 py-2 capitalize">
-                {user.app_metadata?.provider || 'email'}
-              </div>
-            </div>
-            <div>
               <label className="text-[10px] text-muted-foreground font-mono uppercase block mb-1">Member Since</label>
               <div className="text-xs text-muted-foreground bg-background border border-border rounded-lg px-3 py-2">
                 {new Date(user.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={handleSaveProfile}
-                disabled={saving}
-                className="px-3 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50"
-              >
+              <button onClick={handleSaveProfile} disabled={saving} className="px-3 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50">
                 {saving ? 'Saving...' : 'Save Profile'}
               </button>
               {saveMsg && <span className="text-[10px] text-positive">{saveMsg}</span>}
@@ -158,21 +210,72 @@ export default function AccountPanel({ open, onClose }: Props) {
           <div className="space-y-3">
             <div>
               <label className="text-[10px] text-muted-foreground font-mono uppercase block mb-1">Theme</label>
-              <div className="text-xs text-foreground bg-background border border-border rounded-lg px-3 py-2 capitalize">{theme}</div>
+              <select value={prefs.theme} onChange={e => updatePref('theme', e.target.value)} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none">
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] text-muted-foreground font-mono uppercase block mb-1">Default Risk Profile</label>
+              <select value={prefs.risk_profile} onChange={e => updatePref('risk_profile', e.target.value)} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none">
+                <option value="conservative">🛡️ Conservative</option>
+                <option value="moderate-conservative">🔒 Mod-Conservative</option>
+                <option value="moderate">⚖️ Moderate</option>
+                <option value="moderate-aggressive">📈 Mod-Aggressive</option>
+                <option value="aggressive">🔥 Aggressive</option>
+              </select>
             </div>
             <div>
               <label className="text-[10px] text-muted-foreground font-mono uppercase block mb-1">Default Timeframe</label>
-              <div className="text-xs text-muted-foreground bg-background border border-border rounded-lg px-3 py-2">90 days (set via controls)</div>
+              <select value={prefs.default_timeframe_days} onChange={e => updatePref('default_timeframe_days', Number(e.target.value))} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none">
+                <option value={1}>24H</option>
+                <option value={7}>7D</option>
+                <option value={30}>30D</option>
+                <option value={90}>90D</option>
+                <option value={365}>1Y</option>
+                <option value={730}>2Y</option>
+              </select>
             </div>
             <div>
-              <label className="text-[10px] text-muted-foreground font-mono uppercase block mb-1">Data Sync</label>
-              <div className="text-xs text-muted-foreground bg-background border border-border rounded-lg px-3 py-2">
-                Watchlist and analysis history sync automatically when signed in.
+              <label className="text-[10px] text-muted-foreground font-mono uppercase block mb-1">Forecast Length (%)</label>
+              <div className="flex items-center gap-2">
+                <input type="range" min={10} max={80} value={prefs.forecast_percent} onChange={e => updatePref('forecast_percent', Number(e.target.value))} className="flex-1 accent-primary" />
+                <span className="text-xs font-mono text-foreground w-8 text-right">{prefs.forecast_percent}%</span>
               </div>
             </div>
-            <p className="text-[9px] text-muted-foreground/70 italic">
-              💡 Risk profile, timeframes, and forecast settings are controlled from the main analysis view.
-            </p>
+            <div>
+              <label className="text-[10px] text-muted-foreground font-mono uppercase block mb-1">Secondary Currency</label>
+              <select value={prefs.secondary_currency || 'none'} onChange={e => updatePref('secondary_currency', e.target.value === 'none' ? null : e.target.value)} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none">
+                <option value="none">None</option>
+                {SUPPORTED_CURRENCIES.map(c => (
+                  <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* API Keys */}
+            <div className="pt-2 border-t border-border space-y-3">
+              <p className="text-[10px] text-muted-foreground font-mono uppercase">API Keys (optional)</p>
+              <div>
+                <label className="text-[10px] text-muted-foreground block mb-1">CoinGecko API Key</label>
+                <input type="password" value={prefs.cg_api_key || ''} onChange={e => updatePref('cg_api_key', e.target.value || null)} placeholder="Optional" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none" />
+              </div>
+              <div>
+                <label className="text-[10px] text-muted-foreground block mb-1">Alpha Vantage API Key</label>
+                <input type="password" value={prefs.av_api_key || ''} onChange={e => updatePref('av_api_key', e.target.value || null)} placeholder="Optional" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none" />
+              </div>
+              <div>
+                <label className="text-[10px] text-muted-foreground block mb-1">FMP API Key</label>
+                <input type="password" value={prefs.fmp_api_key || ''} onChange={e => updatePref('fmp_api_key', e.target.value || null)} placeholder="Optional" className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none" />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button onClick={handleSavePrefs} disabled={saving} className="px-3 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save Preferences'}
+              </button>
+              {saveMsg && <span className="text-[10px] text-positive">{saveMsg}</span>}
+            </div>
           </div>
         )}
 
@@ -189,6 +292,7 @@ export default function AccountPanel({ open, onClose }: Props) {
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-medium text-foreground font-mono">{h.symbol}</span>
+                      <span className="text-[9px] text-muted-foreground capitalize">{h.asset_type}</span>
                       <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
                         h.signal_score >= 2 ? 'bg-positive/10 text-positive' :
                         h.signal_score <= -2 ? 'bg-negative/10 text-negative' :
@@ -197,10 +301,14 @@ export default function AccountPanel({ open, onClose }: Props) {
                         {h.signal_label}
                       </span>
                     </div>
-                    <div className="text-[9px] text-muted-foreground">{h.name} · ${h.price.toLocaleString()}</div>
+                    <div className="text-[9px] text-muted-foreground">
+                      {h.name} · ${Number(h.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                      {h.market_phase && <span className="ml-1 text-accent">· {h.market_phase}</span>}
+                    </div>
                   </div>
-                  <div className="text-[9px] text-muted-foreground shrink-0 ml-2">
-                    {new Date(h.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  <div className="text-[9px] text-muted-foreground shrink-0 ml-2 text-right">
+                    <div>{new Date(h.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
+                    <div>{new Date(h.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</div>
                   </div>
                 </div>
               ))
@@ -210,10 +318,7 @@ export default function AccountPanel({ open, onClose }: Props) {
 
         {/* Sign Out */}
         <div className="pt-2 border-t border-border">
-          <button
-            onClick={handleSignOut}
-            className="w-full px-3 py-2 rounded-lg text-xs font-medium border border-destructive/30 text-destructive hover:bg-destructive/10 transition-all"
-          >
+          <button onClick={handleSignOut} className="w-full px-3 py-2 rounded-lg text-xs font-medium border border-destructive/30 text-destructive hover:bg-destructive/10 transition-all">
             Sign Out
           </button>
         </div>

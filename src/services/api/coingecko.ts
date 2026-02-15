@@ -46,10 +46,12 @@ export async function getCoinData(coinId: string) {
 }
 
 export async function getCoinChart(coinId: string, days: number) {
-  const key = `cg_chart_${coinId}_${days}`;
+  // CoinGecko supports 'max' for all-time data
+  const daysParam = days >= 9999 ? 'max' : String(days);
+  const key = `cg_chart_${coinId}_${daysParam}`;
   const cached = getCached<any>(key, CACHE_TTL);
   if (cached) return cached;
-  const data = await throttledFetch(`${getBase()}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`);
+  const data = await throttledFetch(`${getBase()}/coins/${coinId}/market_chart?vs_currency=usd&days=${daysParam}`);
   setCache(key, data);
   return data;
 }
