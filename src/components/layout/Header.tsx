@@ -1,21 +1,25 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
 import ApiKeySettings from '@/components/settings/ApiKeySettings';
 import LoginDialog from '@/components/auth/LoginDialog';
 import AccountPanel from '@/components/account/AccountPanel';
 import { getStoredApiKey } from '@/components/settings/ApiKeySettings';
-import logoHeader from '@/assets/logo-header.svg';
+import logoHeaderDark from '@/assets/logo-header.svg';
+import logoHeaderLight from '@/assets/logo-header-light.svg';
 
 export default function Header() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const { user, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const { isAdmin } = useAdminCheck();
   const navigate = useNavigate();
   const hasKey = !!getStoredApiKey();
+  const logoHeader = theme === 'dark' ? logoHeaderDark : logoHeaderLight;
 
   return (
     <>
@@ -25,6 +29,13 @@ export default function Header() {
             <img src={logoHeader} alt="ForecastSimply" className="h-8 sm:h-9" />
 
             <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                onClick={toggleTheme}
+                className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all text-sm"
+                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              >
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
               {isAdmin && (
                 <button
                   onClick={() => navigate('/admin')}
