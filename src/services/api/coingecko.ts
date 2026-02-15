@@ -46,8 +46,14 @@ export async function getCoinData(coinId: string) {
 }
 
 export async function getCoinChart(coinId: string, days: number) {
-  // CoinGecko supports 'max' for all-time data
-  const daysParam = days >= 9999 ? 'max' : String(days);
+  const apiKey = getStoredApiKey();
+  // Free tier limited to 365 days; paid users can use 'max'
+  let daysParam: string;
+  if (days >= 9999) {
+    daysParam = apiKey ? 'max' : '365';
+  } else {
+    daysParam = String(days);
+  }
   const key = `cg_chart_${coinId}_${daysParam}`;
   const cached = getCached<any>(key, CACHE_TTL);
   if (cached) return cached;
