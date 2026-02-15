@@ -166,7 +166,8 @@ export function processTA(
   rawVolumes: number[],
   forecastPercent: number,
   assetType: AssetType,
-  forecastMethods: ForecastMethodId[] = ['holt']
+  forecastMethods: ForecastMethodId[] = ['holt'],
+  riskLevel: number = 3,
 ): TechnicalData {
   const maxPoints = 200;
   const closes = downsample(rawCloses, maxPoints);
@@ -249,9 +250,9 @@ export function processTA(
 
   const recommendations = generateRecommendations(
     signal, currentPrice, support, resistance, target, assetType, currentRsi,
-    bbPosition, lastSma20, lastSma50, sma200Last,
+    bbPosition, lastSma20, lastSma50, sma200Last, riskLevel,
   );
-  const tradeSetups = generateTradeSetups(support, resistance, signal, atrValues);
+  const tradeSetups = generateTradeSetups(support, resistance, signal, atrValues, riskLevel);
   const marketPhase = detectMarketPhase(closes, sma20, sma50);
 
   const analysisText = generateAnalysisText(
