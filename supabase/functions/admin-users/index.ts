@@ -5,6 +5,55 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// --- Input validation helpers ---
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const VALID_ROLES = ['admin', 'moderator', 'user'];
+const MAX_STRING = 500;
+const MAX_META_SIZE = 4096;
+
+function validateUUID(val: unknown, name: string): string {
+  if (typeof val !== 'string' || !UUID_RE.test(val)) throw new Error(`Invalid ${name}: must be a valid UUID`);
+  return val;
+}
+
+function validateEmail(val: unknown): string {
+  if (typeof val !== 'string' || val.length > 255 || !EMAIL_RE.test(val)) throw new Error('Invalid email format');
+  return val;
+}
+
+function validatePassword(val: unknown): string {
+  if (typeof val !== 'string' || val.length < 8 || val.length > 128) throw new Error('Password must be 8-128 characters');
+  return val;
+}
+
+function validatePhone(val: unknown): string {
+  if (typeof val !== 'string' || val.length > 20 || !/^\+?[0-9\s\-()]+$/.test(val)) throw new Error('Invalid phone format');
+  return val;
+}
+
+function validateRole(val: unknown): string {
+  if (typeof val !== 'string' || !VALID_ROLES.includes(val)) throw new Error(`Invalid role: must be one of ${VALID_ROLES.join(', ')}`);
+  return val;
+}
+
+function validateMetadata(val: unknown): Record<string, unknown> {
+  if (typeof val !== 'object' || val === null || Array.isArray(val)) throw new Error('user_metadata must be an object');
+  if (JSON.stringify(val).length > MAX_META_SIZE) throw new Error(`user_metadata exceeds ${MAX_META_SIZE} bytes`);
+  return val as Record<string, unknown>;
+}
+
+function validateDuration(val: unknown): number {
+  const n = Number(val);
+  if (!Number.isFinite(n) || n < 0 || n > 87600) throw new Error('Duration must be 0-87600 hours');
+  return n;
+}
+
+function validateString(val: unknown, name: string, max = MAX_STRING): string {
+  if (typeof val !== 'string' || val.length > max) throw new Error(`${name} must be a string under ${max} chars`);
+  return val;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -41,12 +90,11 @@ Deno.serve(async (req) => {
 
     // LIST USERS
     if (req.method === 'GET' && action === 'list') {
-      const page = parseInt(url.searchParams.get('page') || '1');
-      const perPage = parseInt(url.searchParams.get('per_page') || '50');
+      const page = Math.max(1, Math.min(100, parseInt(url.searchParams.get('page') || '1') || 1));
+      const perPage = Math.max(1, Math.min(100, parseInt(url.searchParams.get('per_page') || '50') || 50));
       const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage });
       if (error) throw error;
 
-      // Fetch roles and profiles for all users
       const userIds = data.users.map(u => u.id);
       const { data: roles } = await adminClient.from('user_roles').select('*').in('user_id', userIds);
       const { data: profiles } = await adminClient.from('profiles').select('*').in('user_id', userIds);
@@ -74,12 +122,11 @@ Deno.serve(async (req) => {
       const body = await req.json();
 
       if (action === 'create') {
-        const { email, password, phone, user_metadata } = body;
         const createData: any = { email_confirm: true };
-        if (email) createData.email = email;
-        if (password) createData.password = password;
-        if (phone) createData.phone = phone;
-        if (user_metadata) createData.user_metadata = user_metadata;
+        if (body.email) createData.email = validateEmail(body.email);
+        if (body.password) createData.password = validatePassword(body.password);
+        if (body.phone) createData.phone = validatePhone(body.phone);
+        if (body.user_metadata) createData.user_metadata = validateMetadata(body.user_metadata);
 
         const { data, error } = await adminClient.auth.admin.createUser(createData);
         if (error) throw error;
@@ -89,12 +136,12 @@ Deno.serve(async (req) => {
       }
 
       if (action === 'update') {
-        const { user_id, email, password, phone, user_metadata } = body;
+        const user_id = validateUUID(body.user_id, 'user_id');
         const updateData: any = {};
-        if (email) updateData.email = email;
-        if (password) updateData.password = password;
-        if (phone) updateData.phone = phone;
-        if (user_metadata) updateData.user_metadata = user_metadata;
+        if (body.email) updateData.email = validateEmail(body.email);
+        if (body.password) updateData.password = validatePassword(body.password);
+        if (body.phone) updateData.phone = validatePhone(body.phone);
+        if (body.user_metadata) updateData.user_metadata = validateMetadata(body.user_metadata);
 
         const { data, error } = await adminClient.auth.admin.updateUserById(user_id, updateData);
         if (error) throw error;
@@ -104,7 +151,7 @@ Deno.serve(async (req) => {
       }
 
       if (action === 'delete') {
-        const { user_id } = body;
+        const user_id = validateUUID(body.user_id, 'user_id');
         const { error } = await adminClient.auth.admin.deleteUser(user_id);
         if (error) throw error;
         return new Response(JSON.stringify({ success: true }), {
@@ -113,12 +160,12 @@ Deno.serve(async (req) => {
       }
 
       if (action === 'ban') {
-        const { user_id, duration } = body; // duration in hours, 0 = unban
+        const user_id = validateUUID(body.user_id, 'user_id');
+        const duration = validateDuration(body.duration);
         const ban_duration = duration === 0 ? 'none' : `${duration}h`;
         const { data, error } = await adminClient.auth.admin.updateUserById(user_id, { ban_duration });
         if (error) throw error;
 
-        // Also update profiles.banned_at
         if (duration > 0) {
           await adminClient.from('profiles').update({ banned_at: new Date().toISOString() }).eq('user_id', user_id);
         } else {
@@ -131,8 +178,8 @@ Deno.serve(async (req) => {
       }
 
       if (action === 'set_role') {
-        const { user_id, role } = body;
-        // Upsert the role
+        const user_id = validateUUID(body.user_id, 'user_id');
+        const role = validateRole(body.role);
         const { error: delErr } = await adminClient.from('user_roles').delete().eq('user_id', user_id);
         if (delErr) throw delErr;
         const { error: insErr } = await adminClient.from('user_roles').insert({ user_id, role });
@@ -143,8 +190,7 @@ Deno.serve(async (req) => {
       }
 
       if (action === 'impersonate') {
-        // Generate a magic link for the target user
-        const { user_id } = body;
+        const user_id = validateUUID(body.user_id, 'user_id');
         const { data: userData } = await adminClient.auth.admin.getUserById(user_id);
         if (!userData?.user?.email) throw new Error('User has no email');
         

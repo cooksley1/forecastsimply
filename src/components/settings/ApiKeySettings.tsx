@@ -153,6 +153,14 @@ export default function ApiKeySettings({ open, onClose }: Props) {
           </div>
         </div>
 
+        {/* Security notice */}
+        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3 space-y-1">
+          <p className="text-[10px] font-semibold text-amber-500 dark:text-amber-400">⚠️ Security Notice</p>
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            Keys are stored in your browser's local storage. Use <strong>free/demo-tier keys only</strong> — never paste keys linked to paid plans or sensitive accounts. Keys are never sent to our servers.
+          </p>
+        </div>
+
         {/* Save */}
         <button onClick={handleSave}
           className="w-full px-3 py-2.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all">
