@@ -14,7 +14,7 @@ export const SUPPORTED_CURRENCIES = [
 ];
 
 export function getSecondaryCurrency(): string | null {
-  try { return localStorage.getItem(PREF_KEY) || null; } catch { return null; }
+  try { return localStorage.getItem(PREF_KEY) || 'AUD'; } catch { return 'AUD'; }
 }
 
 export function setSecondaryCurrency(code: string | null) {
