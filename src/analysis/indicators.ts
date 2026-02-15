@@ -149,3 +149,53 @@ export function calcVWAP(closes: number[], volumes: number[]): number[] {
   }
   return vwap;
 }
+
+/** Ichimoku Cloud */
+export function ichimoku(closes: number[], tenkanPeriod = 9, kijunPeriod = 26, senkouBPeriod = 52) {
+  const highLow = (arr: number[], start: number, end: number) => {
+    let hi = -Infinity, lo = Infinity;
+    for (let j = start; j <= end; j++) {
+      if (arr[j] > hi) hi = arr[j];
+      if (arr[j] < lo) lo = arr[j];
+    }
+    return (hi + lo) / 2;
+  };
+
+  const tenkan: number[] = [];
+  const kijun: number[] = [];
+  const senkouA: number[] = [];
+  const senkouB: number[] = [];
+
+  for (let i = 0; i < closes.length; i++) {
+    tenkan.push(i >= tenkanPeriod - 1 ? highLow(closes, i - tenkanPeriod + 1, i) : NaN);
+    kijun.push(i >= kijunPeriod - 1 ? highLow(closes, i - kijunPeriod + 1, i) : NaN);
+    
+    const t = tenkan[i];
+    const k = kijun[i];
+    senkouA.push(!isNaN(t) && !isNaN(k) ? (t + k) / 2 : NaN);
+    senkouB.push(i >= senkouBPeriod - 1 ? highLow(closes, i - senkouBPeriod + 1, i) : NaN);
+  }
+
+  return { tenkan, kijun, senkouA, senkouB };
+}
+
+/** Fibonacci Retracement levels from high/low of given data */
+export function fibonacciLevels(closes: number[]) {
+  const high = Math.max(...closes);
+  const low = Math.min(...closes);
+  const diff = high - low;
+  return {
+    level0: high,
+    level236: high - diff * 0.236,
+    level382: high - diff * 0.382,
+    level500: high - diff * 0.5,
+    level618: high - diff * 0.618,
+    level786: high - diff * 0.786,
+    level100: low,
+  };
+}
+
+/** EMA pair for chart overlay (12 & 26 period) */
+export function emaPair(closes: number[]): { ema12: number[]; ema26: number[] } {
+  return { ema12: ema(closes, 12), ema26: ema(closes, 26) };
+}
