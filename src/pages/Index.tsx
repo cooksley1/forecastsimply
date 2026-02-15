@@ -444,7 +444,7 @@ export default function Index() {
 
       <StickySubNav
         assetType={assetType}
-        onAssetChange={(t) => { setAssetType(t); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); setPickSort('default'); }}
+        onAssetChange={(t) => { setAssetType(t); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); setPickSort('default'); setTechnicalData(null); setAssetInfo(null); }}
         showSections={!!showAnalysis}
       />
 
@@ -639,6 +639,12 @@ export default function Index() {
         {/* ── DASHBOARD — empty state ── */}
         {!technicalData && !loading && !error && (
           <div className="space-y-6">
+            {/* Chart placeholder */}
+            <div className="border-2 border-dashed border-border/60 rounded-xl bg-muted/20 flex flex-col items-center justify-center py-12 sm:py-16 gap-3">
+              <span className="text-3xl opacity-40">📉</span>
+              <p className="text-sm text-muted-foreground font-medium">Select an asset to view the chart</p>
+              <p className="text-[10px] text-muted-foreground/60">Search above or pick from the list below</p>
+            </div>
 
             <GuidedDiscovery assetType={assetType} onSelect={handleQuickPick} loading={loading} />
 
