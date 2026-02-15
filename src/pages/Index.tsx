@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
+import type { SortCriteria } from '@/components/search/QuickPicks';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -65,11 +66,12 @@ export default function Index() {
   const [activeOverlays, setActiveOverlays] = useState<OverlayId[]>([]);
   const [fullscreenChart, setFullscreenChart] = useState(false);
   const [dataSource, setDataSource] = useState<string>('');
-  const [stockExchange, setStockExchange] = useState('ALL');
+  const [stockExchange, setStockExchange] = useState('US');
   const [dividendOnly, setDividendOnly] = useState(false);
-  const [etfExchange, setEtfExchange] = useState('ALL');
+  const [etfExchange, setEtfExchange] = useState('US');
   const [ranking, setRanking] = useState(false);
   const [rankedPicks, setRankedPicks] = useState<Record<string, { label: string; score: number; confidence: number }>>({});
+  const [pickSort, setPickSort] = useState<SortCriteria>('default');
   const [secondaryCurrency, setSecCurrency] = useState<string | null>(getSecondaryCurrency());
   const [secondaryPrice, setSecondaryPrice] = useState<number | null>(null);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>(() => {
@@ -445,7 +447,7 @@ export default function Index() {
             ]).map(t => (
               <button
                 key={t.key}
-                onClick={() => { setAssetType(t.key); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); }}
+                onClick={() => { setAssetType(t.key); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); setPickSort('default'); }}
                 className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   assetType === t.key
                     ? 'bg-primary/15 text-primary'
@@ -459,36 +461,56 @@ export default function Index() {
           </nav>
           {assetType === 'forex' && <ForexPairSelector onAnalyse={(pairId) => analyseForex(pairId)} loading={loading} />}
           {(assetType === 'stocks' || assetType === 'etfs') && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <ExchangeSelector
-                exchanges={assetType === 'stocks' ? STOCK_EXCHANGES : ETF_EXCHANGES}
-                selected={assetType === 'stocks' ? stockExchange : etfExchange}
-                onSelect={assetType === 'stocks' ? setStockExchange : setEtfExchange}
-              />
-              {assetType === 'stocks' && (() => {
-                const allPicks = STOCK_PICKS_BY_EXCHANGE[stockExchange] || [];
-                const divCount = allPicks.filter(p => p.div).length;
-                const avgYield = divCount > 0
-                  ? (allPicks.filter(p => p.div).reduce((s, p) => s + p.yield, 0) / divCount).toFixed(1)
-                  : '0';
-                return (
+            <div className="space-y-2">
+              {/* Exchange selector as primary navigation */}
+              <div className="flex items-center gap-1 flex-wrap">
+                {(assetType === 'stocks' ? STOCK_EXCHANGES : ETF_EXCHANGES).filter(ex => ex.id !== 'ALL').map(ex => {
+                  const selected = (assetType === 'stocks' ? stockExchange : etfExchange) === ex.id;
+                  return (
+                    <button
+                      key={ex.id}
+                      onClick={() => {
+                        (assetType === 'stocks' ? setStockExchange : setEtfExchange)(ex.id);
+                        setRankedPicks({});
+                        setPickSort('default');
+                      }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        selected
+                          ? 'bg-primary/15 text-primary border border-primary/30'
+                          : 'border border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
+                      }`}
+                    >
+                      <span>{ex.flag}</span>
+                      <span>{ex.label}</span>
+                    </button>
+                  );
+                })}
+                {assetType === 'stocks' && (
                   <button
                     onClick={() => setDividendOnly(d => !d)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ml-auto ${
                       dividendOnly
                         ? 'bg-primary/15 border-primary/40 text-primary'
-                        : 'bg-sf-elevated border-border text-foreground hover:border-primary/40'
+                        : 'border-border text-muted-foreground hover:border-primary/30'
                     }`}
                   >
-                    <span>💰</span>
-                    <span>Dividends</span>
-                    <span className="text-[9px] opacity-70">({divCount} · avg {avgYield}%)</span>
+                    💰 Dividends
                   </button>
-                );
-              })()}
+                )}
+              </div>
             </div>
           )}
-          <QuickPicks picks={getQuickPicks()} onSelect={handleQuickPick} loading={loading} onRank={handleRankPicks} ranking={ranking} showDividends={assetType === 'stocks' && dividendOnly} />
+          <QuickPicks
+            picks={getQuickPicks()}
+            onSelect={handleQuickPick}
+            loading={loading}
+            onRank={handleRankPicks}
+            ranking={ranking}
+            showDividends={assetType === 'stocks'}
+            cardMode={assetType === 'stocks' || assetType === 'etfs'}
+            sortBy={pickSort}
+            onSortChange={setPickSort}
+          />
         </div>
 
         {loading && (
