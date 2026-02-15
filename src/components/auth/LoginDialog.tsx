@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
 type Tab = 'login' | 'signup' | 'phone';
 
 export default function LoginDialog({ open, onClose }: Props) {
-  const { signInWithEmail, signUpWithEmail, signInWithPhone, verifyOtp, signInWithGoogle } = useAuth();
+  const { user, signInWithEmail, signUpWithEmail, signInWithPhone, verifyOtp, signInWithGoogle } = useAuth();
   const [tab, setTab] = useState<Tab>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,6 +19,11 @@ export default function LoginDialog({ open, onClose }: Props) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Auto-close when user becomes authenticated (e.g. after Google OAuth)
+  useEffect(() => {
+    if (user && open) onClose();
+  }, [user, open, onClose]);
 
   if (!open) return null;
 
