@@ -5,7 +5,8 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  :root,
+  .dark {
     --background: 216 56% 3%;
     --foreground: 210 30% 90%;
 
@@ -61,6 +62,64 @@
     --sidebar-accent-foreground: 210 30% 90%;
     --sidebar-border: 216 30% 16%;
     --sidebar-ring: 187 100% 47%;
+  }
+
+  .light {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 186 100% 33%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 186 100% 33%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 186 100% 33%;
+
+    --radius: 0.625rem;
+
+    /* ForecastSimply brand tokens — light */
+    --fs-bg-primary: 210 40% 98%;
+    --fs-bg-secondary: 0 0% 100%;
+    --fs-bg-tertiary: 210 40% 96%;
+    --fs-bg-surface: 210 40% 94%;
+    --fs-bg-hover: 214 32% 91%;
+    --fs-border-subtle: 214 32% 91%;
+    --fs-border-medium: 213 27% 84%;
+    --fs-text-primary: 222 47% 11%;
+    --fs-text-secondary: 215 16% 47%;
+    --fs-text-tertiary: 215 20% 65%;
+    --fs-text-disabled: 214 32% 91%;
+    --fs-cyan: 186 100% 33%;
+    --fs-green: 142 76% 36%;
+    --fs-red: 0 84% 60%;
+    --fs-amber: 38 92% 50%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 186 100% 33%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 186 100% 33%;
   }
 }
 
