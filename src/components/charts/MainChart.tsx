@@ -78,30 +78,45 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
     ...forecastPoints,
   ];
 
+  // Derive actual data span from timestamps to pick the right format
+  const firstTs = combined[0]?.time || 0;
+  const lastTs = combined[combined.length - 1]?.time || 0;
+  const spanMs = lastTs - firstTs;
+  const spanDays = spanMs / 86_400_000;
+
   const formatTime = (ts: number) => {
     const d = new Date(ts);
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    if (timeframeDays <= 0.2) {
-      // 1H / 4H — show hours:minutes
+    if (spanDays < 0.25) {
+      // Under 6 hours — HH:MM
       return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-    } else if (timeframeDays <= 1) {
-      // 24H — show hour
-      return `${d.getHours().toString().padStart(2,'0')}:00`;
-    } else if (timeframeDays <= 7) {
-      // 7D — show day + hour
-      return `${months[d.getMonth()]} ${d.getDate()} ${d.getHours()}h`;
-    } else if (timeframeDays <= 90) {
-      // 30D / 90D — show month + day
+    } else if (spanDays < 2) {
+      // Under 2 days — HH:MM
+      return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+    } else if (spanDays < 14) {
+      // Under 2 weeks — day + abbreviated month
       return `${months[d.getMonth()]} ${d.getDate()}`;
-    } else if (timeframeDays <= 730) {
-      // 1Y / 2Y — show month + year
+    } else if (spanDays < 180) {
+      // Under 6 months — month + day
+      return `${months[d.getMonth()]} ${d.getDate()}`;
+    } else if (spanDays < 900) {
+      // Under ~2.5 years — month + short year
       return `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
     } else {
-      // 5Y / ALL — show year or month+year
-      return timeframeDays > 1825
-        ? `${d.getFullYear()}`
-        : `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
+      // Long range — just year, or quarter+year if under 5 years
+      if (spanDays < 2000) {
+        return `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
+      }
+      return `${d.getFullYear()}`;
     }
+  };
+
+  const formatTooltipLabel = (ts: number) => {
+    const d = new Date(ts);
+    if (spanDays < 2) {
+      return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
   const primaryForecast = forecasts[0];
@@ -134,7 +149,7 @@ export default function MainChart({ data, timeframeDays = 90 }: Props) {
           <YAxis domain={['auto', 'auto']} tick={{ fill: 'hsl(213 20% 55%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono' }} axisLine={{ stroke: 'hsl(216 30% 18%)' }} tickFormatter={(v: number) => fmtPrice(v).replace('$', '')} width={isMobile ? 50 : 60} />
           <Tooltip
             contentStyle={{ background: 'hsl(220 45% 8%)', border: '1px solid hsl(216 30% 18%)', borderRadius: 8, fontFamily: 'JetBrains Mono', fontSize: 11 }}
-            labelFormatter={(ts: number) => new Date(ts).toLocaleDateString()}
+            labelFormatter={formatTooltipLabel}
             formatter={(value: number, name: string) => [fmtPrice(value), name]}
           />
           <Area dataKey="bbUpper" stroke="none" fill="hsl(213 20% 55% / 0.08)" />
