@@ -100,7 +100,7 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
       </header>
       <ApiKeySettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <LoginDialog open={loginOpen} onClose={() => setLoginOpen(false)} />
-      {user && <AccountPanel open={accountOpen} onClose={() => setAccountOpen(false)} />}
+      {user && <AccountPanel open={accountOpen} onClose={() => setAccountOpen(false)} watchlist={watchlist} onWatchlistRemove={onWatchlistRemove} onWatchlistClear={onWatchlistClear} />}
     </>
   );
 }

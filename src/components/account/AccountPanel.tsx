@@ -3,23 +3,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { SUPPORTED_CURRENCIES } from '@/utils/currencyConversion';
+import type { WatchlistItem } from '@/types/assets';
 
 interface Props {
   open: boolean;
   onClose: () => void;
-}
-
-interface AnalysisRecord {
-  id: string;
-  symbol: string;
-  name: string;
-  signal_label: string;
-  signal_score: number;
-  price: number;
-  asset_type: string;
-  created_at: string;
-  market_phase: string | null;
-  data_source: string | null;
+  watchlist?: WatchlistItem[];
+  onWatchlistRemove?: (id: string) => void;
+  onWatchlistClear?: () => void;
 }
 
 interface UserPrefs {
@@ -52,12 +43,17 @@ const DIGEST_CATEGORIES: { key: keyof NewsletterPrefs; icon: string; label: stri
   { key: 'forex', icon: '💱', label: 'ForexSimply Digest' },
 ];
 
-export default function AccountPanel({ open, onClose }: Props) {
+const ASSET_TYPE_ICONS: Record<string, string> = {
+  crypto: '🪙',
+  stocks: '📈',
+  etfs: '📊',
+  forex: '💱',
+};
+
+export default function AccountPanel({ open, onClose, watchlist = [], onWatchlistRemove, onWatchlistClear }: Props) {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'history' | 'newsletter'>('profile');
-  const [history, setHistory] = useState<AnalysisRecord[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'watchlist' | 'newsletter'>('profile');
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
@@ -111,21 +107,6 @@ export default function AccountPanel({ open, onClose }: Props) {
       }
     }
   }, [open, user]);
-
-  useEffect(() => {
-    if (open && activeTab === 'history' && user) {
-      setLoadingHistory(true);
-      supabase.from('analysis_history')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50)
-        .then(({ data }) => {
-          setHistory((data as AnalysisRecord[]) || []);
-          setLoadingHistory(false);
-        });
-    }
-  }, [open, activeTab, user]);
 
   if (!open || !user) return null;
 
@@ -220,7 +201,7 @@ export default function AccountPanel({ open, onClose }: Props) {
     { key: 'profile' as const, label: '👤 Profile' },
     { key: 'preferences' as const, label: '⚙️ Prefs' },
     { key: 'newsletter' as const, label: '📬 Digest' },
-    { key: 'history' as const, label: '📊 History' },
+    { key: 'watchlist' as const, label: '⭐ Watchlist' },
   ];
 
   return (
@@ -414,37 +395,57 @@ export default function AccountPanel({ open, onClose }: Props) {
           </div>
         )}
 
-        {/* History Tab */}
-        {activeTab === 'history' && (
+        {/* Watchlist Tab */}
+        {activeTab === 'watchlist' && (
           <div className="space-y-2">
-            {loadingHistory ? (
-              <div className="text-xs text-muted-foreground text-center py-4 animate-pulse">Loading history...</div>
-            ) : history.length === 0 ? (
-              <div className="text-xs text-muted-foreground text-center py-4">No analysis history yet. Analyse an asset to get started.</div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-muted-foreground font-mono uppercase">{watchlist.length} item{watchlist.length !== 1 ? 's' : ''}</span>
+              {watchlist.length > 0 && onWatchlistClear && (
+                <button
+                  onClick={() => { if (confirm('Clear entire watchlist?')) onWatchlistClear(); }}
+                  className="text-[10px] text-destructive hover:underline"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+
+            {watchlist.length === 0 ? (
+              <div className="text-center py-6 space-y-2">
+                <div className="text-2xl">⭐</div>
+                <p className="text-xs text-muted-foreground">Your watchlist is empty</p>
+                <p className="text-[10px] text-muted-foreground">Search and analyse an asset, then click the ⭐ button to add it here.</p>
+              </div>
             ) : (
-              history.map(h => (
-                <div key={h.id} className="flex items-center justify-between p-2.5 rounded-lg bg-background/50 border border-border/50">
-                  <div className="min-w-0">
+              watchlist.map(item => (
+                <div key={item.id} className="flex items-center justify-between p-2.5 rounded-lg bg-background/50 border border-border/50 group">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-medium text-foreground font-mono">{h.symbol}</span>
-                      <span className="text-[9px] text-muted-foreground capitalize">{h.asset_type}</span>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
-                        h.signal_score >= 2 ? 'bg-positive/10 text-positive' :
-                        h.signal_score <= -2 ? 'bg-negative/10 text-negative' :
-                        'bg-muted text-muted-foreground'
-                      }`}>
-                        {h.signal_label}
-                      </span>
+                      <span className="text-sm">{ASSET_TYPE_ICONS[item.assetType] || '📊'}</span>
+                      <span className="text-xs font-medium text-foreground font-mono">{item.symbol}</span>
+                      <span className="text-[9px] text-muted-foreground capitalize">{item.assetType}</span>
                     </div>
-                    <div className="text-[9px] text-muted-foreground">
-                      {h.name} · ${Number(h.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                      {h.market_phase && <span className="ml-1 text-accent">· {h.market_phase}</span>}
+                    <div className="text-[9px] text-muted-foreground mt-0.5">
+                      {item.name} · ${Number(item.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                      {item.change24h != null && (
+                        <span className={`ml-1 ${item.change24h >= 0 ? 'text-positive' : 'text-negative'}`}>
+                          {item.change24h >= 0 ? '+' : ''}{item.change24h.toFixed(2)}%
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[8px] text-muted-foreground/60 mt-0.5">
+                      Added {new Date(item.addedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </div>
                   </div>
-                  <div className="text-[9px] text-muted-foreground shrink-0 ml-2 text-right">
-                    <div>{new Date(h.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
-                    <div>{new Date(h.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</div>
-                  </div>
+                  {onWatchlistRemove && (
+                    <button
+                      onClick={() => onWatchlistRemove(item.id)}
+                      className="text-muted-foreground hover:text-destructive text-xs transition-all p-1 rounded hover:bg-destructive/10"
+                      title="Remove from watchlist"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
               ))
             )}
