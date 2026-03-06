@@ -34,11 +34,11 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm px-2 sm:px-4 py-2 sm:py-3 overflow-hidden" style={{ height: '72px', position: 'sticky' }}>
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm px-2 sm:px-4 py-2 sm:py-3 overflow-hidden" style={{ height: '80px', position: 'sticky' }}>
         <div className="max-w-7xl mx-auto h-full">
           <div className="flex items-center justify-between h-full">
             <button onClick={() => navigate('/')} className="shrink-0 hover:opacity-80 transition-opacity" aria-label="Home">
-              <img src={logo} alt="ForecastSimply" className="h-10 sm:h-12" style={{ transform: 'scale(1.8)', transformOrigin: 'left center' }} />
+              <img src={logo} alt="ForecastSimply" className="h-12 sm:h-14" style={{ transform: 'scale(3.2)', transformOrigin: 'left center' }} />
             </button>
 
             <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
