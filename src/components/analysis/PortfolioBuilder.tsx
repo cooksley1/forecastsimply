@@ -110,10 +110,10 @@ export default function PortfolioBuilder({ riskProfile, riskLevel, onRiskLevelCh
 
       {/* Allocations */}
       <div className="space-y-2">
-        {allocations.map((a, i) => {
+        {allocations.map((a) => {
           const dollarAmount = budget * a.percent / 100;
           return (
-            <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-background/50 border border-border/50">
+            <div key={a.name} className="flex items-center gap-3 p-2 rounded-lg bg-background/50 border border-border/50">
               <div className="w-10 shrink-0">
                 <div className="text-[10px] font-mono text-primary text-center">{a.percent}%</div>
                 <div className="h-1 bg-border rounded-full overflow-hidden mt-0.5">

@@ -96,6 +96,23 @@ export function computeSignal(
     else if (currentPrice < currentVWAP * 0.995) score -= 1;
   }
 
+  // Trend-Strength Override: dampen bearish signals during strong uptrends
+  // and boost during strong downtrends (per ensemble weighting recommendations)
+  if (lastSma20 && lastSma50 && closes && closes.length >= 20) {
+    const sma20Rising = sma20.length >= 5 && sma20[sma20.length - 1] > sma20[sma20.length - 5];
+    const sma50Rising = sma50.length >= 5 && sma50[sma50.length - 1] > sma50[sma50.length - 5];
+    const strongUptrend = lastSma20 > lastSma50 && sma20Rising && sma50Rising;
+    const strongDowntrend = lastSma20 < lastSma50 && !sma20Rising && !sma50Rising;
+
+    if (strongUptrend && score < 0) {
+      // Halve bearish influence and add trend bonus during strong uptrends
+      score = Math.round(score * 0.5) + 2;
+    } else if (strongDowntrend && score > 0) {
+      // Halve bullish influence during strong downtrends
+      score = Math.round(score * 0.5) - 2;
+    }
+  }
+
   // Clamp
   score = Math.max(-10, Math.min(10, score));
 
