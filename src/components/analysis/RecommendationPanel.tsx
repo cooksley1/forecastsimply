@@ -1,11 +1,11 @@
-import { Play, Info } from 'lucide-react';
+import { Play, Info, TrendingUp, TrendingDown, Clock } from 'lucide-react';
 import type { Recommendation } from '@/types/analysis';
 import { fmtPrice } from '@/utils/format';
 
 interface Props {
   recommendations: Recommendation[];
   onSimulate?: (rec: Recommendation) => void;
-  activeSimulations?: Set<string>; // horizons that already have active simulations
+  activeSimulations?: Set<string>;
 }
 
 const horizonLabels: Record<string, string> = {
@@ -29,6 +29,30 @@ const termExplain: Record<string, string> = {
   Confidence: 'How sure the algorithm is about this recommendation (higher = more signals agree).',
 };
 
+function getActionExplanation(rec: Recommendation): string {
+  const pctToTarget = ((rec.target - rec.entry) / rec.entry * 100).toFixed(1);
+  const pctRisk = ((rec.entry - rec.stopLoss) / rec.entry * 100).toFixed(1);
+  const horizonTime: Record<string, string> = {
+    short: 'within 1-7 days',
+    mid: 'within 1-3 months',
+    long: 'within 6-12+ months',
+  };
+  const timeframe = horizonTime[rec.horizon] || '';
+  const action = rec.action || rec.label;
+
+  if (['Strong Buy', 'Buy', 'Strong Add', 'Add to Position', 'Strong Long', 'Go Long'].includes(action)) {
+    return `Buy at ${fmtPrice(rec.entry)} with a target of ${fmtPrice(rec.target)} (+${pctToTarget}%) ${timeframe}. Set a stop-loss at ${fmtPrice(rec.stopLoss)} to limit downside to ${pctRisk}%. The algorithm sees upside potential based on current indicators.`;
+  }
+  if (['Sell', 'Strong Sell', 'Strong Short', 'Go Short'].includes(action)) {
+    return `Sell or avoid buying at ${fmtPrice(rec.entry)}. The analysis projects a move toward ${fmtPrice(rec.target)} (${pctToTarget}%) ${timeframe}. Place a stop at ${fmtPrice(rec.stopLoss)} if shorting. Multiple indicators are pointing to downside risk.`;
+  }
+  if (['Hold', 'Hold/DCA', 'Flat/Neutral'].includes(action)) {
+    return `No strong signal to buy or sell right now. If you already own this, hold your position. The projected range is ${fmtPrice(rec.stopLoss)} to ${fmtPrice(rec.target)} ${timeframe}. Wait for a clearer directional signal before acting.`;
+  }
+  // Fallback
+  return `Entry at ${fmtPrice(rec.entry)}, target ${fmtPrice(rec.target)} (+${pctToTarget}%), stop at ${fmtPrice(rec.stopLoss)} (-${pctRisk}%) ${timeframe}.`;
+}
+
 export default function RecommendationPanel({ recommendations, onSimulate, activeSimulations }: Props) {
   return (
     <div className="space-y-4">
@@ -42,22 +66,51 @@ export default function RecommendationPanel({ recommendations, onSimulate, activ
         {recommendations.map(rec => {
           const isSimulating = activeSimulations?.has(rec.horizon);
           const canSimulate = rec.horizon !== 'dca' && onSimulate;
+          const pctToTarget = ((rec.target - rec.entry) / rec.entry * 100);
+          const pctRisk = ((rec.entry - rec.stopLoss) / rec.entry * 100);
+          const actionExplanation = getActionExplanation(rec);
 
           return (
-            <div key={rec.horizon} className={`rounded-xl p-4 ${
+            <div key={rec.horizon} className={`rounded-xl p-3 sm:p-4 ${
               rec.horizon === 'dca'
                 ? 'bg-purple-950/30 border-2 border-purple-500/30 md:col-span-3'
                 : 'bg-card border border-border'
             }`}>
               <div className={`text-xs mb-1 font-mono ${rec.horizon === 'dca' ? 'text-purple-400' : 'text-muted-foreground'}`}>{horizonLabels[rec.horizon]}</div>
               <p className={`text-[10px] mb-2 italic ${rec.horizon === 'dca' ? 'text-purple-400/70' : 'text-muted-foreground/70'}`}>{horizonExplain[rec.horizon]}</p>
-              <div className={`text-lg font-bold mb-3 ${
+              <div className={`text-lg font-bold mb-1 ${
                 rec.color === 'green' ? 'text-positive' : rec.color === 'red' ? 'text-negative' : 'text-neutral-signal'
               }`}>
                 {rec.label}
               </div>
 
-              <div className="space-y-2 text-xs font-mono">
+              {/* What this means in plain English */}
+              <div className="bg-muted/30 rounded-lg p-2.5 mb-3 border border-border/30">
+                <div className="flex items-start gap-1.5">
+                  <Info className="w-3 h-3 text-primary mt-0.5 shrink-0" />
+                  <p className="text-[10px] sm:text-[11px] text-foreground/80 leading-relaxed">{actionExplanation}</p>
+                </div>
+              </div>
+
+              {/* Key metrics as visual summary */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="bg-positive/5 rounded-lg p-2 text-center border border-positive/10">
+                  <div className="text-[9px] text-muted-foreground mb-0.5">Potential Gain</div>
+                  <div className="text-sm font-mono font-bold text-positive">
+                    {pctToTarget >= 0 ? '+' : ''}{pctToTarget.toFixed(1)}%
+                  </div>
+                  <div className="text-[9px] text-muted-foreground font-mono">{fmtPrice(rec.target)}</div>
+                </div>
+                <div className="bg-negative/5 rounded-lg p-2 text-center border border-negative/10">
+                  <div className="text-[9px] text-muted-foreground mb-0.5">Max Risk</div>
+                  <div className="text-sm font-mono font-bold text-negative">
+                    -{Math.abs(pctRisk).toFixed(1)}%
+                  </div>
+                  <div className="text-[9px] text-muted-foreground font-mono">{fmtPrice(rec.stopLoss)}</div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 text-xs font-mono">
                 {[
                   { label: 'Entry', value: fmtPrice(rec.entry), explain: termExplain.Entry },
                   { label: 'Target', value: fmtPrice(rec.target), color: 'text-positive', explain: termExplain.Target },
@@ -75,10 +128,9 @@ export default function RecommendationPanel({ recommendations, onSimulate, activ
               </div>
 
               <div className="mt-3 pt-3 border-t border-border">
-                <p className="text-xs text-muted-foreground leading-relaxed">{rec.reasoning}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed">{rec.reasoning}</p>
               </div>
 
-              {/* Simulate button */}
               {canSimulate && (
                 <div className="mt-3 pt-3 border-t border-border/50">
                   {isSimulating ? (
@@ -98,7 +150,7 @@ export default function RecommendationPanel({ recommendations, onSimulate, activ
                   <div className="flex items-start gap-1 mt-1.5">
                     <Info className="w-2.5 h-2.5 text-muted-foreground/50 mt-0.5 shrink-0" />
                     <p className="text-[9px] text-muted-foreground/50 leading-relaxed">
-                      Adds to your watchlist and tracks price{rec.horizon === 'short' ? ' hourly' : ' daily'} against entry, target, and stop-loss. See how the recommendation plays out in real time.
+                      Adds to your watchlist and tracks price{rec.horizon === 'short' ? ' hourly' : ' daily'} against entry, target, and stop-loss.
                     </p>
                   </div>
                 </div>
@@ -107,7 +159,7 @@ export default function RecommendationPanel({ recommendations, onSimulate, activ
           );
         })}
       </div>
-      <p className="text-xs text-muted-foreground italic">Algorithmic analysis only. Not financial advice. Always do your own research.</p>
+      <p className="text-[10px] sm:text-xs text-muted-foreground italic">Algorithmic analysis only. Not financial advice. Always do your own research.</p>
     </div>
   );
 }

@@ -49,7 +49,7 @@ import ReportButton from '@/components/analysis/ReportButton';
 import SmartFeed from '@/components/SmartFeed';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import type { AssetType, AssetInfo, WatchlistItem, SimulationData } from '@/types/assets';
-import type { Recommendation } from '@/types/analysis';
+import type { Recommendation, TradeSetup } from '@/types/analysis';
 import type { TechnicalData } from '@/types/analysis';
 import { getSecondaryCurrency, convertFromUSD, getCurrencySymbol, SUPPORTED_CURRENCIES, setSecondaryCurrency } from '@/utils/currencyConversion';
 
@@ -167,7 +167,39 @@ export default function Index() {
     });
   }, [assetInfo]);
 
-  // Record simulation snapshots periodically
+  // Simulate a trade setup — add to watchlist with simulation data
+  const handleSimulateSetup = useCallback((setup: TradeSetup) => {
+    if (!assetInfo) return;
+    const simData: SimulationData = {
+      horizon: 'short', // trade setups are short-term by nature
+      entry: setup.entry,
+      target: setup.type === 'long' ? setup.tp2 : setup.tp2,
+      stopLoss: setup.stop,
+      signal: setup.type === 'long' ? 'Long Setup' : 'Short Setup',
+      confidence: Math.min(95, Math.round(setup.riskReward * 20 + 40)),
+      startedAt: Date.now(),
+      snapshots: [{ timestamp: Date.now(), price: assetInfo.price }],
+    };
+    setWatchlist(prev => {
+      const simId = `${assetInfo.id}__setup_${setup.type}`;
+      const filtered = prev.filter(w => w.id !== simId);
+      const next: WatchlistItem[] = [{
+        id: simId,
+        symbol: assetInfo.symbol,
+        name: assetInfo.name,
+        assetType: assetInfo.assetType,
+        price: assetInfo.price,
+        addedAt: Date.now(),
+        addedPrice: setup.entry,
+        note: `📊 ${setup.type.toUpperCase()} setup: Entry ${setup.entry.toFixed(2)} → TP1 ${setup.tp1.toFixed(2)} / TP2 ${setup.tp2.toFixed(2)} | Stop ${setup.stop.toFixed(2)}`,
+        simulation: simData,
+      }, ...filtered].slice(0, 30);
+      localStorage.setItem('sf_watchlist', JSON.stringify(next));
+      return next;
+    });
+  }, [assetInfo]);
+
+
   useEffect(() => {
     const interval = setInterval(() => {
       setWatchlist(prev => {
@@ -795,7 +827,13 @@ export default function Index() {
               </div>
 
               {/* Trade Setups */}
-              <div id="section-setups" className="scroll-mt-36"><MemoTradeSetupPanel setups={technicalData.tradeSetups} /></div>
+              <div id="section-setups" className="scroll-mt-36">
+                <MemoTradeSetupPanel
+                  setups={technicalData.tradeSetups}
+                  onSimulateSetup={handleSimulateSetup}
+                  activeSetupSimulations={new Set(watchlist.filter(w => w.simulation && w.id.includes('__setup_')).map(w => w.id.includes('_long') ? 'long' : 'short'))}
+                />
+              </div>
 
               {/* Indicators */}
               <div id="section-indicators" className="scroll-mt-36"><MemoIndicatorsPanel indicators={technicalData.indicators} currentPrice={assetInfo.price} /></div>

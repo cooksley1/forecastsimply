@@ -93,8 +93,8 @@ function scoreToLabel(score: number): { label: string; color: SignalColor } {
   if (score >= 60)  return { label: 'Strong Buy', color: 'green' };
   if (score >= 25)  return { label: 'Buy', color: 'green' };
   if (score > -25)  return { label: 'Hold', color: 'amber' };
-  if (score > -60)  return { label: 'Reduce', color: 'red' };
-  return { label: 'Sell', color: 'red' };
+  if (score > -60)  return { label: 'Sell', color: 'red' };
+  return { label: 'Strong Sell', color: 'red' };
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -112,14 +112,14 @@ function classifyRegime(forecastReturnPct: number): Regime {
 const ALLOWED_BY_REGIME: Record<Regime, string[]> = {
   bullish: ['Strong Buy', 'Buy', 'Hold'],
   neutral: ['Hold'],
-  bearish: ['Reduce', 'Sell'],
+  bearish: ['Sell', 'Strong Sell'],
 };
 
 // ════════════════════════════════════════════════════════════════
 // 5. STRATEGY ALIGNMENT  (constrain label to regime)
 // ════════════════════════════════════════════════════════════════
 
-const SIGNAL_ORDER = ['Sell', 'Reduce', 'Hold', 'Buy', 'Strong Buy'];
+const SIGNAL_ORDER = ['Strong Sell', 'Sell', 'Hold', 'Buy', 'Strong Buy'];
 
 function alignToRegime(label: string, regime: Regime): { label: string; color: SignalColor } {
   const allowed = ALLOWED_BY_REGIME[regime];
@@ -141,8 +141,8 @@ function signalToScore(label: string): number {
     case 'Strong Buy': return 80;
     case 'Buy': return 40;
     case 'Hold': return 0;
-    case 'Reduce': return -40;
-    case 'Sell': return -80;
+    case 'Sell': return -40;
+    case 'Strong Sell': return -80;
     default: return 0;
   }
 }
@@ -152,8 +152,8 @@ function signalToScore(label: string): number {
 // ════════════════════════════════════════════════════════════════
 
 function applyOverrides(label: string, forecastReturnPct: number): string {
-  if (forecastReturnPct < -20 && label === 'Hold') return 'Reduce';
-  if (forecastReturnPct > 20 && label === 'Reduce') return 'Hold';
+  if (forecastReturnPct < -20 && label === 'Hold') return 'Sell';
+  if (forecastReturnPct > 20 && label === 'Sell') return 'Hold';
   return label;
 }
 
@@ -189,7 +189,7 @@ function computeLevels(
   const { riskPct, targetPct } = getRiskParams(horizon, riskLevel);
   const entry = currentPrice;
 
-  const isBullish = ['Strong Buy', 'Buy', 'Hold'].includes(label);
+  const isBullish = !['Sell', 'Strong Sell'].includes(label);
 
   let target: number;
   let stopLoss: number;
@@ -400,7 +400,7 @@ function genDCARecommendation(
 // ════════════════════════════════════════════════════════════════
 
 function validateAndFixRec(rec: Recommendation): Recommendation {
-  const isBullish = !['Reduce', 'Sell', 'Pause DCA', 'Pause & Protect'].includes(rec.label);
+  const isBullish = !['Sell', 'Strong Sell', 'Pause DCA', 'Pause & Protect'].includes(rec.label);
   const { entry, target, stopLoss } = validateLevels(rec.entry, rec.target, rec.stopLoss, isBullish);
   return { ...rec, entry, target, stopLoss };
 }
@@ -414,8 +414,8 @@ function getAssetLabel(label: string, assetType: AssetType): string {
     switch (label) {
       case 'Strong Buy': return 'Strong Add';
       case 'Buy': return 'Add to Position';
-      case 'Sell': return 'Pause DCA';
-      case 'Reduce': return 'Reduce';
+      case 'Strong Sell': return 'Pause DCA';
+      case 'Sell': return 'Sell';
       default: return 'Hold/DCA';
     }
   }
@@ -423,9 +423,8 @@ function getAssetLabel(label: string, assetType: AssetType): string {
     switch (label) {
       case 'Strong Buy': return 'Strong Long';
       case 'Buy': return 'Go Long';
-      case 'Strong Sell':
-      case 'Sell': return 'Strong Short';
-      case 'Reduce': return 'Go Short';
+      case 'Strong Sell': return 'Strong Short';
+      case 'Sell': return 'Go Short';
       default: return 'Flat/Neutral';
     }
   }
