@@ -42,6 +42,25 @@ function IndicatorRow({ ind }: { ind: SignalBreakdown }) {
       {open && (
         <div className="px-3 pb-2 pl-7 space-y-1.5">
           <p className="text-[11px] text-muted-foreground leading-relaxed">{ind.explanation}</p>
+          {/* What this means for the user */}
+          <div className={`flex items-start gap-1.5 rounded-md p-2 ${
+            ind.signal === 'bullish' ? 'bg-positive/8 border border-positive/15' :
+            ind.signal === 'bearish' ? 'bg-negative/8 border border-negative/15' :
+            'bg-warning/8 border border-warning/15'
+          }`}>
+            <p className={`text-[10px] font-medium leading-relaxed ${
+              ind.signal === 'bullish' ? 'text-positive' :
+              ind.signal === 'bearish' ? 'text-negative' :
+              'text-warning'
+            }`}>
+              {ind.signal === 'bullish'
+                ? `🟢 This means BUY / HOLD — ${ind.name} is signaling upward momentum, supporting a bullish position.`
+                : ind.signal === 'bearish'
+                ? `🔴 This means SELL / CAUTION — ${ind.name} is signaling downward pressure. Consider reducing exposure or waiting.`
+                : `🟡 This means HOLD / WAIT — ${ind.name} is neutral. No strong directional signal from this indicator.`
+              }
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-muted-foreground/70">Weight: {ind.weight}%</span>
             <div className="flex-1 h-1 bg-secondary rounded-full overflow-hidden">
@@ -97,9 +116,14 @@ export default function SignalPanel({ signal, price, name, symbol }: Props) {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-          <div className={`text-xl sm:text-2xl font-bold font-mono ${signal.color === 'green' ? 'text-positive' : signal.color === 'red' ? 'text-negative' : 'text-neutral-signal'}`}>
-            {signal.label}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2">
+            <div className={`text-xl sm:text-2xl font-bold font-mono ${signal.color === 'green' ? 'text-positive' : signal.color === 'red' ? 'text-negative' : 'text-neutral-signal'}`}>
+              {signal.label}
+            </div>
+            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border/50">
+              Short-Term
+            </span>
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between text-xs mb-1">

@@ -802,8 +802,7 @@ export default function Index() {
                 <MemoMainChart data={technicalData} timeframeDays={timeframeDays} activeOverlays={activeOverlays} />
               </div>
 
-              {/* Volume & RSI */}
-              <MemoVolumeChart data={technicalData} />
+              {/* RSI (volume is now overlaid on price chart) */}
               <MemoRSIChart data={technicalData} />
 
               {/* Risk Profile + Recommendations + Trade Setups */}
