@@ -44,6 +44,8 @@ function detectMarketPhase(closes: number[], sma20Arr: number[], sma50Arr: numbe
 }
 
 const FORECAST_COLORS: Record<ForecastMethodId, string> = {
+  ensemble: 'hsl(210 90% 55%)',
+  linear: 'hsl(350 80% 55%)',
   holt: 'hsl(142 71% 45%)',
   ema_momentum: 'hsl(263 91% 66%)',
   monte_carlo: 'hsl(38 92% 50%)',
@@ -166,7 +168,7 @@ export function processTA(
   rawVolumes: number[],
   forecastPercent: number,
   assetType: AssetType,
-  forecastMethods: ForecastMethodId[] = ['holt'],
+  forecastMethods: ForecastMethodId[] = ['ensemble'],
   riskLevel: number = 3,
 ): TechnicalData {
   const maxPoints = 200;
@@ -227,7 +229,7 @@ export function processTA(
 
   const currentPrice = closes[closes.length - 1];
   const signal = computeSignal(indicators, currentPrice, closes, volumes, assetType);
-  const primaryMethod = forecastMethods[0] || 'holt';
+  const primaryMethod = forecastMethods[0] || 'ensemble';
   const { forecast, target } = generateForecast(closes, timestamps, forecastPercent, assetType, primaryMethod);
 
   const forecasts: import('@/types/analysis').NamedForecast[] = forecastMethods.map(methodId => {
