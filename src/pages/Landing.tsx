@@ -112,6 +112,9 @@ export default function Landing() {
       <footer className="border-t border-border py-6 px-3">
         <div className="max-w-6xl mx-auto space-y-3">
           <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+            <Link to="/how-it-works" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">How It Works</Link>
+            <Link to="/blog" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">Blog</Link>
+            <Link to="/changelog" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">Changelog</Link>
             <Link to="/about" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">About</Link>
             <Link to="/faq" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">FAQ</Link>
             <Link to="/contact" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">Contact</Link>
