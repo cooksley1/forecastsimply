@@ -7,17 +7,17 @@ export interface Exchange {
 }
 
 export const STOCK_EXCHANGES: Exchange[] = [
-  { id: 'ALL', label: 'All', flag: '🌐' },
-  { id: 'US', label: 'US', flag: '🇺🇸' },
+  { id: 'NYSE', label: 'NYSE', flag: '🇺🇸' },
+  { id: 'NASDAQ', label: 'NASDAQ', flag: '🇺🇸' },
   { id: 'ASX', label: 'ASX', flag: '🇦🇺' },
   { id: 'LSE', label: 'London', flag: '🇬🇧' },
-  { id: 'HKSE', label: 'Hong Kong', flag: '🇭🇰' },
+  { id: 'HKG', label: 'Hong Kong', flag: '🇭🇰' },
   { id: 'JPX', label: 'Tokyo', flag: '🇯🇵' },
 ];
 
 export const ETF_EXCHANGES: Exchange[] = [
-  { id: 'ALL', label: 'All', flag: '🌐' },
-  { id: 'US', label: 'US', flag: '🇺🇸' },
+  { id: 'NYSE', label: 'NYSE', flag: '🇺🇸' },
+  { id: 'NASDAQ', label: 'NASDAQ', flag: '🇺🇸' },
   { id: 'ASX', label: 'ASX', flag: '🇦🇺' },
   { id: 'LSE', label: 'London', flag: '🇬🇧' },
 ];
