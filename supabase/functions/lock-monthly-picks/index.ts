@@ -18,11 +18,19 @@ interface CoinLoreTicker {
   market_cap_usd: string;
 }
 
-interface YahooQuote {
-  symbol: string;
-  shortName?: string;
-  regularMarketPrice?: number;
-  regularMarketChangePercent?: number;
+// Stablecoins and wrapped tokens to exclude — these don't move
+const EXCLUDED_SYMBOLS = new Set([
+  "USDT", "USDC", "BUSD", "DAI", "TUSD", "USDP", "USDD", "GUSD",
+  "FRAX", "LUSD", "SUSD", "MIM", "FDUSD", "PYUSD", "EURC", "EURT",
+  "WBTC", "WETH", "STETH", "CBETH", "RETH",
+]);
+
+const EXCLUDED_NAME_PATTERNS = ["tether", "usd coin", "stablecoin", "wrapped"];
+
+function isStableOrWrapped(t: CoinLoreTicker): boolean {
+  if (EXCLUDED_SYMBOLS.has(t.symbol.toUpperCase())) return true;
+  const nameLower = t.name.toLowerCase();
+  return EXCLUDED_NAME_PATTERNS.some(p => nameLower.includes(p));
 }
 
 function preScreenScore(t: CoinLoreTicker): number {
@@ -39,17 +47,37 @@ function preScreenScore(t: CoinLoreTicker): number {
   return s;
 }
 
-const STOCK_UNIVERSE = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "TSLA", "META", "JPM"];
-const ETF_UNIVERSE = ["SPY", "QQQ", "VTI", "ARKK", "VOO", "IWM"];
+const STOCK_UNIVERSE = [
+  { sym: "AAPL", name: "Apple", fallbackPrice: 230 },
+  { sym: "MSFT", name: "Microsoft", fallbackPrice: 450 },
+  { sym: "NVDA", name: "NVIDIA", fallbackPrice: 140 },
+  { sym: "GOOGL", name: "Alphabet", fallbackPrice: 185 },
+  { sym: "AMZN", name: "Amazon", fallbackPrice: 210 },
+  { sym: "TSLA", name: "Tesla", fallbackPrice: 340 },
+  { sym: "META", name: "Meta", fallbackPrice: 620 },
+  { sym: "JPM", name: "JPMorgan", fallbackPrice: 255 },
+];
 
-const STOCK_NAMES: Record<string, string> = {
-  AAPL: "Apple", MSFT: "Microsoft", NVDA: "NVIDIA", GOOGL: "Alphabet",
-  AMZN: "Amazon", TSLA: "Tesla", META: "Meta", JPM: "JPMorgan",
-};
-const ETF_NAMES: Record<string, string> = {
-  SPY: "S&P 500", QQQ: "Nasdaq 100", VTI: "Total Market",
-  ARKK: "ARK Innovation", VOO: "Vanguard S&P", IWM: "Russell 2000",
-};
+const ETF_UNIVERSE = [
+  { sym: "SPY", name: "S&P 500", fallbackPrice: 575 },
+  { sym: "QQQ", name: "Nasdaq 100", fallbackPrice: 510 },
+  { sym: "VTI", name: "Total Market", fallbackPrice: 285 },
+  { sym: "ARKK", name: "ARK Innovation", fallbackPrice: 58 },
+  { sym: "VOO", name: "Vanguard S&P", fallbackPrice: 530 },
+  { sym: "IWM", name: "Russell 2000", fallbackPrice: 220 },
+];
+
+// Fetch with timeout
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 8000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -75,12 +103,14 @@ Deno.serve(async (req) => {
     const existingTypes = new Set((existing || []).map((e: any) => e.asset_type));
     const results: any[] = [];
 
-    // ── Crypto ──
+    // ── Crypto ── (exclude stablecoins and wrapped tokens)
     if (!existingTypes.has("crypto")) {
       try {
-        const res = await fetch("https://api.coinlore.net/api/tickers/?start=0&limit=20");
+        const res = await fetch("https://api.coinlore.net/api/tickers/?start=0&limit=50");
         const json = await res.json();
-        const tickers: CoinLoreTicker[] = json.data || [];
+        const tickers: CoinLoreTicker[] = (json.data || []).filter(
+          (t: CoinLoreTicker) => !isStableOrWrapped(t)
+        );
 
         let bestTicker: CoinLoreTicker | null = null;
         let bestScore = -1;
@@ -121,91 +151,103 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Stocks & ETFs ──
-    for (const [assetType, universe, names] of [
-      ["stocks", STOCK_UNIVERSE, STOCK_NAMES],
-      ["etfs", ETF_UNIVERSE, ETF_NAMES],
+    // ── Stocks & ETFs — with timeout + fallback ──
+    for (const [assetType, universe] of [
+      ["stocks", STOCK_UNIVERSE],
+      ["etfs", ETF_UNIVERSE],
     ] as const) {
       if (existingTypes.has(assetType)) continue;
 
-      try {
-        // Use Yahoo Finance search proxy to get current prices
-        const supabaseFnUrl = `${supabaseUrl}/functions/v1/yahoo-proxy`;
-        let bestPick: { symbol: string; price: number; change: number; score: number } | null = null;
-        let bestScore = -1;
+      let bestPick: { symbol: string; name: string; price: number; score: number } | null = null;
+      let bestScore = -1;
+      let usedFallback = false;
 
-        for (const sym of universe) {
-          try {
-            const res = await fetch(supabaseFnUrl, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${serviceKey}`,
-              },
-              body: JSON.stringify({ symbol: sym, range: "3mo", interval: "1d" }),
-            });
+      // Try yahoo-proxy with per-symbol timeout
+      const supabaseFnUrl = `${supabaseUrl}/functions/v1/yahoo-proxy`;
+      let succeeded = 0;
 
-            if (!res.ok) continue;
-            const data = await res.json();
-            const closes: number[] = data.closes || [];
-            if (closes.length < 20) continue;
+      for (const item of universe) {
+        try {
+          const res = await fetchWithTimeout(supabaseFnUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${serviceKey}`,
+            },
+            body: JSON.stringify({ symbol: item.sym, range: "3mo", interval: "1d" }),
+          }, 10000);
 
-            const lastPrice = closes[closes.length - 1];
-            const price20ago = closes[Math.max(0, closes.length - 20)];
-            const price5ago = closes[Math.max(0, closes.length - 5)];
+          if (!res.ok) { await res.text(); continue; }
+          const data = await res.json();
+          const closes: number[] = data.closes || [];
+          if (closes.length < 20) continue;
 
-            // Simple momentum score
-            const mom20 = ((lastPrice - price20ago) / price20ago) * 100;
-            const mom5 = ((lastPrice - price5ago) / price5ago) * 100;
+          succeeded++;
+          const lastPrice = closes[closes.length - 1];
+          const price20ago = closes[Math.max(0, closes.length - 20)];
+          const price5ago = closes[Math.max(0, closes.length - 5)];
 
-            let score = 0;
-            if (mom5 > 0 && mom5 < 5) score += 20;
-            if (mom20 > 0 && mom20 < 15) score += 20;
-            if (mom5 > -2) score += 10;
-            if (mom20 > -5) score += 10;
+          const mom20 = ((lastPrice - price20ago) / price20ago) * 100;
+          const mom5 = ((lastPrice - price5ago) / price5ago) * 100;
 
-            // Volume trend (last 5 days vs 20-day avg)
-            const volumes: number[] = data.volumes || [];
-            if (volumes.length >= 20) {
-              const recentVol = volumes.slice(-5).reduce((a: number, b: number) => a + b, 0) / 5;
-              const avgVol = volumes.slice(-20).reduce((a: number, b: number) => a + b, 0) / 20;
-              if (recentVol > avgVol * 1.1) score += 10;
-            }
+          let score = 0;
+          if (mom5 > 0 && mom5 < 5) score += 20;
+          if (mom20 > 0 && mom20 < 15) score += 20;
+          if (mom5 > -2) score += 10;
+          if (mom20 > -5) score += 10;
 
-            if (score > bestScore) {
-              bestScore = score;
-              bestPick = { symbol: sym, price: lastPrice, change: mom5, score };
-            }
-          } catch {
-            continue;
+          const volumes: number[] = data.volumes || [];
+          if (volumes.length >= 20) {
+            const recentVol = volumes.slice(-5).reduce((a: number, b: number) => a + b, 0) / 5;
+            const avgVol = volumes.slice(-20).reduce((a: number, b: number) => a + b, 0) / 20;
+            if (recentVol > avgVol * 1.1) score += 10;
           }
+
+          if (score > bestScore) {
+            bestScore = score;
+            bestPick = { symbol: item.sym, name: item.name, price: lastPrice, score };
+          }
+        } catch {
+          console.log(`Timeout/error fetching ${item.sym}, continuing...`);
+          continue;
         }
-
-        if (bestPick) {
-          const confidence = Math.min(85, 30 + bestPick.score);
-          const signal = bestPick.score >= 45 ? "Buy" : bestPick.score >= 25 ? "Hold" : "Sell";
-          const targetPrice = bestPick.price * (1 + bestPick.score / 200);
-
-          const { data, error } = await supabase.from("tracked_picks").insert({
-            month_start: monthStart,
-            asset_type: assetType,
-            asset_id: bestPick.symbol,
-            symbol: bestPick.symbol,
-            name: (names as Record<string, string>)[bestPick.symbol] || bestPick.symbol,
-            entry_price: bestPick.price,
-            signal_score: bestPick.score,
-            signal_label: signal,
-            confidence,
-            target_price: targetPrice,
-            reasoning: `Top-ranked ${assetType === "etfs" ? "ETF" : "stock"} by momentum score (${bestPick.score}/70). ${signal} signal with ${confidence}% confidence.`,
-          }).select().single();
-
-          if (data) results.push(data);
-          if (error) console.error(`${assetType} insert error:`, error);
-        }
-      } catch (e) {
-        console.error(`${assetType} error:`, e);
       }
+
+      // Fallback: if no yahoo data worked, pick top item with fallback price
+      if (!bestPick) {
+        usedFallback = true;
+        // Pick the first item as a reasonable default
+        const fallbackItem = universe[0];
+        bestPick = {
+          symbol: fallbackItem.sym,
+          name: fallbackItem.name,
+          price: fallbackItem.fallbackPrice,
+          score: 35, // neutral score
+        };
+        bestScore = 35;
+        console.log(`Using fallback for ${assetType}: ${fallbackItem.sym} at $${fallbackItem.fallbackPrice}`);
+      }
+
+      const confidence = Math.min(85, 30 + bestPick.score);
+      const signal = bestPick.score >= 45 ? "Buy" : bestPick.score >= 25 ? "Hold" : "Sell";
+      const targetPrice = bestPick.price * (1 + bestPick.score / 200);
+
+      const { data, error } = await supabase.from("tracked_picks").insert({
+        month_start: monthStart,
+        asset_type: assetType,
+        asset_id: bestPick.symbol,
+        symbol: bestPick.symbol,
+        name: bestPick.name,
+        entry_price: bestPick.price,
+        signal_score: bestPick.score,
+        signal_label: signal,
+        confidence,
+        target_price: targetPrice,
+        reasoning: `Top-ranked ${assetType === "etfs" ? "ETF" : "stock"} by momentum score (${bestPick.score}/70). ${signal} signal with ${confidence}% confidence.${usedFallback ? " (Fallback pricing used — live data unavailable at lock time.)" : ""}`,
+      }).select().single();
+
+      if (data) results.push(data);
+      if (error) console.error(`${assetType} insert error:`, error);
     }
 
     return new Response(JSON.stringify({ locked: results.length, picks: results }), {
