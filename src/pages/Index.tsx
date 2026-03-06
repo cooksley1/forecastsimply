@@ -48,14 +48,15 @@ import SocialShare from '@/components/SocialShare';
 import ReportButton from '@/components/analysis/ReportButton';
 import SmartFeed from '@/components/SmartFeed';
 import NewsletterSignup from '@/components/NewsletterSignup';
-import type { AssetType, AssetInfo, WatchlistItem } from '@/types/assets';
+import type { AssetType, AssetInfo, WatchlistItem, SimulationData } from '@/types/assets';
+import type { Recommendation } from '@/types/analysis';
 import type { TechnicalData } from '@/types/analysis';
 import { getSecondaryCurrency, convertFromUSD, getCurrencySymbol, SUPPORTED_CURRENCIES, setSecondaryCurrency } from '@/utils/currencyConversion';
 
 const MemoMainChart = memo(MainChart);
 const MemoVolumeChart = memo(VolumeChart);
 const MemoRSIChart = memo(RSIChart);
-const MemoRecommendationPanel = memo(RecommendationPanel);
+
 const MemoTradeSetupPanel = memo(TradeSetupPanel);
 const MemoIndicatorsPanel = memo(IndicatorsPanel);
 const MemoTopPicks = memo(TopPicks);
@@ -132,6 +133,72 @@ export default function Index() {
       localStorage.setItem('sf_watchlist', JSON.stringify(next));
       return next;
     });
+  }, []);
+
+  // Simulate a recommendation — add to watchlist with simulation data
+  const handleSimulate = useCallback((rec: Recommendation) => {
+    if (!assetInfo) return;
+    const simData: SimulationData = {
+      horizon: rec.horizon as 'short' | 'mid' | 'long',
+      entry: rec.entry,
+      target: rec.target,
+      stopLoss: rec.stopLoss,
+      signal: rec.label,
+      confidence: rec.confidence,
+      startedAt: Date.now(),
+      snapshots: [],
+    };
+    setWatchlist(prev => {
+      const simId = `${assetInfo.id}__sim_${rec.horizon}`;
+      const filtered = prev.filter(w => w.id !== simId);
+      const next: WatchlistItem[] = [{
+        id: simId,
+        symbol: assetInfo.symbol,
+        name: assetInfo.name,
+        assetType: assetInfo.assetType,
+        price: assetInfo.price,
+        addedAt: Date.now(),
+        addedPrice: rec.entry,
+        note: `📊 ${rec.horizon}-term simulation: ${rec.label} @ ${rec.entry.toFixed(2)} → ${rec.target.toFixed(2)}`,
+        simulation: simData,
+      }, ...filtered].slice(0, 30);
+      localStorage.setItem('sf_watchlist', JSON.stringify(next));
+      return next;
+    });
+  }, [assetInfo]);
+
+  // Record simulation snapshots periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWatchlist(prev => {
+        let changed = false;
+        const next = prev.map(item => {
+          if (!item.simulation) return item;
+          const sim = item.simulation;
+          const lastSnapshot = sim.snapshots[sim.snapshots.length - 1];
+          const now = Date.now();
+          const intervalMs = sim.horizon === 'short' ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+          const lastTime = lastSnapshot?.timestamp || sim.startedAt;
+          if (now - lastTime >= intervalMs) {
+            changed = true;
+            return {
+              ...item,
+              simulation: {
+                ...sim,
+                snapshots: [...sim.snapshots, { timestamp: now, price: item.price }],
+              },
+            };
+          }
+          return item;
+        });
+        if (changed) {
+          localStorage.setItem('sf_watchlist', JSON.stringify(next));
+          return next;
+        }
+        return prev;
+      });
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const updateSecondaryPrice = useCallback(async (usdPrice: number) => {
@@ -695,7 +762,11 @@ export default function Index() {
                     <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">— Adjusts trade setups & recommendations</span>
                   </div>
                 </div>
-                <MemoRecommendationPanel recommendations={technicalData.recommendations} />
+                <RecommendationPanel
+                  recommendations={technicalData.recommendations}
+                  onSimulate={handleSimulate}
+                  activeSimulations={new Set(watchlist.filter(w => w.simulation && w.id.startsWith(assetInfo.id)).map(w => w.simulation!.horizon))}
+                />
               </div>
 
               {/* Trade Setups */}
