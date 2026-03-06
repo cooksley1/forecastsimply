@@ -113,10 +113,13 @@ export default function WatchlistDropdown({ items, onSelect, onRemove, onClear }
                               {item.simulation && <Target className="w-3 h-3 text-primary" />}
                             </div>
                             <div className="text-[10px] text-muted-foreground truncate">
-                              ${addedPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })} →{' '}
-                              <span className="text-foreground">${Number(item.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                              {item.assetType === 'forex' ? '' : '$'}{addedPrice.toLocaleString(undefined, { maximumFractionDigits: item.assetType === 'forex' ? 4 : 2 })} →{' '}
+                              <span className="text-foreground">{item.assetType === 'forex' ? '' : '$'}{Number(item.price).toLocaleString(undefined, { maximumFractionDigits: item.assetType === 'forex' ? 4 : 2 })}</span>
                               <span className={`ml-1 font-mono ${pctChange >= 0 ? 'text-positive' : 'text-negative'}`}>
-                                {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(1)}%
+                                {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(item.assetType === 'forex' ? 2 : 1)}%
+                              </span>
+                              <span className="text-[8px] text-muted-foreground/60 ml-1">
+                                since {new Date(item.addedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                               </span>
                             </div>
                             {item.note && (

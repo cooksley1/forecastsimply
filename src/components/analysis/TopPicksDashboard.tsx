@@ -82,33 +82,43 @@ export default function TopPicksDashboard({ onSelect }: Props) {
   const analyseAndRank = useCallback(async () => {
     setLoading(true);
 
-    // Crypto — use CoinLore for speed
+    // Crypto — use CoinLore with Breakout Finder's pre-screen scoring for consistency
     try {
       const tickers = await getTopTickers(20);
       const cryptoResults: Pick[] = tickers.slice(0, 12).map((t: CoinLoreTicker) => {
         const c24 = parseFloat(t.percent_change_24h) || 0;
         const c7d = parseFloat(t.percent_change_7d) || 0;
-        // Simple scoring from price momentum
-        const momentumScore = c24 * 0.4 + c7d * 0.6;
-        const signal = momentumScore > 3 ? 'Buy' : momentumScore < -3 ? 'Sell' : 'Hold';
-        const confidence = Math.min(85, 40 + Math.abs(momentumScore) * 3);
+        const c1h = parseFloat(t.percent_change_1h) || 0;
+
+        // Same pre-screen scoring as Breakout Finder & TopPicks
+        let preScore = 0;
+        if (c24 > 0 && c24 < 8) preScore += 20;
+        if (c7d > 0 && c7d < 15) preScore += 15;
+        if (c1h > 0 && c1h < 3) preScore += 10;
+        if (c24 > -2) preScore += 5;
+        if (c7d > -5) preScore += 5;
+        if (t.volume24 > 50_000_000) preScore += 10;
+
+        // Derive signal from score (aligned with TopPicks verdicts)
+        const signal = preScore >= 45 ? 'Buy' : (c7d < -10 || c24 < -5) ? 'Sell' : preScore >= 25 ? 'Hold' : 'Sell';
+        const confidence = Math.min(85, 30 + preScore);
         return {
           id: coinloreSymbolToGeckoId(t.symbol, t.name),
           name: t.name,
           symbol: t.symbol.toUpperCase(),
           price: parseFloat(t.price_usd) || 0,
           change: c24,
-          score: momentumScore,
+          score: preScore,
           signal,
           confidence: Math.round(confidence),
-          target: parseFloat(t.price_usd) * (1 + momentumScore / 100),
-          reasoning: c7d > 5 && c24 > 0
-            ? 'Strong momentum on daily and weekly timeframes. Buyers in control.'
-            : c7d < -5
-            ? 'Weak momentum. Wait for stabilisation before entering.'
-            : c24 > 2
-            ? 'Positive daily action suggests short-term opportunity.'
-            : 'Consolidating. Watch for directional breakout.',
+          target: parseFloat(t.price_usd) * (1 + preScore / 200),
+          reasoning: preScore >= 45
+            ? 'Strong setup — positive momentum across timeframes with healthy volume.'
+            : (c7d < -10 || c24 < -5)
+            ? 'Heavy selling pressure. Wait for stabilisation.'
+            : preScore >= 25
+            ? 'Consolidating — some positive signals but not full conviction yet.'
+            : 'Weak metrics — momentum or volume lacking.',
           assetType: 'crypto' as AssetType,
         };
       });
