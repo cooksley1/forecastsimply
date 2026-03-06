@@ -19,6 +19,9 @@ const CACHE_TTL = 30 * 60 * 1000; // 30 min
 export type ScreenerType = 'equity' | 'etf';
 export type ScreenerSubgroup = 'all' | 'asx200';
 
+// All exchanges that the screener supports
+export const SCREENER_SUPPORTED = ['ASX', 'HKG', 'LSE', 'JPX', 'NYSE', 'NASDAQ'];
+
 export function useExchangeScreener(
   exchange: string,
   enabled: boolean,

@@ -44,7 +44,8 @@ import {
 } from '@/utils/constants';
 import ExchangeSelector, { STOCK_EXCHANGES, ETF_EXCHANGES } from '@/components/search/ExchangeSelector';
 import StickySubNav from '@/components/layout/StickySubNav';
-import { useExchangeScreener, type ScreenerSubgroup } from '@/hooks/useExchangeScreener';
+import { useExchangeScreener, SCREENER_SUPPORTED, type ScreenerSubgroup } from '@/hooks/useExchangeScreener';
+import { useCryptoScreener } from '@/hooks/useCryptoScreener';
 import SocialShare from '@/components/SocialShare';
 import ReportButton from '@/components/analysis/ReportButton';
 import SmartFeed from '@/components/SmartFeed';
@@ -79,9 +80,9 @@ export default function Index() {
   const [fullscreenChart, setFullscreenChart] = useState(false);
   const isNewSearchRef = useRef(false);
   const [dataSource, setDataSource] = useState<string>('');
-  const [stockExchange, setStockExchange] = useState('US');
+  const [stockExchange, setStockExchange] = useState('NYSE');
   const [dividendOnly, setDividendOnly] = useState(false);
-  const [etfExchange, setEtfExchange] = useState('US');
+  const [etfExchange, setEtfExchange] = useState('NYSE');
   const [ranking, setRanking] = useState(false);
   const [rankedPicks, setRankedPicks] = useState<Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }>>({});
   const [pickSort, setPickSort] = useState<SortCriteria>('default');
@@ -94,17 +95,20 @@ export default function Index() {
     try { return JSON.parse(localStorage.getItem('sf_watchlist') || '[]'); } catch { return []; }
   });
 
-  // Dynamic exchange screener — supports ASX for stocks and ETFs
-  const SCREENER_EXCHANGES = ['ASX'];
+  // Dynamic exchange screener — supports all major exchanges
   const [asxSubgroup, setAsxSubgroup] = useState<ScreenerSubgroup>('asx200');
-  const useStockScreener = assetType === 'stocks' && SCREENER_EXCHANGES.includes(stockExchange);
-  const useEtfScreener = assetType === 'etfs' && SCREENER_EXCHANGES.includes(etfExchange);
+  const useStockScreener = assetType === 'stocks' && SCREENER_SUPPORTED.includes(stockExchange);
+  const useEtfScreener = assetType === 'etfs' && SCREENER_SUPPORTED.includes(etfExchange);
+  const screenerExchange = useStockScreener ? stockExchange : useEtfScreener ? etfExchange : 'NYSE';
   const { stocks: screenerStocks, loading: screenerLoading } = useExchangeScreener(
-    useStockScreener ? stockExchange : etfExchange,
+    screenerExchange,
     useStockScreener || useEtfScreener,
     useStockScreener ? 'equity' : 'etf',
-    useStockScreener ? asxSubgroup : 'all',
+    useStockScreener && stockExchange === 'ASX' ? asxSubgroup : 'all',
   );
+
+  // Crypto screener — top 500 coins
+  const { coins: cryptoCoins, loading: cryptoScreenerLoading } = useCryptoScreener(assetType === 'crypto');
 
   const currentAssetRef = useRef<{ id: string; type: AssetType } | null>(null);
   const isFirstRender = useRef(true);
@@ -430,7 +434,7 @@ export default function Index() {
 
   /* ── Handlers ── */
   const EXCHANGE_SUFFIXES: Record<string, string> = {
-    US: '', ASX: '.AX', LSE: '.L', TSE: '.TO', XETRA: '.DE', HKSE: '.HK', JPX: '.T',
+    NYSE: '', NASDAQ: '', ASX: '.AX', LSE: '.L', HKG: '.HK', JPX: '.T',
   };
 
   const handleSearch = useCallback(async (query: string) => {
@@ -500,8 +504,14 @@ export default function Index() {
 
   const getQuickPicks = useCallback(() => {
     let items: { label: string; id: string; name?: string; divYield?: number; signal?: { label: string; score: number; confidence: number } }[] = [];
-    if (assetType === 'crypto') items = CRYPTO_PICKS.map(p => ({ label: p.sym, id: p.id }));
-    else if (assetType === 'stocks') {
+    if (assetType === 'crypto') {
+      // Use crypto screener if available, otherwise fall back to hardcoded
+      if (cryptoCoins.length > 0) {
+        items = cryptoCoins.map(c => ({ label: c.sym, id: c.id, name: c.name }));
+      } else {
+        items = CRYPTO_PICKS.map(p => ({ label: p.sym, id: p.id }));
+      }
+    } else if (assetType === 'stocks') {
       if (useStockScreener && screenerStocks.length > 0) {
         let dynamicPicks = screenerStocks;
         if (dividendOnly) {
@@ -509,7 +519,7 @@ export default function Index() {
         }
         items = dynamicPicks.map(p => ({ label: p.sym, id: p.sym, name: p.name, divYield: p.yield }));
       } else {
-        let picks = STOCK_PICKS_BY_EXCHANGE[stockExchange] || [];
+        let picks = STOCK_PICKS_BY_EXCHANGE[stockExchange] || STOCK_PICKS_BY_EXCHANGE['US'] || [];
         if (dividendOnly) {
           picks = picks.filter(p => p.div);
           picks = [...picks].sort((a, b) => b.yield - a.yield);
@@ -520,7 +530,7 @@ export default function Index() {
       if (useEtfScreener && screenerStocks.length > 0) {
         items = screenerStocks.map(p => ({ label: p.sym, id: p.sym, name: p.name, divYield: p.yield }));
       } else {
-        items = (ETF_PICKS_BY_EXCHANGE[etfExchange] || []).map(p => ({ label: p.sym, id: p.sym }));
+        items = (ETF_PICKS_BY_EXCHANGE[etfExchange] || ETF_PICKS_BY_EXCHANGE['US'] || []).map(p => ({ label: p.sym, id: p.sym }));
       }
     } else {
       items = FOREX_PICKS.map(p => ({ label: p.name, id: `${p.from}${p.to}` }));
@@ -536,7 +546,7 @@ export default function Index() {
     }
 
     return withSignals;
-  }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks, useStockScreener, useEtfScreener, screenerStocks]);
+  }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks, useStockScreener, useEtfScreener, screenerStocks, cryptoCoins]);
 
   const handleRankPicks = useCallback(async (timeframeDaysForRank?: number) => {
     setRanking(true);
@@ -733,10 +743,15 @@ export default function Index() {
               Loading {assetType === 'etfs' ? 'ETF' : 'stock'} list ({screenerStocks.length} loaded so far)...
             </p>
           )}
+          {cryptoScreenerLoading && assetType === 'crypto' && (
+            <p className="text-[10px] text-muted-foreground animate-pulse">
+              Loading top 500 coins...
+            </p>
+          )}
           <QuickPicks
             picks={getQuickPicks()}
             onSelect={handleQuickPick}
-            loading={loading || (screenerLoading && (useStockScreener || useEtfScreener))}
+            loading={loading || (screenerLoading && (useStockScreener || useEtfScreener)) || (cryptoScreenerLoading && assetType === 'crypto')}
             onRank={handleRankPicks}
             ranking={ranking}
             showDividends={assetType === 'stocks'}
@@ -936,7 +951,7 @@ export default function Index() {
             )}
 
             {/* Congress Trades — only show when US stocks exchange is active */}
-            {(assetType === 'stocks' && stockExchange === 'US') && (
+            {(assetType === 'stocks' && (stockExchange === 'NYSE' || stockExchange === 'NASDAQ')) && (
               <CongressTrades onAnalyse={(symbol) => analyseStock(symbol, 'stocks')} />
             )}
 
