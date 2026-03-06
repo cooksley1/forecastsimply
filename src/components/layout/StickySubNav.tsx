@@ -1,7 +1,8 @@
-import { BarChart3, TrendingUp, Layers, DollarSign, LineChart, Target, Lightbulb, Zap, SlidersHorizontal, FileText } from 'lucide-react';
+import { BarChart3, TrendingUp, Layers, DollarSign, LineChart, Target, Lightbulb, Zap, SlidersHorizontal, FileText, LayoutGrid } from 'lucide-react';
 import type { AssetType } from '@/types/assets';
 
-const ASSET_TABS: { key: AssetType; label: string; icon: React.ReactNode }[] = [
+const ASSET_TABS: { key: AssetType | 'all'; label: string; icon: React.ReactNode }[] = [
+  { key: 'all', label: 'All', icon: <LayoutGrid className="w-3.5 h-3.5" /> },
   { key: 'crypto', label: 'Crypto', icon: <DollarSign className="w-3.5 h-3.5" /> },
   { key: 'stocks', label: 'Stocks', icon: <TrendingUp className="w-3.5 h-3.5" /> },
   { key: 'etfs', label: 'ETFs', icon: <Layers className="w-3.5 h-3.5" /> },
@@ -19,11 +20,15 @@ const SECTIONS = [
 
 interface Props {
   assetType: AssetType;
+  overviewMode: boolean;
   onAssetChange: (t: AssetType) => void;
+  onOverviewToggle: (on: boolean) => void;
   showSections: boolean;
 }
 
-export default function StickySubNav({ assetType, onAssetChange, showSections }: Props) {
+export default function StickySubNav({ assetType, overviewMode, onAssetChange, onOverviewToggle, showSections }: Props) {
+  const activeKey = overviewMode ? 'all' : assetType;
+
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
@@ -45,10 +50,15 @@ export default function StickySubNav({ assetType, onAssetChange, showSections }:
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
-                onAssetChange(t.key);
+                if (t.key === 'all') {
+                  onOverviewToggle(true);
+                } else {
+                  onOverviewToggle(false);
+                  onAssetChange(t.key);
+                }
               }}
               className={`flex-1 flex items-center justify-center gap-1.5 px-1 py-1.5 rounded-md text-[11px] sm:text-xs font-medium transition-all ${
-                assetType === t.key
+                activeKey === t.key
                   ? 'bg-card text-primary shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
@@ -59,7 +69,7 @@ export default function StickySubNav({ assetType, onAssetChange, showSections }:
           ))}
         </div>
 
-        {showSections && (
+        {showSections && !overviewMode && (
           <div className="flex gap-0.5 border-t border-border/40 pt-1 overflow-x-auto no-scrollbar">
             {SECTIONS.map(s => (
               <button

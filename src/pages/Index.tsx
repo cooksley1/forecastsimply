@@ -70,6 +70,7 @@ const MemoBreakoutFinder = memo(BreakoutFinder);
 export default function Index() {
   const { user } = useAuth();
   const [assetType, setAssetType] = useState<AssetType>('crypto');
+  const [overviewMode, setOverviewMode] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [assetInfo, setAssetInfo] = useState<AssetInfo | null>(null);
@@ -278,6 +279,7 @@ export default function Index() {
   const analyseCrypto = useCallback(async (coinId: string) => {
     setLoading(true);
     setError(null);
+    setOverviewMode(false);
     try {
       const result = await fetchCryptoHistory(coinId, timeframeDays);
       setDataSource(result.source);
@@ -335,6 +337,7 @@ export default function Index() {
   const analyseStock = useCallback(async (symbol: string, type: 'stocks' | 'etfs') => {
     setLoading(true);
     setError(null);
+    setOverviewMode(false);
     try {
       const result = await fetchEquityHistory(symbol, timeframeDays);
       setDataSource(result.source);
@@ -372,6 +375,7 @@ export default function Index() {
   const analyseForex = useCallback(async (pairId: string) => {
     setLoading(true);
     setError(null);
+    setOverviewMode(false);
     try {
       const from = pairId.slice(0, 3);
       const to = pairId.slice(3, 6);
@@ -644,7 +648,9 @@ export default function Index() {
 
       <StickySubNav
         assetType={assetType}
-        onAssetChange={(t) => { setAssetType(t); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); setPickSort('default'); setTechnicalData(null); setAssetInfo(null); }}
+        overviewMode={overviewMode}
+        onOverviewToggle={setOverviewMode}
+        onAssetChange={(t) => { setAssetType(t); setOverviewMode(false); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); setPickSort('default'); setTechnicalData(null); setAssetInfo(null); }}
         showSections={!!showAnalysis}
       />
 
@@ -957,8 +963,21 @@ export default function Index() {
           </div>
         )}
 
-        {/* ── DASHBOARD — empty state ── */}
-        {!technicalData && !loading && !error && (
+        {/* ── OVERVIEW MODE (All tab) ── */}
+        {overviewMode && !technicalData && !loading && !error && (
+          <div className="space-y-6">
+            <TopPicksDashboard onSelect={(id, type) => {
+              setOverviewMode(false);
+              setAssetType(type);
+              if (type === 'crypto') analyseCrypto(id);
+              else if (type === 'stocks') analyseStock(id, 'stocks');
+              else if (type === 'etfs') analyseStock(id, 'etfs');
+            }} />
+          </div>
+        )}
+
+        {/* ── DASHBOARD — empty state (specific asset tab) ── */}
+        {!overviewMode && !technicalData && !loading && !error && (
           <div className="space-y-6">
             {/* Chart placeholder */}
             <div className="border-2 border-dashed border-border/60 rounded-lg bg-muted/20 flex flex-col items-center justify-center py-12 sm:py-16 gap-3">
