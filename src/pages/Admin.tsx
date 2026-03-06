@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import AdminAnalyticsTab from '@/components/admin/AdminAnalyticsTab';
+import AdminSubscribersTab from '@/components/admin/AdminSubscribersTab';
 
 // ── Types ──
 interface LoginRecord {
@@ -553,11 +555,18 @@ export default function Admin() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
-        <Tabs defaultValue="users" className="space-y-4">
-          <TabsList>
+        <Tabs defaultValue="analytics" className="space-y-4">
+          <TabsList className="flex flex-wrap h-auto gap-1 p-1">
+            <TabsTrigger value="analytics">📊 Analytics</TabsTrigger>
             <TabsTrigger value="users">👥 Users</TabsTrigger>
+            <TabsTrigger value="subscribers">📧 Subscribers</TabsTrigger>
             <TabsTrigger value="digests">📰 Digests</TabsTrigger>
           </TabsList>
+
+          {/* ── Analytics Tab ── */}
+          <TabsContent value="analytics">
+            <AdminAnalyticsTab />
+          </TabsContent>
 
           {/* ── Users Tab ── */}
           <TabsContent value="users" className="space-y-4">
@@ -669,6 +678,11 @@ export default function Admin() {
                 </Table>
               </div>
             )}
+          </TabsContent>
+
+          {/* ── Subscribers Tab ── */}
+          <TabsContent value="subscribers">
+            <AdminSubscribersTab />
           </TabsContent>
 
           {/* ── Digests Tab ── */}
