@@ -12,6 +12,7 @@ interface TopPick {
   marketCap: number;
   image: string;
   verdict: 'Buy' | 'Watch' | 'Avoid';
+  score: number;
   reason: string;
 }
 
@@ -19,12 +20,66 @@ interface Props {
   onSelect: (id: string) => void;
 }
 
-function getVerdict(change24h: number, change7d: number): { verdict: TopPick['verdict']; reason: string } {
-  if (change7d > 5 && change24h > 0) return { verdict: 'Buy', reason: 'Strong momentum — rising on both daily and weekly timeframes.' };
-  if (change7d < -10) return { verdict: 'Avoid', reason: 'Heavy selling pressure — wait for stabilisation before entering.' };
-  if (change24h > 3) return { verdict: 'Buy', reason: 'Breaking out today — momentum traders are stepping in.' };
-  if (change24h < -5) return { verdict: 'Avoid', reason: 'Significant drop today — could fall further. Wait for a bounce.' };
-  return { verdict: 'Watch', reason: 'Consolidating — no clear direction yet. Set alerts and wait.' };
+/**
+ * Same pre-screen scoring used by Breakout Finder — ensures consistent signals.
+ * Evaluates momentum, direction, and volume to produce a 0-65 score.
+ */
+function preScreenScore(t: CoinLoreTicker): number {
+  let s = 0;
+  const c24 = parseFloat(t.percent_change_24h) || 0;
+  const c7d = parseFloat(t.percent_change_7d) || 0;
+  const c1h = parseFloat(t.percent_change_1h) || 0;
+
+  // Positive but not overextended
+  if (c24 > 0 && c24 < 8) s += 20;
+  if (c7d > 0 && c7d < 15) s += 15;
+  if (c1h > 0 && c1h < 3) s += 10;
+
+  // Not dumping
+  if (c24 > -2) s += 5;
+  if (c7d > -5) s += 5;
+
+  // Good volume
+  if (t.volume24 > 50_000_000) s += 10;
+
+  return s;
+}
+
+/**
+ * Verdict derived from pre-screen score — aligned with Breakout Finder thresholds.
+ * Score >= 45 → Buy candidate (same coins Breakout Finder would deep-analyse)
+ * Score >= 25 → Watch
+ * Score < 25  → Avoid
+ */
+function getVerdict(score: number, c24: number, c7d: number): { verdict: TopPick['verdict']; reason: string } {
+  if (score >= 45 && c24 > 0) {
+    return {
+      verdict: 'Buy',
+      reason: `Strong setup — positive momentum across timeframes with healthy volume. Score: ${score}/65.`,
+    };
+  }
+  if (score >= 45) {
+    return {
+      verdict: 'Buy',
+      reason: `High potential — building strength on key metrics despite short-term softness. Score: ${score}/65.`,
+    };
+  }
+  if (c7d < -10 || c24 < -5) {
+    return {
+      verdict: 'Avoid',
+      reason: `Heavy selling pressure — wait for stabilisation before entering. Score: ${score}/65.`,
+    };
+  }
+  if (score >= 25) {
+    return {
+      verdict: 'Watch',
+      reason: `Consolidating — some positive signals but not enough conviction yet. Score: ${score}/65.`,
+    };
+  }
+  return {
+    verdict: 'Avoid',
+    reason: `Weak metrics across the board — momentum, direction, or volume lacking. Score: ${score}/65.`,
+  };
 }
 
 export default function TopPicks({ onSelect }: Props) {
@@ -36,27 +91,31 @@ export default function TopPicks({ onSelect }: Props) {
     async function load() {
       setLoading(true);
       try {
-        // Use CoinLore — single fast call, no rate limits
         const tickers = await getTopTickers(20);
         if (cancelled) return;
 
         const items: TopPick[] = tickers.slice(0, 12).map((t: CoinLoreTicker) => {
           const c24 = parseFloat(t.percent_change_24h) || 0;
           const c7d = parseFloat(t.percent_change_7d) || 0;
-          const { verdict, reason } = getVerdict(c24, c7d);
+          const score = preScreenScore(t);
+          const { verdict, reason } = getVerdict(score, c24, c7d);
           return {
-            id: coinloreSymbolToGeckoId(t.symbol, t.name), // CoinGecko ID for full analysis
+            id: coinloreSymbolToGeckoId(t.symbol, t.name),
             name: t.name,
             symbol: t.symbol.toUpperCase(),
             price: parseFloat(t.price_usd) || 0,
             change24h: c24,
             change7d: c7d,
             marketCap: parseFloat(t.market_cap_usd) || 0,
-            image: '', // CoinLore doesn't provide images
+            image: '',
             verdict,
+            score,
             reason,
           };
         });
+
+        // Sort by score (same ranking as Breakout Finder pre-screen)
+        items.sort((a, b) => b.score - a.score);
         setPicks(items);
       } catch {
         // silent fail
@@ -87,7 +146,7 @@ export default function TopPicks({ onSelect }: Props) {
       <div>
         <h3 className="text-sm sm:text-base font-semibold text-foreground">🏆 Top Picks — Right Now</h3>
         <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
-          Live signals via CoinLore (no rate limits). Tap any asset to run full technical analysis.
+          Ranked using the same scoring as the Breakout Finder. Tap any asset to run full technical analysis.
         </p>
       </div>
 
@@ -135,7 +194,7 @@ export default function TopPicks({ onSelect }: Props) {
       </div>
 
       <p className="text-[9px] text-muted-foreground/60 italic text-center">
-        Powered by CoinLore (free, no rate limits). Full analysis uses CoinGecko for chart data.
+        Scored using the same algorithm as the Breakout Finder for consistent signals across the page.
       </p>
     </div>
   );
