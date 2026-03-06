@@ -85,9 +85,12 @@ export default function Index() {
   const [fullscreenChart, setFullscreenChart] = useState(false);
   const isNewSearchRef = useRef(false);
   const [dataSource, setDataSource] = useState<string>('');
-  const [stockExchange, setStockExchange] = useState('ASX');
+  // Country-based defaults
+  const savedCountry = localStorage.getItem('sf_country') || 'AU';
+  const COUNTRY_EXCHANGE_MAP: Record<string, string> = { AU: 'ASX', US: 'NYSE', UK: 'LSE', HK: 'HKG', JP: 'JPX', CA: 'NYSE', NZ: 'ASX', EU: 'LSE' };
+  const [stockExchange, setStockExchange] = useState(COUNTRY_EXCHANGE_MAP[savedCountry] || 'ASX');
   const [dividendOnly, setDividendOnly] = useState(false);
-  const [etfExchange, setEtfExchange] = useState('NYSE');
+  const [etfExchange, setEtfExchange] = useState(COUNTRY_EXCHANGE_MAP[savedCountry] || 'ASX');
   const [ranking, setRanking] = useState(false);
   const [rankedPicks, setRankedPicks] = useState<Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }>>({});
   const [pickSort, setPickSort] = useState<SortCriteria>('default');
