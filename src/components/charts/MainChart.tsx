@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
 import {
   Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Area, ComposedChart, ReferenceLine,
+  Area, ComposedChart, ReferenceLine, Bar,
 } from 'recharts';
 import type { TechnicalData } from '@/types/analysis';
 import type { OverlayId } from './AnalysisOverlayBar';
@@ -313,91 +313,95 @@ export default function MainChart({ data, timeframeDays = 90, activeOverlays = [
         onWheel={handleWheel}
         className={`touch-none ${fullscreen ? 'flex-1 min-h-0' : ''}`}
       >
-        <ResponsiveContainer width="100%" height={fullscreen ? '100%' : isMobile ? 240 : 350}>
+        <ResponsiveContainer width="100%" height={fullscreen ? '100%' : isMobile ? 280 : 400}>
           <ComposedChart data={visibleData} margin={{ top: 5, right: 5, left: isMobile ? 0 : 10, bottom: 30 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.4)" horizontal={true} vertical={false} />
             <XAxis dataKey="time" tickFormatter={formatTime} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono' }} axisLine={{ stroke: 'hsl(var(--border))' }} interval="preserveStartEnd" minTickGap={isMobile ? 30 : 50} angle={-45} textAnchor="end" dy={10} />
-            <YAxis domain={['auto', 'auto']} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono' }} axisLine={{ stroke: 'hsl(var(--border))' }} tickFormatter={(v: number) => fmtPrice(v).replace('$', '')} width={isMobile ? 50 : 60} />
+            <YAxis yAxisId="price" domain={['auto', 'auto']} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono' }} axisLine={{ stroke: 'hsl(var(--border))' }} tickFormatter={(v: number) => fmtPrice(v).replace('$', '')} width={isMobile ? 50 : 60} />
+            <YAxis yAxisId="volume" orientation="right" hide={true} domain={[0, (dataMax: number) => dataMax * 5]} />
             <Tooltip
               contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontFamily: 'JetBrains Mono', fontSize: 11, color: 'hsl(var(--popover-foreground))' }}
               labelFormatter={formatTooltipLabel}
               formatter={(value: number, name: string) => [fmtPrice(value), name]}
             />
 
+            {/* Volume bars — rendered first so they sit behind everything */}
+            <Bar dataKey="volume" yAxisId="volume" fill="hsl(var(--muted-foreground) / 0.15)" radius={[1, 1, 0, 0]} isAnimationActive={false} name="Volume" />
+
             {/* Ichimoku Cloud — bolder fills and lines */}
             {showIchimoku && (
               <>
-                <Area dataKey="senkouA" stroke="none" fill="hsl(160 60% 45% / 0.40)" />
-                <Area dataKey="senkouB" stroke="none" fill="hsl(0 60% 45% / 0.35)" />
-                <Line dataKey="tenkan" stroke="hsl(160 80% 65%)" strokeWidth={2.5} dot={false} name="Tenkan (9)" />
-                <Line dataKey="kijun" stroke="hsl(0 80% 65%)" strokeWidth={2.5} dot={false} name="Kijun (26)" />
-                <Line dataKey="senkouA" stroke="hsl(160 70% 55% / 0.8)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Senkou A" />
-                <Line dataKey="senkouB" stroke="hsl(0 70% 55% / 0.8)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Senkou B" />
+                <Area yAxisId="price" dataKey="senkouA" stroke="none" fill="hsl(160 60% 45% / 0.40)" />
+                <Area yAxisId="price" dataKey="senkouB" stroke="none" fill="hsl(0 60% 45% / 0.35)" />
+                <Line yAxisId="price" dataKey="tenkan" stroke="hsl(160 80% 65%)" strokeWidth={2.5} dot={false} name="Tenkan (9)" />
+                <Line yAxisId="price" dataKey="kijun" stroke="hsl(0 80% 65%)" strokeWidth={2.5} dot={false} name="Kijun (26)" />
+                <Line yAxisId="price" dataKey="senkouA" stroke="hsl(160 70% 55% / 0.8)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Senkou A" />
+                <Line yAxisId="price" dataKey="senkouB" stroke="hsl(0 70% 55% / 0.8)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Senkou B" />
               </>
             )}
 
             {/* Bollinger Bands — stronger fill and thicker lines */}
             {showBB && (
               <>
-                <Area dataKey="bbUpper" stroke="none" fill="hsl(213 70% 60% / 0.30)" />
-                <Area dataKey="bbLower" stroke="none" fill="transparent" />
-                <Line dataKey="bbUpper" stroke="hsl(213 80% 70%)" strokeWidth={2} strokeDasharray="6 3" dot={false} name="BB Upper" />
-                <Line dataKey="bbLower" stroke="hsl(213 80% 70%)" strokeWidth={2} strokeDasharray="6 3" dot={false} name="BB Lower" />
+                <Area yAxisId="price" dataKey="bbUpper" stroke="none" fill="hsl(213 70% 60% / 0.30)" />
+                <Area yAxisId="price" dataKey="bbLower" stroke="none" fill="transparent" />
+                <Line yAxisId="price" dataKey="bbUpper" stroke="hsl(213 80% 70%)" strokeWidth={2} strokeDasharray="6 3" dot={false} name="BB Upper" />
+                <Line yAxisId="price" dataKey="bbLower" stroke="hsl(213 80% 70%)" strokeWidth={2} strokeDasharray="6 3" dot={false} name="BB Lower" />
               </>
             )}
 
             {/* VWAP — thicker */}
             {showVWAP && (
-              <Line dataKey="vwap" stroke="hsl(280 80% 65%)" strokeWidth={3} dot={false} name="VWAP" />
+              <Line yAxisId="price" dataKey="vwap" stroke="hsl(280 80% 65%)" strokeWidth={3} dot={false} name="VWAP" />
             )}
 
             {/* EMA 12/26 — thicker, more distinct colors */}
             {showEMACross && (
               <>
-                <Line dataKey="ema12" stroke="hsl(340 90% 65%)" strokeWidth={2.5} dot={false} name="EMA 12 (fast)" />
-                <Line dataKey="ema26" stroke="hsl(340 55% 55%)" strokeWidth={2.5} strokeDasharray="8 4" dot={false} name="EMA 26 (slow)" />
+                <Line yAxisId="price" dataKey="ema12" stroke="hsl(340 90% 65%)" strokeWidth={2.5} dot={false} name="EMA 12 (fast)" />
+                <Line yAxisId="price" dataKey="ema26" stroke="hsl(340 55% 55%)" strokeWidth={2.5} strokeDasharray="8 4" dot={false} name="EMA 26 (slow)" />
               </>
             )}
 
             {/* SMAs — fade when overlays active */}
-            <Line dataKey="sma20" stroke={`hsl(38 92% 55% / ${baseFade})`} strokeWidth={hasActiveOverlays ? 1.5 : 2} dot={false} name="SMA20" />
-            <Line dataKey="sma50" stroke={`hsl(25 95% 58% / ${baseFade})`} strokeWidth={hasActiveOverlays ? 1.5 : 2} dot={false} name="SMA50" />
+            <Line yAxisId="price" dataKey="sma20" stroke={`hsl(38 92% 55% / ${baseFade})`} strokeWidth={hasActiveOverlays ? 1.5 : 2} dot={false} name="SMA20" />
+            <Line yAxisId="price" dataKey="sma50" stroke={`hsl(25 95% 58% / ${baseFade})`} strokeWidth={hasActiveOverlays ? 1.5 : 2} dot={false} name="SMA50" />
             {hasSma200 && (
-              <Line dataKey="sma200" stroke={`hsl(213 20% 55% / ${baseFade * 0.6})`} strokeWidth={1} strokeDasharray="8 4" dot={false} name="SMA200" />
+              <Line yAxisId="price" dataKey="sma200" stroke={`hsl(213 20% 55% / ${baseFade * 0.6})`} strokeWidth={1} strokeDasharray="8 4" dot={false} name="SMA200" />
             )}
 
             {/* Price line — slightly faded when overlays active so they stand out */}
-            <Line dataKey="price" stroke={`hsl(187 100% 47% / ${priceFade})`} strokeWidth={2} dot={false} name="Price" />
+            <Line yAxisId="price" dataKey="price" stroke={`hsl(187 100% 47% / ${priceFade})`} strokeWidth={2} dot={false} name="Price" />
 
             {/* Fibonacci Retracement levels — shown on all screens */}
             {showFib && fibLevels && (
               <>
-                <ReferenceLine y={fibLevels.level236} stroke="hsl(45 90% 60% / 0.7)" strokeWidth={1.5} strokeDasharray="4 4" label={{ value: isMobile ? '23.6' : '23.6%', fill: 'hsl(45 90% 60%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono', position: 'right' }} />
-                <ReferenceLine y={fibLevels.level382} stroke="hsl(45 90% 60% / 0.8)" strokeWidth={1.5} strokeDasharray="4 4" label={{ value: isMobile ? '38.2' : '38.2%', fill: 'hsl(45 90% 60%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono', position: 'right' }} />
-                <ReferenceLine y={fibLevels.level500} stroke="hsl(45 90% 65% / 0.9)" strokeWidth={2} strokeDasharray="6 4" label={{ value: '50%', fill: 'hsl(45 90% 65%)', fontSize: isMobile ? 9 : 11, fontFamily: 'JetBrains Mono', fontWeight: 600, position: 'right' }} />
-                <ReferenceLine y={fibLevels.level618} stroke="hsl(45 90% 60%)" strokeWidth={2} strokeDasharray="6 4" label={{ value: '61.8%', fill: 'hsl(45 90% 60%)', fontSize: isMobile ? 9 : 11, fontFamily: 'JetBrains Mono', fontWeight: 700, position: 'right' }} />
-                <ReferenceLine y={fibLevels.level786} stroke="hsl(45 90% 60% / 0.7)" strokeWidth={1.5} strokeDasharray="4 4" label={{ value: isMobile ? '78.6' : '78.6%', fill: 'hsl(45 90% 60%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono', position: 'right' }} />
+                <ReferenceLine yAxisId="price" y={fibLevels.level236} stroke="hsl(45 90% 60% / 0.7)" strokeWidth={1.5} strokeDasharray="4 4" label={{ value: isMobile ? '23.6' : '23.6%', fill: 'hsl(45 90% 60%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono', position: 'right' }} />
+                <ReferenceLine yAxisId="price" y={fibLevels.level382} stroke="hsl(45 90% 60% / 0.8)" strokeWidth={1.5} strokeDasharray="4 4" label={{ value: isMobile ? '38.2' : '38.2%', fill: 'hsl(45 90% 60%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono', position: 'right' }} />
+                <ReferenceLine yAxisId="price" y={fibLevels.level500} stroke="hsl(45 90% 65% / 0.9)" strokeWidth={2} strokeDasharray="6 4" label={{ value: '50%', fill: 'hsl(45 90% 65%)', fontSize: isMobile ? 9 : 11, fontFamily: 'JetBrains Mono', fontWeight: 600, position: 'right' }} />
+                <ReferenceLine yAxisId="price" y={fibLevels.level618} stroke="hsl(45 90% 60%)" strokeWidth={2} strokeDasharray="6 4" label={{ value: '61.8%', fill: 'hsl(45 90% 60%)', fontSize: isMobile ? 9 : 11, fontFamily: 'JetBrains Mono', fontWeight: 700, position: 'right' }} />
+                <ReferenceLine yAxisId="price" y={fibLevels.level786} stroke="hsl(45 90% 60% / 0.7)" strokeWidth={1.5} strokeDasharray="4 4" label={{ value: isMobile ? '78.6' : '78.6%', fill: 'hsl(45 90% 60%)', fontSize: isMobile ? 8 : 10, fontFamily: 'JetBrains Mono', position: 'right' }} />
               </>
             )}
 
             {/* Support/Resistance */}
             {!isMobile && (
               <>
-                <ReferenceLine y={indicators.support} stroke={`hsl(142 71% 45% / ${baseFade})`} strokeDasharray="6 4" label={{ value: `S: ${fmtPrice(indicators.support)}`, fill: `hsl(142 71% 45% / ${baseFade})`, fontSize: 10, fontFamily: 'JetBrains Mono' }} />
-                <ReferenceLine y={indicators.resistance} stroke={`hsl(0 84% 60% / ${baseFade})`} strokeDasharray="6 4" label={{ value: `R: ${fmtPrice(indicators.resistance)}`, fill: `hsl(0 84% 60% / ${baseFade})`, fontSize: 10, fontFamily: 'JetBrains Mono' }} />
+                <ReferenceLine yAxisId="price" y={indicators.support} stroke={`hsl(142 71% 45% / ${baseFade})`} strokeDasharray="6 4" label={{ value: `S: ${fmtPrice(indicators.support)}`, fill: `hsl(142 71% 45% / ${baseFade})`, fontSize: 10, fontFamily: 'JetBrains Mono' }} />
+                <ReferenceLine yAxisId="price" y={indicators.resistance} stroke={`hsl(0 84% 60% / ${baseFade})`} strokeDasharray="6 4" label={{ value: `R: ${fmtPrice(indicators.resistance)}`, fill: `hsl(0 84% 60% / ${baseFade})`, fontSize: 10, fontFamily: 'JetBrains Mono' }} />
               </>
             )}
 
             {/* Forecast bands */}
             {primaryForecast && (
               <>
-                <Area dataKey={`fcU_${primaryForecast.methodId}`} stroke="none" fill={`${primaryForecast.color.replace(')', ' / 0.12)')}`} />
-                <Area dataKey={`fcL_${primaryForecast.methodId}`} stroke="none" fill="transparent" />
+                <Area yAxisId="price" dataKey={`fcU_${primaryForecast.methodId}`} stroke="none" fill={`${primaryForecast.color.replace(')', ' / 0.12)')}`} />
+                <Area yAxisId="price" dataKey={`fcL_${primaryForecast.methodId}`} stroke="none" fill="transparent" />
               </>
             )}
 
             {forecasts.map(f => (
-              <Line key={f.methodId} dataKey={`fc_${f.methodId}`} stroke={f.color} strokeWidth={2.5} strokeDasharray="6 4" dot={false} name={f.label} />
+              <Line yAxisId="price" key={f.methodId} dataKey={`fc_${f.methodId}`} stroke={f.color} strokeWidth={2.5} strokeDasharray="6 4" dot={false} name={f.label} />
             ))}
           </ComposedChart>
         </ResponsiveContainer>
