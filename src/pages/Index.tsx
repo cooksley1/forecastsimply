@@ -52,6 +52,7 @@ import { useCryptoScreener } from '@/hooks/useCryptoScreener';
 import SocialShare from '@/components/SocialShare';
 import ReportButton from '@/components/analysis/ReportButton';
 import SmartFeed from '@/components/SmartFeed';
+import LiveTracker from '@/components/analysis/LiveTracker';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import type { AssetType, AssetInfo, WatchlistItem, SimulationData } from '@/types/assets';
 import type { Recommendation, TradeSetup } from '@/types/analysis';
@@ -983,6 +984,8 @@ export default function Index() {
         {/* ── OVERVIEW MODE (All tab) ── */}
         {overviewMode && !technicalData && !loading && !error && (
           <div className="space-y-6">
+            <LiveTracker />
+
             <TopPicksDashboard onSelect={(id, type) => {
               setOverviewMode(false);
               setAssetType(type);

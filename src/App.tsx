@@ -17,6 +17,7 @@ import Disclaimer from "./pages/Disclaimer";
 import FAQ from "./pages/FAQ";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Scorecard from "./pages/Scorecard";
 import NotFound from "./pages/NotFound";
 import CookieBanner from "./components/CookieBanner";
 import { toast } from "sonner";
@@ -57,6 +58,7 @@ const App = () => (
                   <Route path="/faq" element={<FAQ />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
+                  <Route path="/scorecard" element={<Scorecard />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <CookieBanner />
