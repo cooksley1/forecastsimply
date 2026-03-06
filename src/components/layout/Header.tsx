@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
+import { Settings, Sun, Moon, Shield, User, Bell } from 'lucide-react';
 import ApiKeySettings from '@/components/settings/ApiKeySettings';
 import LoginDialog from '@/components/auth/LoginDialog';
 import AccountPanel from '@/components/account/AccountPanel';
@@ -33,12 +34,12 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-border bg-background px-2 sm:px-4 py-2 sm:py-3 overflow-hidden" style={{ height: '64px', position: 'sticky' }}>
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm px-2 sm:px-4 py-2 sm:py-3 overflow-hidden" style={{ height: '64px', position: 'sticky' }}>
         <div className="max-w-7xl mx-auto h-full">
           <div className="flex items-center justify-between h-full">
             <img src={logo} alt="ForecastSimply" className="h-12 sm:h-14 shrink-0" />
 
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
               {onWatchlistSelect && (
                 <WatchlistDropdown
                   items={watchlist}
@@ -49,50 +50,51 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
               )}
               <button
                 onClick={toggleTheme}
-                className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all text-sm"
+                className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
                 title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
               >
-                {theme === 'dark' ? '☀️' : '🌙'}
+                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
               {isAdmin && (
                 <button
                   onClick={() => navigate('/admin')}
-                  className="p-1.5 sm:p-2 rounded-lg border border-destructive/30 text-destructive bg-destructive/10 hover:bg-destructive/20 transition-all text-sm"
+                  className="p-1.5 sm:p-2 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-all"
                   title="Admin Panel"
                 >
-                  🛡️
+                  <Shield className="w-4 h-4" />
                 </button>
               )}
               <button
                 onClick={() => setSettingsOpen(true)}
-                className={`p-1.5 sm:p-2 rounded-lg border transition-all text-sm ${
+                className={`p-1.5 sm:p-2 rounded-lg border transition-all ${
                   hasKey
-                    ? 'border-positive/30 text-positive bg-positive/10'
-                    : 'border-border text-muted-foreground hover:text-foreground hover:border-primary/50'
+                    ? 'border-positive/30 text-positive'
+                    : 'border-border text-muted-foreground hover:text-foreground hover:border-primary/40'
                 }`}
                 title="API Settings"
               >
-                ⚙️
+                <Settings className="w-4 h-4" />
               </button>
 
               {user ? (
                 <button
                   onClick={() => setAccountOpen(true)}
-                  className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium border border-primary/30 text-primary bg-primary/10 hover:bg-primary/20 transition-all"
+                  className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium border border-primary/30 text-primary hover:bg-primary/5 transition-all"
                 >
                   {user.user_metadata?.avatar_url ? (
                     <img src={user.user_metadata.avatar_url} alt="" className="w-4 h-4 rounded-full" />
                   ) : (
-                    <span>👤</span>
+                    <User className="w-3.5 h-3.5" />
                   )}
                   <span className="hidden sm:inline">{user.user_metadata?.full_name?.split(' ')[0] || user.email?.split('@')[0] || 'Account'}</span>
                 </button>
               ) : (
                 <button
                   onClick={() => setLoginOpen(true)}
-                  className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all"
+                  className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
                 >
-                  👤 <span className="hidden sm:inline">Sign In</span>
+                  <User className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Sign In</span>
                 </button>
               )}
             </div>

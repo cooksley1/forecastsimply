@@ -1,19 +1,20 @@
+import { BarChart3, TrendingUp, Layers, DollarSign, LineChart, Target, Lightbulb, Zap, SlidersHorizontal, FileText } from 'lucide-react';
 import type { AssetType } from '@/types/assets';
 
-const ASSET_TABS: { key: AssetType; label: string; icon: string }[] = [
-  { key: 'crypto', label: 'Crypto', icon: '🪙' },
-  { key: 'stocks', label: 'Stocks', icon: '📈' },
-  { key: 'etfs', label: 'ETFs', icon: '📊' },
-  { key: 'forex', label: 'Forex', icon: '💱' },
+const ASSET_TABS: { key: AssetType; label: string; icon: React.ReactNode }[] = [
+  { key: 'crypto', label: 'Crypto', icon: <DollarSign className="w-3.5 h-3.5" /> },
+  { key: 'stocks', label: 'Stocks', icon: <TrendingUp className="w-3.5 h-3.5" /> },
+  { key: 'etfs', label: 'ETFs', icon: <Layers className="w-3.5 h-3.5" /> },
+  { key: 'forex', label: 'Forex', icon: <BarChart3 className="w-3.5 h-3.5" /> },
 ];
 
 const SECTIONS = [
-  { id: 'section-chart', label: 'Chart', icon: '📉' },
-  { id: 'section-signal', label: 'Signal', icon: '🎯' },
-  { id: 'section-recs', label: 'Advice', icon: '💡' },
-  { id: 'section-setups', label: 'Setups', icon: '⚡' },
-  { id: 'section-indicators', label: 'Indicators', icon: '📐' },
-  { id: 'section-analysis', label: 'Analysis', icon: '📝' },
+  { id: 'section-chart', label: 'Chart', icon: <LineChart className="w-3 h-3" /> },
+  { id: 'section-signal', label: 'Signal', icon: <Target className="w-3 h-3" /> },
+  { id: 'section-recs', label: 'Advice', icon: <Lightbulb className="w-3 h-3" /> },
+  { id: 'section-setups', label: 'Setups', icon: <Zap className="w-3 h-3" /> },
+  { id: 'section-indicators', label: 'Indicators', icon: <SlidersHorizontal className="w-3 h-3" /> },
+  { id: 'section-analysis', label: 'Analysis', icon: <FileText className="w-3 h-3" /> },
 ];
 
 interface Props {
@@ -26,7 +27,6 @@ export default function StickySubNav({ assetType, onAssetChange, showSections }:
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
-      // Offset for header (56px) + subnav with sections (~90px)
       const y = el.getBoundingClientRect().top + window.scrollY - 160;
       window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
     }
@@ -34,12 +34,11 @@ export default function StickySubNav({ assetType, onAssetChange, showSections }:
 
   return (
     <nav
-      className="sticky top-[56px] z-40 bg-background border-b border-border shadow-sm overflow-hidden"
+      className="sticky top-[56px] z-40 bg-background/95 backdrop-blur-sm border-b border-border"
       style={{ position: 'sticky' }}
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-1.5 space-y-1">
-        {/* Row 1: Asset tabs — always visible */}
-        <div className="flex justify-between gap-1 bg-secondary/50 rounded-lg p-1">
+        <div className="flex gap-0.5 bg-muted/50 rounded-lg p-0.5">
           {ASSET_TABS.map(t => (
             <button
               key={t.key}
@@ -48,21 +47,20 @@ export default function StickySubNav({ assetType, onAssetChange, showSections }:
                 e.preventDefault();
                 onAssetChange(t.key);
               }}
-              className={`flex-1 text-center px-1 py-1.5 rounded-md text-[10px] sm:text-xs font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-1 py-1.5 rounded-md text-[11px] sm:text-xs font-medium transition-all ${
                 assetType === t.key
-                  ? 'bg-primary/15 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                  ? 'bg-card text-primary shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span className="mr-0.5">{t.icon}</span>
+              {t.icon}
               {t.label}
             </button>
           ))}
         </div>
 
-        {/* Row 2: Section jump links — only when analysis is visible */}
         {showSections && (
-          <div className="flex gap-1 border-t border-border/40 pt-1 overflow-x-auto no-scrollbar">
+          <div className="flex gap-0.5 border-t border-border/40 pt-1 overflow-x-auto no-scrollbar">
             {SECTIONS.map(s => (
               <button
                 key={s.id}
@@ -71,9 +69,9 @@ export default function StickySubNav({ assetType, onAssetChange, showSections }:
                   e.preventDefault();
                   scrollTo(s.id);
                 }}
-                className="shrink-0 text-center px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all"
+                className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] sm:text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all"
               >
-                <span className="mr-0.5">{s.icon}</span>
+                {s.icon}
                 <span>{s.label}</span>
               </button>
             ))}

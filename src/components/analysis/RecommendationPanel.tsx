@@ -42,7 +42,7 @@ export default function RecommendationPanel({ recommendations }: Props) {
               ? 'bg-purple-950/30 border-2 border-purple-500/30 md:col-span-3'
               : 'bg-sf-card border border-border'
           }`}>
-            <div className={`text-xs mb-1 font-mono ${rec.horizon === 'dca' ? 'text-purple-400' : 'text-muted-foreground'}`}>{rec.horizon === 'dca' ? '💰 ' : ''}{horizonLabels[rec.horizon]}</div>
+            <div className={`text-xs mb-1 font-mono ${rec.horizon === 'dca' ? 'text-purple-400' : 'text-muted-foreground'}`}>{horizonLabels[rec.horizon]}</div>
             <p className={`text-[10px] mb-2 italic ${rec.horizon === 'dca' ? 'text-purple-400/70' : 'text-muted-foreground/70'}`}>{horizonExplain[rec.horizon]}</p>
             <div className={`text-lg font-bold mb-3 ${
               rec.color === 'green' ? 'text-positive' : rec.color === 'red' ? 'text-negative' : 'text-neutral-signal'
@@ -73,7 +73,7 @@ export default function RecommendationPanel({ recommendations }: Props) {
           </div>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground italic">⚠️ Algorithmic analysis only. Not financial advice. Always do your own research.</p>
+      <p className="text-xs text-muted-foreground italic">Algorithmic analysis only. Not financial advice. Always do your own research.</p>
     </div>
   );
 }
