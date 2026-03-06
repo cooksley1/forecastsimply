@@ -76,7 +76,7 @@ export default function TopPicksDashboard({ onSelect }: Props) {
   const [stockPicks, setStockPicks] = useState<HorizonPicks>({ short: [], mid: [], long: [] });
   const [etfPicks, setEtfPicks] = useState<HorizonPicks>({ short: [], mid: [], long: [] });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'crypto' | 'stocks' | 'etfs'>('crypto');
+  const [activeTab, setActiveTab] = useState<'all' | 'crypto' | 'stocks' | 'etfs'>('all');
   const [expanded, setExpanded] = useState(true);
 
   const analyseAndRank = useCallback(async () => {
@@ -232,7 +232,17 @@ export default function TopPicksDashboard({ onSelect }: Props) {
     analyseAndRank();
   }, [analyseAndRank]);
 
-  const activePicks = activeTab === 'crypto' ? cryptoPicks : activeTab === 'stocks' ? stockPicks : etfPicks;
+  // Merge all picks across asset classes for the "All" tab
+  const allPicks: HorizonPicks = {
+    short: [...cryptoPicks.short, ...stockPicks.short, ...etfPicks.short]
+      .sort((a, b) => b.score - a.score).slice(0, 3),
+    mid: [...cryptoPicks.mid, ...stockPicks.mid, ...etfPicks.mid]
+      .sort((a, b) => b.score - a.score).slice(0, 3),
+    long: [...cryptoPicks.long, ...stockPicks.long, ...etfPicks.long]
+      .sort((a, b) => b.score - a.score).slice(0, 3),
+  };
+
+  const activePicks = activeTab === 'all' ? allPicks : activeTab === 'crypto' ? cryptoPicks : activeTab === 'stocks' ? stockPicks : etfPicks;
   const hasAnyPicks = activePicks.short.length > 0 || activePicks.mid.length > 0 || activePicks.long.length > 0;
 
   return (
@@ -254,7 +264,7 @@ export default function TopPicksDashboard({ onSelect }: Props) {
         <div className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-3">
           {/* Category tabs */}
           <div className="flex gap-1 bg-muted/50 rounded-lg p-0.5">
-            {(['crypto', 'stocks', 'etfs'] as const).map(tab => (
+            {(['all', 'crypto', 'stocks', 'etfs'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -264,7 +274,7 @@ export default function TopPicksDashboard({ onSelect }: Props) {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {tab === 'crypto' ? 'Crypto' : tab === 'stocks' ? 'Stocks' : 'ETFs'}
+                {tab === 'all' ? 'All' : tab === 'crypto' ? 'Crypto' : tab === 'stocks' ? 'Stocks' : 'ETFs'}
               </button>
             ))}
           </div>
@@ -304,7 +314,14 @@ export default function TopPicksDashboard({ onSelect }: Props) {
                               <span className="text-[10px] font-mono text-muted-foreground w-4">{i + 1}.</span>
                               <div className="min-w-0">
                                 <span className="text-xs font-medium text-foreground block truncate">{pick.name}</span>
-                                <span className="text-[10px] text-muted-foreground font-mono">{pick.symbol}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] text-muted-foreground font-mono">{pick.symbol}</span>
+                                  {activeTab === 'all' && (
+                                    <span className="text-[8px] font-mono uppercase px-1 py-px rounded bg-muted text-muted-foreground">
+                                      {pick.assetType === 'crypto' ? 'Crypto' : pick.assetType === 'stocks' ? 'Stock' : 'ETF'}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
