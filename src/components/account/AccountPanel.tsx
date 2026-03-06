@@ -22,6 +22,7 @@ interface UserPrefs {
   default_timeframe_days: number;
   secondary_currency: string | null;
   theme: string;
+  country: string;
 }
 
 interface NewsletterPrefs {
@@ -45,12 +46,24 @@ const MARKET_OPTIONS: { key: string; label: string; flag: string }[] = [
 const DEFAULT_MARKETS = ['AU'];
 const WORLD_MARKETS = ['AU', 'US', 'UK', 'HK'];
 
+const COUNTRY_OPTIONS: { code: string; label: string; flag: string; exchange: string; currency: string }[] = [
+  { code: 'AU', label: 'Australia', flag: '🇦🇺', exchange: 'ASX', currency: 'AUD' },
+  { code: 'US', label: 'United States', flag: '🇺🇸', exchange: 'NYSE', currency: 'USD' },
+  { code: 'UK', label: 'United Kingdom', flag: '🇬🇧', exchange: 'LSE', currency: 'GBP' },
+  { code: 'HK', label: 'Hong Kong', flag: '🇭🇰', exchange: 'HKG', currency: 'HKD' },
+  { code: 'JP', label: 'Japan', flag: '🇯🇵', exchange: 'JPX', currency: 'JPY' },
+  { code: 'CA', label: 'Canada', flag: '🇨🇦', exchange: 'NYSE', currency: 'CAD' },
+  { code: 'NZ', label: 'New Zealand', flag: '🇳🇿', exchange: 'ASX', currency: 'NZD' },
+  { code: 'EU', label: 'Europe', flag: '🇪🇺', exchange: 'LSE', currency: 'EUR' },
+];
+
 const DEFAULT_PREFS: UserPrefs = {
   risk_profile: 'moderate',
   forecast_percent: 30,
   default_timeframe_days: 90,
   secondary_currency: null,
   theme: 'dark',
+  country: 'AU',
 };
 
 const DIGEST_CATEGORIES: { key: keyof NewsletterPrefs; icon: string; label: string }[] = [
@@ -99,6 +112,7 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
               default_timeframe_days: data.default_timeframe_days,
               secondary_currency: data.secondary_currency,
               theme: data.theme,
+              country: (data as any).country || 'AU',
             });
           }
           setPrefsLoaded(true);
@@ -151,6 +165,8 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
     setSaving(false);
     setSaveMsg(error ? `Failed: ${error.message}` : 'Preferences saved ✓');
     if (prefs.theme !== theme) setTheme(prefs.theme as 'dark' | 'light');
+    // Persist country to localStorage for non-auth use (default exchange/currency)
+    localStorage.setItem('sf_country', prefs.country);
     setTimeout(() => setSaveMsg(''), 2000);
   };
 
@@ -305,6 +321,31 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
         {/* Preferences Tab */}
         {activeTab === 'preferences' && (
           <div className="space-y-3">
+            {/* Country — drives exchange, currency, content */}
+            <div>
+              <label className="text-[10px] text-muted-foreground font-mono uppercase block mb-1">Your Country</label>
+              <select
+                value={prefs.country}
+                onChange={e => {
+                  const c = COUNTRY_OPTIONS.find(o => o.code === e.target.value);
+                  updatePref('country', e.target.value);
+                  if (c) {
+                    // Auto-set currency when country changes
+                    if (!prefs.secondary_currency || prefs.secondary_currency === COUNTRY_OPTIONS.find(o => o.code === prefs.country)?.currency) {
+                      updatePref('secondary_currency', c.currency === 'USD' ? null : c.currency);
+                    }
+                  }
+                }}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+              >
+                {COUNTRY_OPTIONS.map(c => (
+                  <option key={c.code} value={c.code}>{c.flag} {c.label}</option>
+                ))}
+              </select>
+              <p className="text-[9px] text-muted-foreground mt-1">
+                Sets your default exchange ({COUNTRY_OPTIONS.find(c => c.code === prefs.country)?.exchange}), currency ({COUNTRY_OPTIONS.find(c => c.code === prefs.country)?.currency}), and blog content region.
+              </p>
+            </div>
             <div>
               <label className="text-[10px] text-muted-foreground font-mono uppercase block mb-1">Theme</label>
               <select value={prefs.theme} onChange={e => updatePref('theme', e.target.value)} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none">

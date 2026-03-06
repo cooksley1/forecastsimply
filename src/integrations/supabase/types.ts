@@ -402,6 +402,7 @@ export type Database = {
       }
       user_preferences: {
         Row: {
+          country: string | null
           default_timeframe_days: number
           forecast_percent: number
           id: string
@@ -412,6 +413,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          country?: string | null
           default_timeframe_days?: number
           forecast_percent?: number
           id?: string
@@ -422,6 +424,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          country?: string | null
           default_timeframe_days?: number
           forecast_percent?: number
           id?: string

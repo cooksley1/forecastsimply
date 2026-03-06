@@ -18,6 +18,9 @@ import FAQ from "./pages/FAQ";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Scorecard from "./pages/Scorecard";
+import Blog from "./pages/Blog";
+import HowItWorks from "./pages/HowItWorks";
+import Changelog from "./pages/Changelog";
 import NotFound from "./pages/NotFound";
 import CookieBanner from "./components/CookieBanner";
 import { toast } from "sonner";
@@ -59,6 +62,9 @@ const App = () => (
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/scorecard" element={<Scorecard />} />
+                  <Route path="/blog" element={<Blog />} />
+                  <Route path="/how-it-works" element={<HowItWorks />} />
+                  <Route path="/changelog" element={<Changelog />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <CookieBanner />
