@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
+import { LineChart } from 'lucide-react';
 import PriceAlertDialog from '@/components/alerts/PriceAlertDialog';
 import type { SortCriteria } from '@/components/search/QuickPicks';
 import { Link } from 'react-router-dom';
@@ -489,7 +490,7 @@ export default function Index() {
       />
 
       <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
-        {/* AI Smart Feed — always visible */}
+        {/* Smart Feed */}
         <SmartFeed
           watchlist={watchlist}
           assetType={assetType}
@@ -550,14 +551,14 @@ export default function Index() {
                         : 'bg-secondary/50 border border-border text-muted-foreground hover:text-foreground hover:border-positive/30'
                     }`}
                   >
-                    💰 {dividendOnly ? 'Showing Dividend Stocks' : 'Filter: Dividends Only'}
+                    Filter: Dividends Only
                   </button>
                 </div>
               )}
             </div>
           )}
           {screenerLoading && useScreener && (
-            <p className="text-[10px] text-muted-foreground animate-pulse">⏳ Loading full ASX list ({screenerStocks.length} loaded so far)...</p>
+            <p className="text-[10px] text-muted-foreground animate-pulse">Loading full ASX list ({screenerStocks.length} loaded so far)...</p>
           )}
           <QuickPicks
             picks={getQuickPicks()}
@@ -575,7 +576,7 @@ export default function Index() {
 
         {loading && (
           <div className="text-center py-12">
-            <div className="text-primary font-mono animate-pulse-glow text-sm">Fetching data & running analysis...</div>
+            <div className="text-primary font-mono animate-pulse-glow text-sm">Fetching data and running analysis...</div>
           </div>
         )}
 
@@ -594,7 +595,7 @@ export default function Index() {
               <div className="flex items-center gap-2 flex-wrap ml-auto">
                 {dataSource && (
                   <span className="text-[10px] sm:text-xs font-mono text-muted-foreground bg-card px-2 py-1 rounded-lg border border-border">
-                    📡 {dataSource}
+                    {dataSource}
                   </span>
                 )}
                 {secondaryCurrency && secondaryPrice !== null && assetInfo.assetType !== 'forex' && (
@@ -615,9 +616,8 @@ export default function Index() {
                 <button
                   onClick={() => setAlertDialogOpen(true)}
                   className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] sm:text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all"
-                  title="Set price alert"
-                >
-                  🔔 Alert
+                  title="Set price alert">
+                  Alert
                 </button>
                 <SocialShare assetInfo={assetInfo} technicalData={technicalData} />
                 <ReportButton assetInfo={assetInfo} technicalData={technicalData} timeframeDays={timeframeDays} riskLevel={riskLevel} dataSource={dataSource} />
@@ -715,7 +715,7 @@ export default function Index() {
           <div className="space-y-6">
             {/* Chart placeholder */}
             <div className="border-2 border-dashed border-border/60 rounded-xl bg-muted/20 flex flex-col items-center justify-center py-12 sm:py-16 gap-3">
-              <span className="text-3xl opacity-40">📉</span>
+              <LineChart className="w-10 h-10 text-muted-foreground/30" />
               <p className="text-sm text-muted-foreground font-medium">Select an asset to view the chart</p>
               <p className="text-[10px] text-muted-foreground/60">Search above or pick from the list below</p>
             </div>
@@ -738,7 +738,7 @@ export default function Index() {
         <div className="max-w-7xl mx-auto space-y-4">
           {/* Newsletter signup */}
           <div className="flex flex-col items-center gap-1">
-            <span className="text-[10px] text-muted-foreground font-mono uppercase">Weekly Market Insights</span>
+            <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">Weekly Market Insights</span>
             <NewsletterSignup variant="footer" />
           </div>
 
@@ -751,8 +751,8 @@ export default function Index() {
             <Link to="/disclaimer" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">Disclaimer</Link>
           </div>
           <div className="text-center space-y-1">
-            <p className="text-[10px] text-muted-foreground font-mono tracking-wider">ANALYSE · FORECAST · DECIDE</p>
-            <p className="text-[10px] text-muted-foreground italic">⚠️ Not financial advice. Always DYOR.</p>
+            <p className="text-[10px] text-muted-foreground font-mono tracking-wider uppercase">Analyse · Forecast · Decide</p>
+            <p className="text-[10px] text-muted-foreground italic">Not financial advice. Always do your own research.</p>
           </div>
         </div>
       </footer>
