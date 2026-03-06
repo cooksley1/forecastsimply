@@ -1,9 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useAllPicks, useAllSnapshots, type TrackedPick } from '@/hooks/useTrackedPicks';
-import { Trophy, TrendingUp, TrendingDown, Target, BarChart3, Calendar, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, Target, BarChart3, Calendar, ChevronDown, ChevronUp, ArrowLeft, Sparkles, Loader2, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEO from '@/components/SEO';
 import BackToHome from '@/components/BackToHome';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine,
 } from 'recharts';
@@ -31,6 +34,25 @@ export default function Scorecard() {
   const [filterAsset, setFilterAsset] = useState<FilterAsset>('all');
   const [filterOutcome, setFilterOutcome] = useState<FilterOutcome>('all');
   const [expandedPick, setExpandedPick] = useState<string | null>(null);
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const generateCaseStudy = async (pickId: string) => {
+    setGeneratingId(pickId);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-case-study', {
+        body: { pick_id: pickId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success('Case study generated!');
+      queryClient.invalidateQueries({ queryKey: ['tracked-picks'] });
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to generate case study');
+    } finally {
+      setGeneratingId(null);
+    }
+  };
 
   const filteredPicks = useMemo(() => {
     return allPicks.filter(p => {
@@ -320,10 +342,42 @@ export default function Scorecard() {
                           </div>
                         )}
 
-                        {/* Case study */}
+                        {/* Case study generate / display */}
+                        {pick.status === 'completed' && !pick.case_study_text && (
+                          <button
+                            onClick={() => generateCaseStudy(pick.id)}
+                            disabled={generatingId === pick.id}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all text-xs font-medium disabled:opacity-50"
+                          >
+                            {generatingId === pick.id ? (
+                              <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating AI Case Study…</>
+                            ) : (
+                              <><Sparkles className="w-3.5 h-3.5" /> Generate AI Case Study</>
+                            )}
+                          </button>
+                        )}
+
                         {pick.case_study_text && (
                           <div className="bg-muted/30 rounded-lg p-4 space-y-2">
-                            <p className="text-[10px] font-semibold text-muted-foreground">Case Study</p>
+                            <div className="flex items-center justify-between">
+                              <p className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                                <Sparkles className="w-3 h-3 text-primary" /> AI Case Study
+                              </p>
+                              {pick.status === 'completed' && (
+                                <button
+                                  onClick={() => generateCaseStudy(pick.id)}
+                                  disabled={generatingId === pick.id}
+                                  className="flex items-center gap-1 text-[9px] text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                                >
+                                  {generatingId === pick.id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <RefreshCw className="w-3 h-3" />
+                                  )}
+                                  Regenerate
+                                </button>
+                              )}
+                            </div>
                             <div className="prose prose-sm prose-invert max-w-none">
                               {pick.case_study_text.split('\n').map((line, i) => {
                                 if (line.startsWith('## ')) return <h2 key={i} className="text-sm font-bold text-foreground mt-3 mb-1">{line.replace('## ', '')}</h2>;
