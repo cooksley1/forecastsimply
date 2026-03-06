@@ -32,7 +32,7 @@ const CONGRESS_TRADES: CongressTrade[] = [
     company: 'NVIDIA',
     tradeType: 'Buy',
     amount: '$1M–$5M',
-    date: '2025-01-14',
+    date: '2026-02-14',
     committees: ['Former Speaker — access to all committees'],
     tier: 'confirmed',
     relevance: 'Insider conviction AND chart both agree. CHIPS Act access + strong technical uptrend.',
@@ -48,7 +48,7 @@ const CONGRESS_TRADES: CongressTrade[] = [
     company: 'Lockheed Martin',
     tradeType: 'Buy',
     amount: '$15K–$50K',
-    date: '2025-02-18',
+    date: '2026-02-18',
     committees: ['Armed Services Committee'],
     tier: 'confirmed',
     relevance: 'Direct defence oversight + bullish chart structure confirms direction.',
@@ -64,7 +64,7 @@ const CONGRESS_TRADES: CongressTrade[] = [
     company: 'Palantir',
     tradeType: 'Buy',
     amount: '$15K–$50K',
-    date: '2025-01-28',
+    date: '2026-02-28',
     committees: ['Homeland Security (Chair)', 'Armed Services'],
     tier: 'confirmed',
     relevance: 'Chairs committee overseeing Palantir\'s biggest customer (DHS). Strong chart confirms.',
@@ -80,7 +80,7 @@ const CONGRESS_TRADES: CongressTrade[] = [
     company: 'RTX (Raytheon)',
     tradeType: 'Buy',
     amount: '$50K–$100K',
-    date: '2025-01-21',
+    date: '2026-02-21',
     committees: ['Foreign Affairs (Chair)'],
     tier: 'confirmed',
     relevance: 'Foreign Affairs Chair has advance knowledge of arms sales. Chart confirms uptrend.',
@@ -96,7 +96,7 @@ const CONGRESS_TRADES: CongressTrade[] = [
     company: 'Apple',
     tradeType: 'Buy',
     amount: '$100K–$250K',
-    date: '2025-02-10',
+    date: '2026-02-10',
     committees: ['Financial Services'],
     tier: 'override',
     relevance: 'Financial Services Committee regulates Apple Pay/Card. Chart is neutral — insider may know something the chart can\'t show yet.',
@@ -112,7 +112,7 @@ const CONGRESS_TRADES: CongressTrade[] = [
     company: 'Alphabet (Google)',
     tradeType: 'Sell',
     amount: '$250K–$500K',
-    date: '2025-02-20',
+    date: '2026-02-20',
     committees: ['Intelligence (Chair)', 'Banking'],
     tier: 'override',
     relevance: 'Intelligence Committee oversees Google\'s government contracts. Selling despite strong chart — insider may see risk the chart can\'t.',
@@ -128,7 +128,7 @@ const CONGRESS_TRADES: CongressTrade[] = [
     company: 'Tesla',
     tradeType: 'Buy',
     amount: '$50K–$100K',
-    date: '2025-02-03',
+    date: '2026-02-13',
     committees: ['Armed Services', 'Agriculture'],
     tier: 'informational',
     relevance: 'Defence committee connection is indirect — through SpaceX, not Tesla directly.',
@@ -144,7 +144,7 @@ const CONGRESS_TRADES: CongressTrade[] = [
     company: 'Trump Media',
     tradeType: 'Buy',
     amount: '$15K–$50K',
-    date: '2025-02-24',
+    date: '2026-02-24',
     committees: ['Homeland Security', 'Oversight'],
     tier: 'informational',
     relevance: 'Political alignment trade. No direct regulatory connection to the company.',
@@ -192,9 +192,14 @@ export default function CongressTrades({ onAnalyse }: Props) {
   const [filterTier, setFilterTier] = useState<'all' | Tier>('all');
   const [expandedTrade, setExpandedTrade] = useState<number | null>(null);
 
+  // Only show trades from the past 30 days
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
+  const recentTrades = CONGRESS_TRADES.filter(t => new Date(t.date) >= cutoff);
+
   const filtered = filterTier === 'all'
-    ? CONGRESS_TRADES
-    : CONGRESS_TRADES.filter(t => t.tier === filterTier);
+    ? recentTrades
+    : recentTrades.filter(t => t.tier === filterTier);
 
   // Group by tier for display
   const tiers: Tier[] = ['confirmed', 'override', 'informational'];
