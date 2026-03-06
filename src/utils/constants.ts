@@ -56,27 +56,6 @@ export const STOCK_PICKS_LSE = [
   { sym: 'DGE.L', name: 'Diageo', div: true, yield: 2.5 },
 ];
 
-export const STOCK_PICKS_TSE = [
-  { sym: 'RY.TO', name: 'Royal Bank', div: true, yield: 3.8 },
-  { sym: 'TD.TO', name: 'TD Bank', div: true, yield: 4.5 },
-  { sym: 'SHOP.TO', name: 'Shopify', div: false, yield: 0 },
-  { sym: 'ENB.TO', name: 'Enbridge', div: true, yield: 7.2 },
-  { sym: 'CNR.TO', name: 'CN Rail', div: true, yield: 1.8 },
-  { sym: 'BMO.TO', name: 'BMO', div: true, yield: 4.3 },
-  { sym: 'BNS.TO', name: 'Scotiabank', div: true, yield: 5.8 },
-  { sym: 'CP.TO', name: 'CP Rail', div: true, yield: 0.7 },
-];
-
-export const STOCK_PICKS_XETRA = [
-  { sym: 'SAP.DE', name: 'SAP', div: true, yield: 1.5 },
-  { sym: 'SIE.DE', name: 'Siemens', div: true, yield: 2.8 },
-  { sym: 'ALV.DE', name: 'Allianz', div: true, yield: 4.8 },
-  { sym: 'DTE.DE', name: 'Deutsche Telekom', div: true, yield: 3.5 },
-  { sym: 'BAS.DE', name: 'BASF', div: true, yield: 6.0 },
-  { sym: 'MBG.DE', name: 'Mercedes-Benz', div: true, yield: 7.5 },
-  { sym: 'BMW.DE', name: 'BMW', div: true, yield: 6.2 },
-  { sym: 'ADS.DE', name: 'Adidas', div: true, yield: 1.2 },
-];
 
 export const STOCK_PICKS_HKSE = [
   { sym: '0700.HK', name: 'Tencent', div: true, yield: 0.8 },
@@ -103,12 +82,10 @@ export const STOCK_PICKS_JPX = [
 export type StockPick = { sym: string; name: string; div: boolean; yield: number };
 
 export const STOCK_PICKS_BY_EXCHANGE: Record<string, StockPick[]> = {
-  ALL: [...STOCK_PICKS_US, ...STOCK_PICKS_ASX, ...STOCK_PICKS_LSE, ...STOCK_PICKS_TSE, ...STOCK_PICKS_XETRA, ...STOCK_PICKS_HKSE, ...STOCK_PICKS_JPX],
+  ALL: [...STOCK_PICKS_US, ...STOCK_PICKS_ASX, ...STOCK_PICKS_LSE, ...STOCK_PICKS_HKSE, ...STOCK_PICKS_JPX],
   US: STOCK_PICKS_US,
   ASX: STOCK_PICKS_ASX,
   LSE: STOCK_PICKS_LSE,
-  TSE: STOCK_PICKS_TSE,
-  XETRA: STOCK_PICKS_XETRA,
   HKSE: STOCK_PICKS_HKSE,
   JPX: STOCK_PICKS_JPX,
 };
