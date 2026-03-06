@@ -11,8 +11,6 @@ export const STOCK_EXCHANGES: Exchange[] = [
   { id: 'US', label: 'US', flag: '🇺🇸' },
   { id: 'ASX', label: 'ASX', flag: '🇦🇺' },
   { id: 'LSE', label: 'London', flag: '🇬🇧' },
-  { id: 'TSE', label: 'Toronto', flag: '🇨🇦' },
-  { id: 'XETRA', label: 'Frankfurt', flag: '🇩🇪' },
   { id: 'HKSE', label: 'Hong Kong', flag: '🇭🇰' },
   { id: 'JPX', label: 'Tokyo', flag: '🇯🇵' },
 ];

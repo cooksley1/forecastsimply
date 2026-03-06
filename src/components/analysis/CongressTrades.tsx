@@ -17,7 +17,8 @@ interface CongressTrade {
   explanation: string;
 }
 
-// Curated dataset of notable recent-style Congress trades with committee relevance
+// Curated dataset of notable recent Congress trades with committee relevance
+// NOTE: These are informational only — they are NOT factored into buy/sell signals or forecasts.
 const CONGRESS_TRADES: CongressTrade[] = [
   {
     politician: 'Dan Crenshaw',
@@ -28,7 +29,7 @@ const CONGRESS_TRADES: CongressTrade[] = [
     company: 'Lockheed Martin',
     tradeType: 'Buy',
     amount: '$15K–$50K',
-    date: '2024-11-15',
+    date: '2025-02-18',
     committees: ['Armed Services Committee'],
     relevance: 'Direct oversight of defence contracts and military budgets. LMT is the largest US defence contractor.',
     confidence: 'High',
@@ -43,7 +44,7 @@ const CONGRESS_TRADES: CongressTrade[] = [
     company: 'NVIDIA',
     tradeType: 'Buy',
     amount: '$1M–$5M',
-    date: '2024-08-22',
+    date: '2025-01-14',
     committees: ['Former Speaker — access to all committees'],
     relevance: 'Access to CHIPS Act implementation details and semiconductor policy before public announcements.',
     confidence: 'High',
@@ -58,11 +59,11 @@ const CONGRESS_TRADES: CongressTrade[] = [
     company: 'Tesla',
     tradeType: 'Buy',
     amount: '$50K–$100K',
-    date: '2024-09-10',
+    date: '2025-02-03',
     committees: ['Armed Services', 'Agriculture'],
     relevance: 'Defence committee role provides insight into EV fleet contracts and energy policy direction.',
     confidence: 'Medium',
-    explanation: 'While Tuberville\'s committee assignments don\'t directly oversee Tesla, the Armed Services Committee discusses military vehicle electrification. The trade may also reflect broader political alignment expectations regarding EV policy under different administration scenarios.',
+    explanation: 'While Tuberville\'s committee assignments don\'t directly oversee Tesla, the Armed Services Committee discusses military vehicle electrification. The trade may also reflect broader political alignment expectations regarding EV policy under the current administration.',
   },
   {
     politician: 'Mark Green',
@@ -73,7 +74,7 @@ const CONGRESS_TRADES: CongressTrade[] = [
     company: 'Palantir',
     tradeType: 'Buy',
     amount: '$15K–$50K',
-    date: '2024-10-03',
+    date: '2025-01-28',
     committees: ['Homeland Security (Chair)', 'Armed Services'],
     relevance: 'Palantir is a major DHS and DoD contractor. Green chairs the committee overseeing their largest customer.',
     confidence: 'High',
@@ -88,26 +89,11 @@ const CONGRESS_TRADES: CongressTrade[] = [
     company: 'Microsoft',
     tradeType: 'Buy',
     amount: '$100K–$250K',
-    date: '2024-07-18',
+    date: '2025-02-10',
     committees: ['Financial Services'],
     relevance: 'Financial Services Committee oversees fintech regulation affecting Microsoft\'s Azure/cloud business.',
     confidence: 'Medium',
     explanation: 'Gottheimer\'s Financial Services role gives him insight into banking regulation and fintech policy. Microsoft\'s Azure cloud platform serves major financial institutions. While not a direct oversight relationship, policy decisions around cloud computing, AI regulation, and data privacy could materially impact MSFT.',
-  },
-  {
-    politician: 'Marjorie Taylor Greene',
-    party: 'R',
-    state: 'GA',
-    chamber: 'House',
-    ticker: 'DJT',
-    company: 'Trump Media',
-    tradeType: 'Buy',
-    amount: '$15K–$50K',
-    date: '2024-10-28',
-    committees: ['Homeland Security', 'Oversight'],
-    relevance: 'Political alignment trade rather than committee-based. No direct regulatory connection.',
-    confidence: 'Low',
-    explanation: 'This trade appears politically motivated rather than information-driven. Greene\'s committee assignments don\'t provide any relevant oversight of social media companies. The trade likely reflects political conviction about election outcomes rather than material non-public information.',
   },
   {
     politician: 'Michael McCaul',
@@ -118,11 +104,26 @@ const CONGRESS_TRADES: CongressTrade[] = [
     company: 'RTX (Raytheon)',
     tradeType: 'Buy',
     amount: '$50K–$100K',
-    date: '2024-09-25',
+    date: '2025-01-21',
     committees: ['Foreign Affairs (Chair)'],
     relevance: 'Foreign Affairs Chair has advance knowledge of arms sales, foreign aid packages, and geopolitical developments.',
     confidence: 'High',
     explanation: 'As Chairman of the Foreign Affairs Committee, McCaul receives classified briefings on international conflicts, weapons sales to allies, and foreign aid packages — all of which directly impact defence contractor revenue. RTX (formerly Raytheon) is a top-3 US defence contractor heavily exposed to international arms sales.',
+  },
+  {
+    politician: 'Marjorie Taylor Greene',
+    party: 'R',
+    state: 'GA',
+    chamber: 'House',
+    ticker: 'DJT',
+    company: 'Trump Media',
+    tradeType: 'Buy',
+    amount: '$15K–$50K',
+    date: '2025-02-24',
+    committees: ['Homeland Security', 'Oversight'],
+    relevance: 'Political alignment trade rather than committee-based. No direct regulatory connection.',
+    confidence: 'Low',
+    explanation: 'This trade appears politically motivated rather than information-driven. Greene\'s committee assignments don\'t provide any relevant oversight of social media companies. The trade likely reflects political conviction rather than material non-public information.',
   },
   {
     politician: 'Ro Khanna',
@@ -133,7 +134,7 @@ const CONGRESS_TRADES: CongressTrade[] = [
     company: 'Apple',
     tradeType: 'Sell',
     amount: '$50K–$100K',
-    date: '2024-11-05',
+    date: '2025-02-12',
     committees: ['Armed Services', 'Oversight'],
     relevance: 'Represents Silicon Valley district. Close relationships with tech executives but limited direct oversight.',
     confidence: 'Low',
@@ -319,7 +320,8 @@ export default function CongressTrades({ onAnalyse }: Props) {
               View all trades on Capitol Trades <ExternalLink className="w-3 h-3" />
             </a>
             <p className="text-[9px] text-muted-foreground/60 italic">
-              Data sourced from public congressional financial disclosures. Trades shown are illustrative of the types of analysis available. Always verify with official sources.
+              Data sourced from public congressional financial disclosures. Trades shown are illustrative of the types of analysis available.
+              These trades are <strong>informational only</strong> and are not factored into buy/sell signals or forecasts. Always verify with official sources.
             </p>
           </div>
         </div>
