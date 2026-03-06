@@ -738,8 +738,10 @@ export default function Index() {
               </>
             )}
 
-            {/* Congress Trades */}
-            <CongressTrades onAnalyse={(symbol) => analyseStock(symbol, 'stocks')} />
+            {/* Congress Trades — only show when US stocks exchange is active */}
+            {(assetType === 'stocks' && stockExchange === 'US') && (
+              <CongressTrades onAnalyse={(symbol) => analyseStock(symbol, 'stocks')} />
+            )}
 
             <PortfolioBuilder riskProfile={riskProfile} riskLevel={riskLevel} onRiskLevelChange={setRiskLevel} />
           </div>
