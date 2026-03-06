@@ -39,6 +39,22 @@ export interface AssetInfo {
   category?: string;
 }
 
+export interface SimulationSnapshot {
+  timestamp: number;
+  price: number;
+}
+
+export interface SimulationData {
+  horizon: 'short' | 'mid' | 'long';
+  entry: number;
+  target: number;
+  stopLoss: number;
+  signal: string;
+  confidence: number;
+  startedAt: number;
+  snapshots: SimulationSnapshot[];
+}
+
 export interface WatchlistItem {
   id: string;
   symbol: string;
@@ -49,4 +65,5 @@ export interface WatchlistItem {
   addedAt: number;
   addedPrice: number;
   note?: string;
+  simulation?: SimulationData;
 }
