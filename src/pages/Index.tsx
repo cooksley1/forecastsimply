@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
-import { LineChart } from 'lucide-react';
+import { LineChart, RefreshCw } from 'lucide-react';
 import PriceAlertDialog from '@/components/alerts/PriceAlertDialog';
 import type { SortCriteria } from '@/components/search/QuickPicks';
 import { Link } from 'react-router-dom';
@@ -380,6 +380,16 @@ export default function Index() {
     }
   }, [technicalData, assetInfo, loading]);
 
+  /* ── Refresh current analysis ── */
+  const handleRefreshAll = useCallback(() => {
+    const asset = currentAssetRef.current;
+    if (!asset) return;
+    if (asset.type === 'crypto') analyseCrypto(asset.id);
+    else if (asset.type === 'stocks') analyseStock(asset.id, 'stocks');
+    else if (asset.type === 'etfs') analyseStock(asset.id, 'etfs');
+    else if (asset.type === 'forex') analyseForex(asset.id);
+  }, [analyseCrypto, analyseStock, analyseForex]);
+
   /* ── Handlers ── */
   const EXCHANGE_SUFFIXES: Record<string, string> = {
     US: '', ASX: '.AX', LSE: '.L', TSE: '.TO', XETRA: '.DE', HKSE: '.HK', JPX: '.T',
@@ -691,6 +701,21 @@ export default function Index() {
                 <SocialShare assetInfo={assetInfo} technicalData={technicalData} />
                 <ReportButton assetInfo={assetInfo} technicalData={technicalData} timeframeDays={timeframeDays} riskLevel={riskLevel} dataSource={dataSource} />
               </div>
+            </div>
+
+            {/* Refresh bar */}
+            <div className="flex items-center justify-between bg-card border border-border rounded-xl px-3 py-2">
+              <span className="text-[10px] text-muted-foreground">
+                Last updated: {new Date().toLocaleTimeString()}
+              </span>
+              <button
+                onClick={handleRefreshAll}
+                disabled={loading}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 disabled:opacity-50 transition-all"
+              >
+                <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Refreshing...' : 'Refresh All Data'}
+              </button>
             </div>
 
             {/* Timeframe bar */}
