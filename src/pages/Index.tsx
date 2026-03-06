@@ -28,6 +28,8 @@ import AnalysisTextPanel from '@/components/analysis/AnalysisTextPanel';
 import IndicatorsPanel from '@/components/analysis/IndicatorsPanel';
 import PortfolioBuilder from '@/components/analysis/PortfolioBuilder';
 import TopPicks from '@/components/analysis/TopPicks';
+import TopPicksDashboard from '@/components/analysis/TopPicksDashboard';
+import CongressTrades from '@/components/analysis/CongressTrades';
 import BreakoutFinder from '@/components/analysis/BreakoutFinder';
 import { getCoinData, searchCoins } from '@/services/api/coingecko';
 import { getDIACryptoPrice, geckoIdToDIASymbol } from '@/services/api/dia';
@@ -714,11 +716,18 @@ export default function Index() {
         {!technicalData && !loading && !error && (
           <div className="space-y-6">
             {/* Chart placeholder */}
-            <div className="border-2 border-dashed border-border/60 rounded-xl bg-muted/20 flex flex-col items-center justify-center py-12 sm:py-16 gap-3">
+            <div className="border-2 border-dashed border-border/60 rounded-lg bg-muted/20 flex flex-col items-center justify-center py-12 sm:py-16 gap-3">
               <LineChart className="w-10 h-10 text-muted-foreground/30" />
               <p className="text-sm text-muted-foreground font-medium">Select an asset to view the chart</p>
               <p className="text-[10px] text-muted-foreground/60">Search above or pick from the list below</p>
             </div>
+
+            {/* Top Picks Dashboard — all categories */}
+            <TopPicksDashboard onSelect={(id, type) => {
+              if (type === 'crypto') analyseCrypto(id);
+              else if (type === 'stocks') analyseStock(id, 'stocks');
+              else if (type === 'etfs') analyseStock(id, 'etfs');
+            }} />
 
             <GuidedDiscovery assetType={assetType} onSelect={handleQuickPick} loading={loading} />
 
@@ -728,6 +737,9 @@ export default function Index() {
                 <MemoTopPicks onSelect={(id) => analyseCrypto(id)} />
               </>
             )}
+
+            {/* Congress Trades */}
+            <CongressTrades onAnalyse={(symbol) => analyseStock(symbol, 'stocks')} />
 
             <PortfolioBuilder riskProfile={riskProfile} riskLevel={riskLevel} onRiskLevelChange={setRiskLevel} />
           </div>
