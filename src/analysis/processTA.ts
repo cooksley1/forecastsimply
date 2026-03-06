@@ -270,10 +270,21 @@ export function processTA(
     signal.label, signal.confidence, signal.score,
   );
 
+  // Align the hero signal to match the short-term recommendation
+  const shortRec = recommendations.find(r => r.horizon === 'short');
+  const alignedSignal = shortRec
+    ? {
+        ...signal,
+        label: shortRec.label as import('@/types/analysis').SignalLabel,
+        color: shortRec.color,
+        confidence: shortRec.confidence,
+      }
+    : signal;
+
   return {
     prices: closes.map((close, i) => ({ timestamp: timestamps[i], close, volume: volumes[i] })),
     indicators,
-    signal,
+    signal: alignedSignal,
     recommendations,
     tradeSetups,
     forecast,
