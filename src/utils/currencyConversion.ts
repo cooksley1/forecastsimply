@@ -3,6 +3,7 @@ const CACHE_TTL = 3600000; // 1 hour
 const PREF_KEY = 'sf_secondary_currency';
 
 export const SUPPORTED_CURRENCIES = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
   { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
   { code: 'EUR', symbol: '€', name: 'Euro' },
   { code: 'GBP', symbol: '£', name: 'British Pound' },
@@ -11,6 +12,26 @@ export const SUPPORTED_CURRENCIES = [
   { code: 'NZD', symbol: 'NZ$', name: 'New Zealand Dollar' },
   { code: 'CHF', symbol: 'CHF', name: 'Swiss Franc' },
   { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
+  { code: 'THB', symbol: '฿', name: 'Thai Baht' },
+  { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit' },
+  { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
+  { code: 'KRW', symbol: '₩', name: 'South Korean Won' },
+  { code: 'HKD', symbol: 'HK$', name: 'Hong Kong Dollar' },
+  { code: 'SEK', symbol: 'kr', name: 'Swedish Krona' },
+  { code: 'NOK', symbol: 'kr', name: 'Norwegian Krone' },
+  { code: 'DKK', symbol: 'kr', name: 'Danish Krone' },
+  { code: 'ZAR', symbol: 'R', name: 'South African Rand' },
+  { code: 'BRL', symbol: 'R$', name: 'Brazilian Real' },
+  { code: 'MXN', symbol: 'MX$', name: 'Mexican Peso' },
+  { code: 'PLN', symbol: 'zł', name: 'Polish Zloty' },
+  { code: 'TRY', symbol: '₺', name: 'Turkish Lira' },
+  { code: 'PHP', symbol: '₱', name: 'Philippine Peso' },
+  { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
+  { code: 'CZK', symbol: 'Kč', name: 'Czech Koruna' },
+  { code: 'HUF', symbol: 'Ft', name: 'Hungarian Forint' },
+  { code: 'ILS', symbol: '₪', name: 'Israeli Shekel' },
+  { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
+  { code: 'TWD', symbol: 'NT$', name: 'Taiwan Dollar' },
 ];
 
 export function getSecondaryCurrency(): string | null {
