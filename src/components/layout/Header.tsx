@@ -38,7 +38,7 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
         <div className="max-w-7xl mx-auto h-full">
           <div className="flex items-center justify-between h-full">
             <button onClick={() => navigate('/')} className="shrink-0 hover:opacity-80 transition-opacity" aria-label="Home">
-              <img src={logo} alt="ForecastSimply" className="h-12 sm:h-14" style={{ transform: 'scale(3.2)', transformOrigin: 'left center' }} />
+              <img src={logo} alt="ForecastSimply" className="h-12 sm:h-14" style={{ transform: 'scale(2.2)', transformOrigin: 'left center' }} />
             </button>
 
             <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
