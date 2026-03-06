@@ -162,9 +162,9 @@ export default function SmartFeed({ assetType, exchange, watchlist = [], onSelec
               {digest.insights.length > 0 && (
                 <div className="space-y-1.5">
                   <span className="text-[10px] text-muted-foreground font-mono uppercase">Your Assets</span>
-                  {digest.insights.map((ins, i) => (
+                  {digest.insights.map((ins) => (
                     <button
-                      key={i}
+                      key={`${ins.asset}-${ins.type}`}
                       onClick={() => onSelectAsset?.(ins.asset, ins.type)}
                       className="w-full text-left flex items-start gap-2 px-3 py-2 rounded-lg bg-secondary/30 hover:bg-primary/5 border border-border hover:border-primary/30 transition-all"
                     >
@@ -186,8 +186,8 @@ export default function SmartFeed({ assetType, exchange, watchlist = [], onSelec
               {digest.recommendations.length > 0 && (
                 <div className="space-y-1">
                   <span className="text-[10px] text-muted-foreground font-mono uppercase">Recommendations</span>
-                  {digest.recommendations.map((rec, i) => (
-                    <div key={i} className="flex items-start gap-2 text-[11px] text-foreground">
+                  {digest.recommendations.map((rec) => (
+                    <div key={rec} className="flex items-start gap-2 text-[11px] text-foreground">
                       <span className="text-primary">→</span>
                       <span>{rec}</span>
                     </div>
@@ -198,8 +198,8 @@ export default function SmartFeed({ assetType, exchange, watchlist = [], onSelec
               {digest.watchlist_alerts.length > 0 && (
                 <div className="space-y-1">
                   <span className="text-[10px] text-muted-foreground font-mono uppercase">Watchlist Alerts</span>
-                  {digest.watchlist_alerts.map((alert, i) => (
-                    <div key={i} className="flex items-start gap-2 text-[11px] text-foreground">
+                  {digest.watchlist_alerts.map((alert) => (
+                    <div key={alert} className="flex items-start gap-2 text-[11px] text-foreground">
                       <span>⚡</span>
                       <span>{alert}</span>
                     </div>

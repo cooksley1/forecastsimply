@@ -30,8 +30,8 @@ export default function FAQ() {
         <h1 className="text-2xl font-bold text-foreground">Frequently Asked Questions</h1>
 
         <Accordion type="multiple" className="space-y-2">
-          {faqs.map((faq, i) => (
-            <AccordionItem key={i} value={`faq-${i}`} className="border border-border rounded-xl px-4 bg-card">
+          {faqs.map((faq) => (
+            <AccordionItem key={faq.q} value={faq.q} className="border border-border rounded-xl px-4 bg-card">
               <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline">{faq.q}</AccordionTrigger>
               <AccordionContent className="text-sm text-muted-foreground leading-relaxed">{faq.a}</AccordionContent>
             </AccordionItem>

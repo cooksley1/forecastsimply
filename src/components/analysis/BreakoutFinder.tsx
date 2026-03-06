@@ -334,8 +334,8 @@ export default function BreakoutFinder({ onSelect }: Props) {
 
           <div className="space-y-1.5">
             <h4 className="text-xs font-semibold text-foreground">💡 Why This Asset?</h4>
-            {result.reasoning.map((r, i) => (
-              <div key={i} className="flex items-start gap-2 text-[10px] sm:text-xs text-muted-foreground">
+            {result.reasoning.map((r) => (
+              <div key={r} className="flex items-start gap-2 text-[10px] sm:text-xs text-muted-foreground">
                 <span className="text-positive shrink-0 mt-0.5">✓</span>
                 <span>{r}</span>
               </div>
@@ -351,8 +351,8 @@ export default function BreakoutFinder({ onSelect }: Props) {
                 { label: '3. TAKE PROFIT', value: result.plan.takeProfit, icon: '🎯' },
                 { label: '4. TIMEFRAME', value: result.plan.timeframe, icon: '⏱️' },
                 { label: '5. RISK/REWARD', value: result.plan.riskReward, icon: '⚖️' },
-              ].map((step, i) => (
-                <div key={i} className="flex items-start gap-2">
+              ].map((step) => (
+                <div key={step.label} className="flex items-start gap-2">
                   <span className="shrink-0 text-xs">{step.icon}</span>
                   <div>
                     <span className="text-[9px] font-mono text-muted-foreground uppercase">{step.label}</span>
