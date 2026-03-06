@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
-import { Settings, Sun, Moon, Shield, User, Bell } from 'lucide-react';
+import { Settings, Sun, Moon, Shield, User, Bell, Trophy } from 'lucide-react';
 import ApiKeySettings from '@/components/settings/ApiKeySettings';
 import LoginDialog from '@/components/auth/LoginDialog';
 import AccountPanel from '@/components/account/AccountPanel';
@@ -51,6 +51,13 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
                   onClear={onWatchlistClear || (() => {})}
                 />
               )}
+              <button
+                onClick={() => navigate('/scorecard')}
+                className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-primary hover:border-primary/40 transition-all"
+                title="Performance Scorecard"
+              >
+                <Trophy className="w-4 h-4" />
+              </button>
               <button
                 onClick={toggleTheme}
                 className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
