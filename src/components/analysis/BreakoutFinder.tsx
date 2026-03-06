@@ -21,6 +21,7 @@ const STORAGE_KEY = 'sf_breakout_custom';
 
 interface Props {
   onSelect: (id: string) => void;
+  watchlistCoinIds?: string[];
 }
 
 /** Quick pre-screen using CoinLore data only (no API cost) */
@@ -45,7 +46,7 @@ function preScreenScore(t: CoinLoreTicker): number {
   return s;
 }
 
-export default function BreakoutFinder({ onSelect }: Props) {
+export default function BreakoutFinder({ onSelect, watchlistCoinIds = [] }: Props) {
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<BreakoutResult | null>(null);
   const [scanStatus, setScanStatus] = useState('');
@@ -88,12 +89,13 @@ export default function BreakoutFinder({ onSelect }: Props) {
         .map(t => ({ ticker: t, preScore: preScreenScore(t) }))
         .sort((a, b) => b.preScore - a.preScore);
 
-      // Take top 10 candidates + custom coins for deep analysis
+      // Take top 10 candidates + custom coins + watchlist coins for deep analysis
       const topCandidateIds = new Set<string>();
       for (const { ticker } of scored.slice(0, 10)) {
         topCandidateIds.add(coinloreSymbolToGeckoId(ticker.symbol, ticker.name));
       }
       for (const id of customCoins) topCandidateIds.add(id);
+      for (const id of watchlistCoinIds) topCandidateIds.add(id);
 
       const deepList = Array.from(topCandidateIds);
       setTotalToScan(deepList.length);
@@ -122,7 +124,7 @@ export default function BreakoutFinder({ onSelect }: Props) {
 
           if (prices.length < 30) continue;
 
-          const ta = processTA(prices, timestamps, vols, 30, 'crypto', ['holt']);
+          const ta = processTA(prices, timestamps, vols, 30, 'crypto', ['ensemble']);
           // Use DIA price if available (exchange-aggregated, most recent), else chart last price
           const price = diaPrice?.price || prices[prices.length - 1];
 
@@ -246,7 +248,7 @@ export default function BreakoutFinder({ onSelect }: Props) {
         <div>
           <h3 className="text-sm sm:text-base font-semibold text-foreground">🚀 Breakout Finder</h3>
           <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-            Pre-screens 300 coins via CoinLore, verifies prices via DIA, then deep-analyses with CoinGecko charts
+            Pre-screens 300 coins via CoinLore{watchlistCoinIds.length > 0 ? ` + ${watchlistCoinIds.length} from your watchlist` : ''}, verifies prices via DIA, then deep-analyses with ensemble forecasting
           </p>
         </div>
         <div className="flex gap-2">

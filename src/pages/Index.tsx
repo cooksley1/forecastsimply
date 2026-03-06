@@ -931,6 +931,26 @@ export default function Index() {
                   assetType={assetInfo.assetType}
                   assetName={assetInfo.name}
                   technicalData={technicalData}
+                  onViewChart={(overlayId) => {
+                    // If it's a section scroll target, just scroll
+                    if (overlayId.startsWith('section-')) {
+                      const el = document.getElementById(overlayId);
+                      if (el) {
+                        const y = el.getBoundingClientRect().top + window.scrollY - 160;
+                        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+                      }
+                    } else {
+                      // Toggle the overlay on and scroll to chart
+                      setActiveOverlays(prev => prev.includes(overlayId as any) ? prev : [...prev, overlayId as any]);
+                      setTimeout(() => {
+                        const el = document.getElementById('section-chart');
+                        if (el) {
+                          const y = el.getBoundingClientRect().top + window.scrollY - 160;
+                          window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+                        }
+                      }, 100);
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -958,7 +978,7 @@ export default function Index() {
 
             {assetType === 'crypto' && (
               <>
-                <MemoBreakoutFinder onSelect={(id) => analyseCrypto(id)} />
+                <MemoBreakoutFinder onSelect={(id) => analyseCrypto(id)} watchlistCoinIds={watchlist.filter(w => w.assetType === 'crypto').map(w => w.id)} />
                 <MemoTopPicks onSelect={(id) => analyseCrypto(id)} />
               </>
             )}
