@@ -61,6 +61,45 @@ const SORT_OPTIONS: { value: SortCriteria; label: string; icon: string }[] = [
   { value: 'growth', label: 'Growth', icon: '🌱' },
 ];
 
+const FILTER_CRITERIA: Record<SortCriteria, { title: string; bullets: string[]; note?: string }> = {
+  default: { title: '', bullets: [] },
+  'best-buys': {
+    title: 'Best Buys — Selection Criteria',
+    bullets: [
+      'Signal must be "Buy" or "Strong Buy" (composite score ≥ 3/10)',
+      'Score is built from 11 weighted indicators: SMA(20), SMA(50), MA Crossover, RSI(14), MACD, Bollinger Bands, Stochastic %K, OBV Divergence, VWAP, RSI Divergence, and Trend Strength',
+      'Each indicator contributes +1 to +3 (bullish) or −1 to −3 (bearish)',
+      'Sorted by highest composite score — strongest technical setups first',
+    ],
+    note: 'If no assets appear, market conditions are currently unfavourable across the board for this timeframe. This is a valid signal — it means there are no strong buying opportunities right now. Try a different timeframe or check back after market conditions shift.',
+  },
+  sells: {
+    title: 'Sells / Avoid — Selection Criteria',
+    bullets: [
+      'Signal must be "Sell", "Strong Sell", or "Hold" (composite score ≤ 0)',
+      'Same 11-indicator scoring system — these assets have predominantly bearish readings',
+      'Sorted by lowest score first — weakest setups at the top',
+    ],
+    note: 'These are assets showing technical weakness. "Hold" assets are included because they lack bullish conviction.',
+  },
+  yield: {
+    title: 'Highest Yield — Selection Criteria',
+    bullets: [
+      'Sorted by annual dividend yield (highest first)',
+      'No signal filter applied — includes all dividend-paying assets',
+      'Yield data sourced from the latest available market data',
+    ],
+  },
+  growth: {
+    title: 'Growth — Selection Criteria',
+    bullets: [
+      'Filters to assets with dividend yield < 1% (capital-growth focus)',
+      'Sorted by highest composite signal score',
+      'Identifies momentum-driven assets reinvesting earnings into growth',
+    ],
+  },
+};
+
 const TIMEFRAMES: RankTimeframe[] = ['1M', '3M', '6M', '1Y'];
 
 export default function QuickPicks({
@@ -261,10 +300,30 @@ export default function QuickPicks({
         </div>
       )}
 
+      {/* Filter criteria explainer */}
+      {sortBy !== 'default' && FILTER_CRITERIA[sortBy]?.title && (
+        <div className="bg-muted/40 border border-border/60 rounded-lg px-3 py-2.5 space-y-1.5">
+          <p className="text-[10px] font-semibold text-foreground">{FILTER_CRITERIA[sortBy].title}</p>
+          <ul className="space-y-0.5">
+            {FILTER_CRITERIA[sortBy].bullets.map((b, i) => (
+              <li key={i} className="text-[9px] text-muted-foreground flex gap-1.5">
+                <span className="text-primary/70 shrink-0">•</span>
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+          {FILTER_CRITERIA[sortBy].note && allOrdered.length === 0 && (
+            <p className="text-[9px] text-warning/90 mt-1 leading-relaxed">{FILTER_CRITERIA[sortBy].note}</p>
+          )}
+        </div>
+      )}
+
       {/* Card grid */}
       {allOrdered.length === 0 ? (
         <p className="text-xs text-muted-foreground italic py-3 text-center">
-          {hasRanked ? 'No assets match this filter. Try a different sort.' : 'No assets available.'}
+          {hasRanked
+            ? `0 assets meet the ${SORT_OPTIONS.find(o => o.value === sortBy)?.label || 'selected'} criteria for this ${rankTimeframe} timeframe.`
+            : 'No assets available.'}
         </p>
       ) : (
         <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 transition-opacity ${isFiltering ? 'opacity-50' : ''}`}>
