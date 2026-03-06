@@ -67,7 +67,7 @@ export default function Index() {
   const [technicalData, setTechnicalData] = useState<TechnicalData | null>(null);
   const [timeframeDays, setTimeframeDays] = useState(90);
   const [forecastPercent, setForecastPercent] = useState(30);
-  const [forecastMethods, setForecastMethods] = useState<ForecastMethodId[]>(['holt']);
+  const [forecastMethods, setForecastMethods] = useState<ForecastMethodId[]>(['ensemble']);
   const [riskLevel, setRiskLevel] = useState<RiskLevel>(3);
   const riskProfile = riskLevelToProfile(riskLevel);
   const [activeOverlays, setActiveOverlays] = useState<OverlayId[]>([]);

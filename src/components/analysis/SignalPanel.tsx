@@ -1,4 +1,5 @@
-import type { Signal } from '@/types/analysis';
+import { useState } from 'react';
+import type { Signal, SignalBreakdown } from '@/types/analysis';
 
 interface Props {
   signal: Signal;
@@ -15,7 +16,60 @@ const signalExplanations: Record<string, string> = {
   'Strong Sell': 'Multiple indicators suggest downward pressure. Caution is advised.',
 };
 
+const sigColor = (s: string) =>
+  s === 'bullish' ? 'text-positive' : s === 'bearish' ? 'text-negative' : 'text-neutral-signal';
+const sigBg = (s: string) =>
+  s === 'bullish' ? 'border-l-positive' : s === 'bearish' ? 'border-l-negative' : 'border-l-neutral-signal';
+
+function IndicatorRow({ ind }: { ind: SignalBreakdown }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`border border-border rounded-lg overflow-hidden border-l-[3px] ${sigBg(ind.signal)}`}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full p-2 flex items-center gap-2 text-left hover:bg-secondary/30 transition-colors"
+      >
+        <span className={`text-xs ${sigColor(ind.signal)}`}>
+          {ind.signal === 'bullish' ? '✓' : ind.signal === 'bearish' ? '✗' : '—'}
+        </span>
+        <span className="text-xs font-semibold text-foreground flex-1">{ind.name}</span>
+        <span className={`text-xs font-mono font-semibold ${sigColor(ind.signal)}`}>{ind.value}</span>
+        <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-mono">
+          {ind.contribution > 0 ? '+' : ''}{ind.contribution}pts
+        </span>
+        <span className="text-muted-foreground text-xs">{open ? '▾' : '▸'}</span>
+      </button>
+      {open && (
+        <div className="px-3 pb-2 pl-7 space-y-1.5">
+          <p className="text-[11px] text-muted-foreground leading-relaxed">{ind.explanation}</p>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground/70">Weight: {ind.weight}%</span>
+            <div className="flex-1 h-1 bg-secondary rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${ind.weight}%`,
+                  backgroundColor: ind.signal === 'bullish'
+                    ? 'hsl(var(--positive))'
+                    : ind.signal === 'bearish'
+                      ? 'hsl(var(--negative))'
+                      : 'hsl(var(--muted-foreground))',
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SignalPanel({ signal, price, name, symbol }: Props) {
+  const [showBreakdown, setShowBreakdown] = useState(false);
+  const breakdown = signal.breakdown || [];
+  const bullish = breakdown.filter(i => i.signal === 'bullish');
+  const bearish = breakdown.filter(i => i.signal === 'bearish');
+
   const colorMap = {
     green: 'text-positive border-fs-green/30 bg-fs-green/5',
     red: 'text-negative border-fs-red/30 bg-fs-red/5',
@@ -29,51 +83,80 @@ export default function SignalPanel({ signal, price, name, symbol }: Props) {
   };
 
   return (
-    <div className={`border rounded-xl p-3 sm:p-5 ${colorMap[signal.color]} ${glowMap[signal.color]}`}>
-      <div className="flex items-center justify-between mb-2 sm:mb-3">
-        <div>
-          <h2 className="text-foreground text-base sm:text-lg font-bold">{name}</h2>
-          <span className="text-muted-foreground text-[10px] sm:text-xs font-mono">{symbol}</span>
-        </div>
-        <div className="text-right">
-          <div className="text-foreground text-lg sm:text-xl font-mono font-bold">
-            ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+    <div className="space-y-3">
+      <div className={`border rounded-xl p-3 sm:p-5 ${colorMap[signal.color]} ${glowMap[signal.color]}`}>
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <div>
+            <h2 className="text-foreground text-base sm:text-lg font-bold">{name}</h2>
+            <span className="text-muted-foreground text-[10px] sm:text-xs font-mono">{symbol}</span>
           </div>
+          <div className="text-right">
+            <div className="text-foreground text-lg sm:text-xl font-mono font-bold">
+              ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <div className={`text-xl sm:text-2xl font-bold font-mono ${signal.color === 'green' ? 'text-positive' : signal.color === 'red' ? 'text-negative' : 'text-neutral-signal'}`}>
+            {signal.label}
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span className="text-muted-foreground">Confidence</span>
+              <span className="font-mono text-foreground">{signal.confidence}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  signal.color === 'green' ? 'bg-fs-green' : signal.color === 'red' ? 'bg-fs-red' : 'bg-fs-amber'
+                }`}
+                style={{ width: `${signal.confidence}%` }}
+              />
+            </div>
+          </div>
+          <div className="flex sm:flex-col items-center sm:items-end gap-1 sm:gap-0 sm:text-right">
+            <span className="text-xs text-muted-foreground">Score</span>
+            <span className="font-mono font-bold text-foreground">{signal.score > 0 ? '+' : ''}{signal.score}</span>
+          </div>
+        </div>
+
+        {/* Summary with indicator counts */}
+        <div className="mt-3 pt-3 border-t border-border/50">
+          <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
+            <span className="font-semibold text-foreground/80">What does this mean? </span>
+            {signalExplanations[signal.label]}
+            {breakdown.length > 0 && (
+              <> <strong className="text-positive">{bullish.length} bullish</strong> vs <strong className="text-negative">{bearish.length} bearish</strong> indicators.
+              {bullish.length > 0 && <> Bullish: {bullish.map(i => i.name).join(', ')}.</>}
+              {bearish.length > 0 && <> Bearish: {bearish.map(i => i.name).join(', ')}.</>}
+              </>
+            )}
+          </p>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-        <div className={`text-xl sm:text-2xl font-bold font-mono ${signal.color === 'green' ? 'text-positive' : signal.color === 'red' ? 'text-negative' : 'text-neutral-signal'}`}>
-          {signal.label}
+      {/* Indicator Breakdown */}
+      {breakdown.length > 0 && (
+        <div className="space-y-1.5">
+          <button
+            onClick={() => setShowBreakdown(o => !o)}
+            className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+          >
+            {showBreakdown ? '▾' : '▸'} {showBreakdown ? 'Hide' : 'Show'} indicator breakdown ({breakdown.length} indicators)
+          </button>
+          {showBreakdown && (
+            <div className="space-y-1">
+              {breakdown.map(ind => (
+                <IndicatorRow key={ind.name} ind={ind} />
+              ))}
+              <p className="text-[10px] text-muted-foreground italic pt-1">
+                Click any indicator to see why it matters and how it contributed to the signal. Weights are calibrated from backtesting 13 assets across 234 tests.
+              </p>
+            </div>
+          )}
         </div>
-        <div className="flex-1">
-          <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-muted-foreground">Confidence</span>
-            <span className="font-mono text-foreground">{signal.confidence}%</span>
-          </div>
-          <div className="h-2 rounded-full bg-muted overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${
-                signal.color === 'green' ? 'bg-fs-green' : signal.color === 'red' ? 'bg-fs-red' : 'bg-fs-amber'
-              }`}
-              style={{ width: `${signal.confidence}%` }}
-            />
-          </div>
-        </div>
-        <div className="flex sm:flex-col items-center sm:items-end gap-1 sm:gap-0 sm:text-right">
-          <span className="text-xs text-muted-foreground">Score</span>
-          <span className="font-mono font-bold text-foreground">{signal.score > 0 ? '+' : ''}{signal.score}</span>
-        </div>
-      </div>
-
-      {/* Beginner explanation */}
-      <div className="mt-3 pt-3 border-t border-border/50">
-        <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
-          <span className="font-semibold text-foreground/80">What does this mean? </span>
-          {signalExplanations[signal.label]}
-          {' '}The <strong>confidence</strong> shows how certain the algorithm is (higher = more indicators agree). The <strong>score</strong> ranges from -10 to +10 based on combined indicator readings.
-        </p>
-      </div>
+      )}
     </div>
   );
 }

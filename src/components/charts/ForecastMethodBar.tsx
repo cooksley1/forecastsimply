@@ -3,15 +3,19 @@ import { FORECAST_METHODS } from '@/analysis/forecast';
 import type { ForecastMethodId } from '@/analysis/forecast';
 
 const METHOD_COLORS: Record<ForecastMethodId, string> = {
+  ensemble: 'hsl(210 90% 55%)',
+  linear: 'hsl(350 80% 55%)',
   holt: 'hsl(142 71% 45%)',
   ema_momentum: 'hsl(263 91% 66%)',
   monte_carlo: 'hsl(38 92% 50%)',
 };
 
 const METHOD_WHENS: Record<ForecastMethodId, string> = {
-  holt: 'Use when the asset has a clear trend (up or down). Best for steady movers like blue-chip stocks or established crypto. It follows recent momentum smoothly.',
-  ema_momentum: 'Use when the asset is volatile and you expect mean reversion — i.e., big moves that tend to snap back. Great for crypto swings and forex. Captures momentum bursts but limits runaway projections.',
-  monte_carlo: 'Use when you want to see the full range of possible outcomes rather than a single prediction. Best for risk assessment — it shows you realistic best/worst cases based on historical volatility.',
+  ensemble: 'Best default choice. Blends Linear (best direction) + Holt (best bands) + Momentum (short-term) using weights optimised from 234 backtests. Use this if unsure which method to pick.',
+  linear: 'Best single method for direction (64.1% accuracy). Use when the asset has a clear trend and you want the most statistically reliable projection. Bands widened 1.67× for better coverage.',
+  holt: 'Use when you care more about the range (confidence bands) than the exact direction. Holt captures 83.3% of actual prices within its bands — best of any method. But only 44.9% directional accuracy.',
+  ema_momentum: 'Use for volatile assets like crypto. Captures momentum bursts but dampened 40% and capped at ±15% after backtesting showed avg error of 27.7% without these limits.',
+  monte_carlo: 'Use when you want to see the full range of possible outcomes rather than a single prediction. Best for risk assessment — shows realistic best/worst cases based on historical volatility.',
 };
 
 interface Props {

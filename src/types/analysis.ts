@@ -22,11 +22,21 @@ export interface Indicators {
 export type SignalLabel = 'Strong Buy' | 'Buy' | 'Hold' | 'Sell' | 'Strong Sell';
 export type SignalColor = 'green' | 'amber' | 'red';
 
+export interface SignalBreakdown {
+  name: string;
+  value: string;
+  signal: 'bullish' | 'bearish' | 'neutral';
+  contribution: number;
+  weight: number;
+  explanation: string;
+}
+
 export interface Signal {
   score: number;
   label: SignalLabel;
   color: SignalColor;
   confidence: number;
+  breakdown?: SignalBreakdown[];
 }
 
 export interface Recommendation {
