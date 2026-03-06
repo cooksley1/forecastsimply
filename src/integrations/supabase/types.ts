@@ -164,6 +164,56 @@ export type Database = {
         }
         Relationships: []
       }
+      pick_snapshots: {
+        Row: {
+          change_from_entry_pct: number
+          created_at: string
+          forecast_ema_price: number | null
+          forecast_ensemble_price: number | null
+          forecast_holt_price: number | null
+          forecast_linear_price: number | null
+          forecast_monte_carlo_price: number | null
+          id: string
+          pick_id: string
+          price: number
+          snapshot_date: string
+        }
+        Insert: {
+          change_from_entry_pct?: number
+          created_at?: string
+          forecast_ema_price?: number | null
+          forecast_ensemble_price?: number | null
+          forecast_holt_price?: number | null
+          forecast_linear_price?: number | null
+          forecast_monte_carlo_price?: number | null
+          id?: string
+          pick_id: string
+          price: number
+          snapshot_date: string
+        }
+        Update: {
+          change_from_entry_pct?: number
+          created_at?: string
+          forecast_ema_price?: number | null
+          forecast_ensemble_price?: number | null
+          forecast_holt_price?: number | null
+          forecast_linear_price?: number | null
+          forecast_monte_carlo_price?: number | null
+          id?: string
+          pick_id?: string
+          price?: number
+          snapshot_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pick_snapshots_pick_id_fkey"
+            columns: ["pick_id"]
+            isOneToOne: false
+            referencedRelation: "tracked_picks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       price_alerts: {
         Row: {
           active: boolean
@@ -266,6 +316,87 @@ export type Database = {
           id?: string
           p256dh?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      tracked_picks: {
+        Row: {
+          asset_id: string
+          asset_type: string
+          case_study_text: string | null
+          completed_at: string | null
+          confidence: number
+          created_at: string
+          entry_price: number
+          final_price: number | null
+          final_return_pct: number | null
+          forecast_ema_momentum: Json | null
+          forecast_ensemble: Json | null
+          forecast_holt: Json | null
+          forecast_linear: Json | null
+          forecast_monte_carlo: Json | null
+          id: string
+          month_start: string
+          name: string
+          reasoning: string | null
+          signal_label: string
+          signal_score: number
+          status: string
+          stop_loss: number | null
+          symbol: string
+          target_price: number | null
+        }
+        Insert: {
+          asset_id: string
+          asset_type: string
+          case_study_text?: string | null
+          completed_at?: string | null
+          confidence?: number
+          created_at?: string
+          entry_price: number
+          final_price?: number | null
+          final_return_pct?: number | null
+          forecast_ema_momentum?: Json | null
+          forecast_ensemble?: Json | null
+          forecast_holt?: Json | null
+          forecast_linear?: Json | null
+          forecast_monte_carlo?: Json | null
+          id?: string
+          month_start: string
+          name: string
+          reasoning?: string | null
+          signal_label?: string
+          signal_score?: number
+          status?: string
+          stop_loss?: number | null
+          symbol: string
+          target_price?: number | null
+        }
+        Update: {
+          asset_id?: string
+          asset_type?: string
+          case_study_text?: string | null
+          completed_at?: string | null
+          confidence?: number
+          created_at?: string
+          entry_price?: number
+          final_price?: number | null
+          final_return_pct?: number | null
+          forecast_ema_momentum?: Json | null
+          forecast_ensemble?: Json | null
+          forecast_holt?: Json | null
+          forecast_linear?: Json | null
+          forecast_monte_carlo?: Json | null
+          id?: string
+          month_start?: string
+          name?: string
+          reasoning?: string | null
+          signal_label?: string
+          signal_score?: number
+          status?: string
+          stop_loss?: number | null
+          symbol?: string
+          target_price?: number | null
         }
         Relationships: []
       }
