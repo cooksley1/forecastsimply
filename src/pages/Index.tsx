@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { LineChart, RefreshCw } from 'lucide-react';
 import PriceAlertDialog from '@/components/alerts/PriceAlertDialog';
-import type { SortCriteria } from '@/components/search/QuickPicks';
+import type { SortCriteria, RankTimeframe } from '@/components/search/QuickPicks';
+import { RANK_TIMEFRAME_DAYS } from '@/components/search/QuickPicks';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -82,8 +83,9 @@ export default function Index() {
   const [dividendOnly, setDividendOnly] = useState(false);
   const [etfExchange, setEtfExchange] = useState('US');
   const [ranking, setRanking] = useState(false);
-  const [rankedPicks, setRankedPicks] = useState<Record<string, { label: string; score: number; confidence: number }>>({});
+  const [rankedPicks, setRankedPicks] = useState<Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }>>({});
   const [pickSort, setPickSort] = useState<SortCriteria>('default');
+  const [rankTimeframe, setRankTimeframe] = useState<RankTimeframe>('3M');
   const [secondaryCurrency, setSecCurrency] = useState<string | null>(getSecondaryCurrency());
   const [secondaryPrice, setSecondaryPrice] = useState<number | null>(null);
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
@@ -531,47 +533,75 @@ export default function Index() {
     return withSignals;
   }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks, useScreener, screenerStocks]);
 
-  const handleRankPicks = useCallback(async () => {
+  const handleRankPicks = useCallback(async (timeframeDaysForRank?: number) => {
     setRanking(true);
     const picks = getQuickPicks();
-    const results: Record<string, { label: string; score: number; confidence: number }> = {};
+    const tfDays = timeframeDaysForRank || RANK_TIMEFRAME_DAYS[rankTimeframe];
+    const results: Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }> = {};
 
     const fetchOne = async (pick: { id: string }) => {
       try {
         let closes: number[], timestamps: number[], volumes: number[];
         if (assetType === 'crypto') {
-          const result = await fetchCryptoHistory(pick.id, 90);
+          const result = await fetchCryptoHistory(pick.id, tfDays);
           closes = result.priceData.closes;
           timestamps = result.priceData.timestamps;
           volumes = result.priceData.volumes || [];
         } else if (assetType === 'forex') {
           const from = pick.id.slice(0, 3);
           const to = pick.id.slice(3, 6);
-          const result = await fetchForexHistory(from, to, 90);
+          const result = await fetchForexHistory(from, to, tfDays);
           closes = result.data.closes;
           timestamps = result.data.timestamps;
           volumes = result.data.volumes || [];
         } else {
-          const result = await fetchEquityHistory(pick.id, 90);
+          const result = await fetchEquityHistory(pick.id, tfDays);
           closes = result.data.closes;
           timestamps = result.data.timestamps;
           volumes = result.data.volumes || [];
         }
         const ta = processTA(closes, timestamps, volumes, 30, assetType, ['holt'], 3);
-        results[pick.id] = { label: ta.signal.label, score: ta.signal.score, confidence: ta.signal.confidence };
+        
+        // Compute projected return from forecast
+        const lastClose = closes[closes.length - 1];
+        let projectedReturn: number | undefined;
+        let peakMonths: number | undefined;
+        let peakWarning: string | undefined;
+        
+        if (ta.forecast && ta.forecast.length > 0) {
+          const forecastEndPt = ta.forecast[ta.forecast.length - 1];
+          const forecastEndVal = forecastEndPt.value;
+          projectedReturn = ((forecastEndVal - lastClose) / lastClose) * 100;
+          
+          // Find peak in forecast
+          const forecastValues = ta.forecast.map(f => f.value);
+          const peakVal = Math.max(...forecastValues);
+          const peakIdx = forecastValues.indexOf(peakVal);
+          const totalForecastDays = ta.forecast.length;
+          const peakFraction = peakIdx / totalForecastDays;
+          const tfMonths = tfDays / 30;
+          
+          // If peak is significantly before end and price drops after
+          if (peakIdx < totalForecastDays * 0.75 && peakVal > forecastEndVal * 1.05) {
+            peakMonths = Math.max(1, Math.round(peakFraction * tfMonths));
+            const dropFromPeak = ((forecastEndVal - peakVal) / peakVal) * 100;
+            peakWarning = `Peak ~${peakMonths}mo, then ${dropFromPeak.toFixed(0)}% pullback`;
+          }
+        }
+        
+        results[pick.id] = { label: ta.signal.label, score: ta.signal.score, confidence: ta.signal.confidence, projectedReturn, peakMonths, peakWarning };
       } catch {
         // skip failed ones
       }
     };
 
-    // Run in batches of 4 to avoid overwhelming APIs
     for (let i = 0; i < picks.length; i += 4) {
       await Promise.all(picks.slice(i, i + 4).map(fetchOne));
     }
 
     setRankedPicks(results);
     setRanking(false);
-  }, [getQuickPicks, assetType]);
+  }, [getQuickPicks, assetType, rankTimeframe]);
 
   const handleCurrencyChange = useCallback((code: string) => {
     const newVal = code === 'none' ? null : code;
@@ -682,6 +712,8 @@ export default function Index() {
             sortBy={pickSort}
             onSortChange={setPickSort}
             maxVisible={15}
+            rankTimeframe={rankTimeframe}
+            onRankTimeframeChange={(tf) => { setRankTimeframe(tf); setRankedPicks({}); }}
           />
         </div>
 
