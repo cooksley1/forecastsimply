@@ -44,7 +44,7 @@ import {
 } from '@/utils/constants';
 import ExchangeSelector, { STOCK_EXCHANGES, ETF_EXCHANGES } from '@/components/search/ExchangeSelector';
 import StickySubNav from '@/components/layout/StickySubNav';
-import { useExchangeScreener } from '@/hooks/useExchangeScreener';
+import { useExchangeScreener, type ScreenerSubgroup } from '@/hooks/useExchangeScreener';
 import SocialShare from '@/components/SocialShare';
 import ReportButton from '@/components/analysis/ReportButton';
 import SmartFeed from '@/components/SmartFeed';
@@ -94,12 +94,16 @@ export default function Index() {
     try { return JSON.parse(localStorage.getItem('sf_watchlist') || '[]'); } catch { return []; }
   });
 
-  // Dynamic exchange screener — currently supports ASX
+  // Dynamic exchange screener — supports ASX for stocks and ETFs
   const SCREENER_EXCHANGES = ['ASX'];
-  const useScreener = assetType === 'stocks' && SCREENER_EXCHANGES.includes(stockExchange);
+  const [asxSubgroup, setAsxSubgroup] = useState<ScreenerSubgroup>('asx200');
+  const useStockScreener = assetType === 'stocks' && SCREENER_EXCHANGES.includes(stockExchange);
+  const useEtfScreener = assetType === 'etfs' && SCREENER_EXCHANGES.includes(etfExchange);
   const { stocks: screenerStocks, loading: screenerLoading } = useExchangeScreener(
-    stockExchange,
-    useScreener
+    useStockScreener ? stockExchange : etfExchange,
+    useStockScreener || useEtfScreener,
+    useStockScreener ? 'equity' : 'etf',
+    useStockScreener ? asxSubgroup : 'all',
   );
 
   const currentAssetRef = useRef<{ id: string; type: AssetType } | null>(null);
@@ -498,8 +502,7 @@ export default function Index() {
     let items: { label: string; id: string; name?: string; divYield?: number; signal?: { label: string; score: number; confidence: number } }[] = [];
     if (assetType === 'crypto') items = CRYPTO_PICKS.map(p => ({ label: p.sym, id: p.id }));
     else if (assetType === 'stocks') {
-      // Use dynamic screener data if available, otherwise fall back to hardcoded picks
-      if (useScreener && screenerStocks.length > 0) {
+      if (useStockScreener && screenerStocks.length > 0) {
         let dynamicPicks = screenerStocks;
         if (dividendOnly) {
           dynamicPicks = dynamicPicks.filter(p => p.div);
@@ -514,24 +517,26 @@ export default function Index() {
         items = picks.map(p => ({ label: p.sym, id: p.sym, name: p.name, divYield: p.yield }));
       }
     } else if (assetType === 'etfs') {
-      items = (ETF_PICKS_BY_EXCHANGE[etfExchange] || []).map(p => ({ label: p.sym, id: p.sym }));
+      if (useEtfScreener && screenerStocks.length > 0) {
+        items = screenerStocks.map(p => ({ label: p.sym, id: p.sym, name: p.name, divYield: p.yield }));
+      } else {
+        items = (ETF_PICKS_BY_EXCHANGE[etfExchange] || []).map(p => ({ label: p.sym, id: p.sym }));
+      }
     } else {
       items = FOREX_PICKS.map(p => ({ label: p.name, id: `${p.from}${p.to}` }));
     }
 
-    // Attach signal data if ranked
     const withSignals = items.map(item => {
       const r = rankedPicks[item.id];
       return r ? { ...item, signal: r } : item;
     });
 
-    // Sort by score descending if any have signals (and not in dividend-sort mode)
     if (withSignals.some(p => p.signal) && !dividendOnly) {
       withSignals.sort((a, b) => (b.signal?.score ?? -999) - (a.signal?.score ?? -999));
     }
 
     return withSignals;
-  }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks, useScreener, screenerStocks]);
+  }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks, useStockScreener, useEtfScreener, screenerStocks]);
 
   const handleRankPicks = useCallback(async (timeframeDaysForRank?: number) => {
     setRanking(true);
@@ -681,9 +686,34 @@ export default function Index() {
                     </button>
                   );
                 })}
-              </div>
+               </div>
+              {/* ASX subgroup + dividend filters */}
               {assetType === 'stocks' && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {stockExchange === 'ASX' && (
+                    <>
+                      <button
+                        onClick={() => { setAsxSubgroup('asx200'); setRankedPicks({}); setPickSort('default'); }}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                          asxSubgroup === 'asx200'
+                            ? 'bg-primary/15 text-primary border border-primary/30'
+                            : 'bg-secondary/50 border border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
+                        }`}
+                      >
+                        S&P/ASX 200
+                      </button>
+                      <button
+                        onClick={() => { setAsxSubgroup('all'); setRankedPicks({}); setPickSort('default'); }}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                          asxSubgroup === 'all'
+                            ? 'bg-primary/15 text-primary border border-primary/30'
+                            : 'bg-secondary/50 border border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
+                        }`}
+                      >
+                        All ASX ({screenerStocks.length > 200 ? `${screenerStocks.length}+` : '2200+'})
+                      </button>
+                    </>
+                  )}
                   <button
                     onClick={() => setDividendOnly(d => !d)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
@@ -692,19 +722,21 @@ export default function Index() {
                         : 'bg-secondary/50 border border-border text-muted-foreground hover:text-foreground hover:border-positive/30'
                     }`}
                   >
-                    Filter: Dividends Only
+                    Dividends Only
                   </button>
                 </div>
               )}
             </div>
           )}
-          {screenerLoading && useScreener && (
-            <p className="text-[10px] text-muted-foreground animate-pulse">Loading full ASX list ({screenerStocks.length} loaded so far)...</p>
+          {screenerLoading && (useStockScreener || useEtfScreener) && (
+            <p className="text-[10px] text-muted-foreground animate-pulse">
+              Loading {assetType === 'etfs' ? 'ETF' : 'stock'} list ({screenerStocks.length} loaded so far)...
+            </p>
           )}
           <QuickPicks
             picks={getQuickPicks()}
             onSelect={handleQuickPick}
-            loading={loading || (screenerLoading && useScreener)}
+            loading={loading || (screenerLoading && (useStockScreener || useEtfScreener))}
             onRank={handleRankPicks}
             ranking={ranking}
             showDividends={assetType === 'stocks'}

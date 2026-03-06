@@ -12,20 +12,29 @@ export interface ScreenerStock {
   yield: number;
 }
 
-// In-memory cache
+// In-memory cache keyed by exchange+type+subgroup
 let screenerCache: Record<string, { stocks: ScreenerStock[]; timestamp: number }> = {};
 const CACHE_TTL = 30 * 60 * 1000; // 30 min
 
-export function useExchangeScreener(exchange: string, enabled: boolean) {
+export type ScreenerType = 'equity' | 'etf';
+export type ScreenerSubgroup = 'all' | 'asx200';
+
+export function useExchangeScreener(
+  exchange: string,
+  enabled: boolean,
+  type: ScreenerType = 'equity',
+  subgroup: ScreenerSubgroup = 'all',
+) {
   const [stocks, setStocks] = useState<ScreenerStock[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const cacheKey = `${exchange}_${type}_${subgroup}`;
+
   const fetch_ = useCallback(async () => {
     if (!enabled || !SUPABASE_URL || !SUPABASE_ANON_KEY) return;
 
-    // Check cache
-    const cached = screenerCache[exchange];
+    const cached = screenerCache[cacheKey];
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       setStocks(cached.stocks);
       return;
@@ -35,11 +44,16 @@ export function useExchangeScreener(exchange: string, enabled: boolean) {
     setError(null);
 
     try {
+      const params = new URLSearchParams({
+        exchange,
+        type,
+        subgroup,
+      });
       const res = await fetch(
-        `${SUPABASE_URL}/functions/v1/exchange-screener?exchange=${encodeURIComponent(exchange)}`,
+        `${SUPABASE_URL}/functions/v1/exchange-screener?${params}`,
         {
           headers: { apikey: SUPABASE_ANON_KEY },
-          signal: AbortSignal.timeout(120000), // 2 min timeout for large exchanges
+          signal: AbortSignal.timeout(120000),
         }
       );
 
@@ -47,7 +61,7 @@ export function useExchangeScreener(exchange: string, enabled: boolean) {
 
       const data = await res.json();
       if (data.success && Array.isArray(data.stocks)) {
-        screenerCache[exchange] = { stocks: data.stocks, timestamp: Date.now() };
+        screenerCache[cacheKey] = { stocks: data.stocks, timestamp: Date.now() };
         setStocks(data.stocks);
       } else {
         throw new Error(data.error || 'Unknown screener error');
@@ -58,7 +72,7 @@ export function useExchangeScreener(exchange: string, enabled: boolean) {
     } finally {
       setLoading(false);
     }
-  }, [exchange, enabled]);
+  }, [exchange, enabled, type, subgroup, cacheKey]);
 
   useEffect(() => {
     fetch_();
