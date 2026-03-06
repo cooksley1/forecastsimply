@@ -85,7 +85,7 @@ export default function Index() {
   const [fullscreenChart, setFullscreenChart] = useState(false);
   const isNewSearchRef = useRef(false);
   const [dataSource, setDataSource] = useState<string>('');
-  const [stockExchange, setStockExchange] = useState('NYSE');
+  const [stockExchange, setStockExchange] = useState('ASX');
   const [dividendOnly, setDividendOnly] = useState(false);
   const [etfExchange, setEtfExchange] = useState('NYSE');
   const [ranking, setRanking] = useState(false);
