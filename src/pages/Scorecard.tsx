@@ -34,6 +34,7 @@ export default function Scorecard() {
   const [filterAsset, setFilterAsset] = useState<FilterAsset>('all');
   const [filterOutcome, setFilterOutcome] = useState<FilterOutcome>('all');
   const [expandedPick, setExpandedPick] = useState<string | null>(null);
+  const [expandedCaseStudy, setExpandedCaseStudy] = useState<string | null>(null);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
@@ -357,38 +358,70 @@ export default function Scorecard() {
                           </button>
                         )}
 
-                        {pick.case_study_text && (
-                          <div className="bg-muted/30 rounded-lg p-4 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <p className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1.5">
-                                <Sparkles className="w-3 h-3 text-primary" /> AI Case Study
-                              </p>
-                              {pick.status === 'completed' && (
-                                <button
-                                  onClick={() => generateCaseStudy(pick.id)}
-                                  disabled={generatingId === pick.id}
-                                  className="flex items-center gap-1 text-[9px] text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-                                >
-                                  {generatingId === pick.id ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    <RefreshCw className="w-3 h-3" />
+                        {pick.case_study_text && (() => {
+                          const lines = pick.case_study_text.split('\n');
+                          // Extract first section (Performance Summary) as preview
+                          const firstSectionEnd = lines.findIndex((l, i) => i > 2 && l.startsWith('### '));
+                          const previewLines = firstSectionEnd > 0 ? lines.slice(0, firstSectionEnd) : lines.slice(0, 8);
+                          const restLines = firstSectionEnd > 0 ? lines.slice(firstSectionEnd) : lines.slice(8);
+                          const isCaseExpanded = expandedCaseStudy === pick.id;
+
+                          const renderLine = (line: string, i: number) => {
+                            if (line.startsWith('## ')) return <h2 key={i} className="text-sm font-bold text-foreground mt-3 mb-1">{line.replace('## ', '')}</h2>;
+                            if (line.startsWith('### ')) return <h3 key={i} className="text-xs font-semibold text-foreground mt-2 mb-0.5">{line.replace('### ', '')}</h3>;
+                            if (line.startsWith('**') && line.endsWith('**')) return <p key={i} className="text-xs font-semibold text-foreground">{line.replace(/\*\*/g, '')}</p>;
+                            if (line.trim() === '') return <br key={i} />;
+                            return <p key={i} className="text-xs text-muted-foreground">{line}</p>;
+                          };
+
+                          return (
+                            <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <p className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                                  <Sparkles className="w-3 h-3 text-primary" /> AI Case Study
+                                </p>
+                                <div className="flex items-center gap-2">
+                                  {pick.status === 'completed' && (
+                                    <button
+                                      onClick={() => generateCaseStudy(pick.id)}
+                                      disabled={generatingId === pick.id}
+                                      className="flex items-center gap-1 text-[9px] text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                                    >
+                                      {generatingId === pick.id ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <RefreshCw className="w-3 h-3" />
+                                      )}
+                                      Regenerate
+                                    </button>
                                   )}
-                                  Regenerate
-                                </button>
+                                </div>
+                              </div>
+                              <div className="prose prose-sm prose-invert max-w-none">
+                                {previewLines.map(renderLine)}
+                              </div>
+                              {restLines.length > 0 && (
+                                <>
+                                  {isCaseExpanded && (
+                                    <div className="prose prose-sm prose-invert max-w-none">
+                                      {restLines.map(renderLine)}
+                                    </div>
+                                  )}
+                                  <button
+                                    onClick={() => setExpandedCaseStudy(isCaseExpanded ? null : pick.id)}
+                                    className="flex items-center gap-1 text-[10px] text-primary hover:underline font-medium mt-1"
+                                  >
+                                    {isCaseExpanded ? (
+                                      <><ChevronUp className="w-3 h-3" /> Show less</>
+                                    ) : (
+                                      <><ChevronDown className="w-3 h-3" /> Read full analysis</>
+                                    )}
+                                  </button>
+                                </>
                               )}
                             </div>
-                            <div className="prose prose-sm prose-invert max-w-none">
-                              {pick.case_study_text.split('\n').map((line, i) => {
-                                if (line.startsWith('## ')) return <h2 key={i} className="text-sm font-bold text-foreground mt-3 mb-1">{line.replace('## ', '')}</h2>;
-                                if (line.startsWith('### ')) return <h3 key={i} className="text-xs font-semibold text-foreground mt-2 mb-0.5">{line.replace('### ', '')}</h3>;
-                                if (line.startsWith('**') && line.endsWith('**')) return <p key={i} className="text-xs font-semibold text-foreground">{line.replace(/\*\*/g, '')}</p>;
-                                if (line.trim() === '') return <br key={i} />;
-                                return <p key={i} className="text-xs text-muted-foreground">{line}</p>;
-                              })}
-                            </div>
-                          </div>
-                        )}
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
