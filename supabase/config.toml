@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.snapshot-picks]
 verify_jwt = false
+
+[functions.generate-case-study]
+verify_jwt = false
