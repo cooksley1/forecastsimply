@@ -32,6 +32,9 @@ import TopPicks from '@/components/analysis/TopPicks';
 import TopPicksDashboard from '@/components/analysis/TopPicksDashboard';
 import CongressTrades from '@/components/analysis/CongressTrades';
 import BreakoutFinder from '@/components/analysis/BreakoutFinder';
+import ConditionScreener from '@/components/analysis/ConditionScreener';
+import StrategyBacktester from '@/components/analysis/StrategyBacktester';
+import IndicatorBuilder from '@/components/analysis/IndicatorBuilder';
 import { getCoinData, searchCoins } from '@/services/api/coingecko';
 import { getDIACryptoPrice, geckoIdToDIASymbol } from '@/services/api/dia';
 import { getStockChart } from '@/services/api/yahoo';
@@ -920,6 +923,16 @@ export default function Index() {
               <div id="section-analysis" className="lg:col-span-2 scroll-mt-36">
                 <AnalysisTextPanel text={technicalData.analysisText} marketPhase={technicalData.marketPhase} />
               </div>
+
+              {/* Strategy Backtester — full width */}
+              <div className="lg:col-span-2">
+                <StrategyBacktester
+                  assetId={assetInfo.id}
+                  assetType={assetInfo.assetType}
+                  assetName={assetInfo.name}
+                  technicalData={technicalData}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -954,6 +967,18 @@ export default function Index() {
             {(assetType === 'stocks' && (stockExchange === 'NYSE' || stockExchange === 'NASDAQ')) && (
               <CongressTrades onAnalyse={(symbol) => analyseStock(symbol, 'stocks')} />
             )}
+            {/* Multi-Condition Screener */}
+            <ConditionScreener
+              assetType={assetType}
+              picks={getQuickPicks()}
+              onSelect={handleQuickPick}
+            />
+
+            {/* Signal Builder */}
+            <IndicatorBuilder />
+
+            {/* Strategy Backtester (no asset selected) */}
+            <StrategyBacktester assetId={null} assetType={assetType} assetName={null} technicalData={null} />
 
             <PortfolioBuilder riskProfile={riskProfile} riskLevel={riskLevel} onRiskLevelChange={setRiskLevel} />
           </div>
