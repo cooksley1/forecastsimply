@@ -1042,6 +1042,10 @@ export default function Index() {
           </div>
 
           <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
+            <Link to="/how-it-works" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">How It Works</Link>
+            <Link to="/blog" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">Blog</Link>
+            <Link to="/scorecard" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">Scorecard</Link>
+            <Link to="/changelog" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">Changelog</Link>
             <Link to="/about" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">About</Link>
             <Link to="/faq" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">FAQ</Link>
             <Link to="/contact" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">Contact</Link>
