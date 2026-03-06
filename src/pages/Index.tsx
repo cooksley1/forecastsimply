@@ -146,7 +146,7 @@ export default function Index() {
       signal: rec.label,
       confidence: rec.confidence,
       startedAt: Date.now(),
-      snapshots: [],
+      snapshots: [{ timestamp: Date.now(), price: assetInfo.price }],
     };
     setWatchlist(prev => {
       const simId = `${assetInfo.id}__sim_${rec.horizon}`;
