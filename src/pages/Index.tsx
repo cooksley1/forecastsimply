@@ -708,12 +708,12 @@ export default function Index() {
             onRank={handleRankPicks}
             ranking={ranking}
             showDividends={assetType === 'stocks'}
-            cardMode={assetType === 'stocks' || assetType === 'etfs'}
             sortBy={pickSort}
             onSortChange={setPickSort}
             maxVisible={15}
             rankTimeframe={rankTimeframe}
             onRankTimeframeChange={(tf) => { setRankTimeframe(tf); setRankedPicks({}); }}
+            watchlistIds={new Set(watchlist.filter(w => w.assetType === assetType).slice(0, 5).map(w => w.id))}
           />
         </div>
 

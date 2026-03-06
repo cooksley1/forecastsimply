@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import type { RiskProfile } from '@/components/charts/ChartControls';
 import { getRiskMeta, type RiskLevel } from '@/components/charts/ChartControls';
 import { fmtPrice } from '@/utils/format';
-import { Info, Target, TrendingUp } from 'lucide-react';
+import { Info, Target, TrendingUp, Shield } from 'lucide-react';
 
 interface Props {
   riskProfile: RiskProfile;
@@ -16,8 +16,16 @@ interface Allocation {
   percent: number;
   type: 'crypto' | 'stocks' | 'etfs' | 'forex';
   reason: string;
-  expectedReturn: number; // annual %
+  expectedReturn: number;
 }
+
+const RISK_PROFILES_ORDERED: { profile: RiskProfile; level: RiskLevel }[] = [
+  { profile: 'conservative', level: 1 },
+  { profile: 'moderate-conservative', level: 2 },
+  { profile: 'moderate', level: 3 },
+  { profile: 'moderate-aggressive', level: 4 },
+  { profile: 'aggressive', level: 5 },
+];
 
 const PORTFOLIOS: Record<RiskProfile, Allocation[]> = {
   conservative: [
@@ -59,15 +67,19 @@ const PORTFOLIOS: Record<RiskProfile, Allocation[]> = {
 };
 
 const RISK_DETAILS: Record<RiskProfile, { label: string; desc: string; color: string; volatility: string; drawdown: string; target: string }> = {
-  conservative: { label: '🛡️ Conservative', desc: 'Protect capital first, grow slowly. You prefer stability over high returns. Best for short-term goals (1-3 years) or low risk tolerance.', color: 'text-positive', volatility: '5-10%', drawdown: '5-15%', target: '5-8% p.a.' },
-  'moderate-conservative': { label: '🔒 Mod-Conservative', desc: 'Mostly safe with modest growth. You can handle small dips but want reliable returns. Good for medium-term goals (3-5 years).', color: 'text-positive', volatility: '8-15%', drawdown: '10-20%', target: '8-12% p.a.' },
-  moderate: { label: '⚖️ Moderate', desc: 'Balanced between safety and growth. You accept ups and downs for better long-term returns. Ideal for 5-10 year goals.', color: 'text-primary', volatility: '12-20%', drawdown: '15-30%', target: '10-18% p.a.' },
-  'moderate-aggressive': { label: '📈 Mod-Aggressive', desc: 'Growth-focused with controlled risk. You can stomach significant drawdowns for higher gains. For 5-15 year horizons.', color: 'text-warning', volatility: '18-30%', drawdown: '25-40%', target: '15-25% p.a.' },
-  aggressive: { label: '🔥 Aggressive', desc: 'Maximum growth, high volatility. You have a long time horizon (10+ years) and won\'t panic-sell during crashes.', color: 'text-warning', volatility: '25-50%', drawdown: '35-60%', target: '20%+ p.a.' },
+  conservative: { label: '🛡️ Conservative', desc: 'Protect capital first, grow slowly. Best for short-term goals (1-3 years) or if you can\'t afford to lose money.', color: 'text-positive', volatility: '5-10%', drawdown: '5-15%', target: '5-8% p.a.' },
+  'moderate-conservative': { label: '🔒 Mod-Conservative', desc: 'Mostly safe with modest growth. You can handle small dips for better returns. Good for 3-5 year goals.', color: 'text-positive', volatility: '8-15%', drawdown: '10-20%', target: '8-12% p.a.' },
+  moderate: { label: '⚖️ Moderate', desc: 'Balanced safety and growth. You accept ups and downs for better long-term returns. Ideal for 5-10 year goals.', color: 'text-primary', volatility: '12-20%', drawdown: '15-30%', target: '10-18% p.a.' },
+  'moderate-aggressive': { label: '📈 Mod-Aggressive', desc: 'Growth-focused. You can stomach significant drawdowns for higher gains. For 5-15 year horizons.', color: 'text-warning', volatility: '18-30%', drawdown: '25-40%', target: '15-25% p.a.' },
+  aggressive: { label: '🔥 Aggressive', desc: 'Maximum growth, high volatility. Long time horizon (10+ years), won\'t panic-sell during crashes.', color: 'text-warning', volatility: '25-50%', drawdown: '35-60%', target: '20%+ p.a.' },
 };
 
 function compoundGrowth(principal: number, annualRate: number, months: number): number {
   return principal * Math.pow(1 + annualRate / 100, months / 12);
+}
+
+function getPortfolioReturn(profile: RiskProfile): number {
+  return PORTFOLIOS[profile].reduce((sum, a) => sum + (a.percent / 100) * a.expectedReturn, 0);
 }
 
 export default function PortfolioBuilder({ riskProfile, riskLevel, onRiskLevelChange }: Props) {
@@ -75,64 +87,42 @@ export default function PortfolioBuilder({ riskProfile, riskLevel, onRiskLevelCh
   const [goalAmount, setGoalAmount] = useState(10000);
   const [goalMonths, setGoalMonths] = useState(60);
 
-  const allocations = PORTFOLIOS[riskProfile];
-  const riskInfo = RISK_DETAILS[riskProfile];
   const meta = getRiskMeta(riskLevel);
 
-  // Calculate weighted portfolio expected return
-  const portfolioReturn = useMemo(() => {
-    return allocations.reduce((sum, a) => sum + (a.percent / 100) * a.expectedReturn, 0);
-  }, [allocations]);
-
-  // Project growth
-  const projectedValue = useMemo(() => compoundGrowth(budget, portfolioReturn, goalMonths), [budget, portfolioReturn, goalMonths]);
-
-  // What return would be needed to reach goal?
+  // Required annual return to reach goal
   const requiredReturn = useMemo(() => {
-    if (budget <= 0 || goalMonths <= 0) return 0;
+    if (budget <= 0 || goalMonths <= 0 || goalAmount <= budget) return 0;
     return (Math.pow(goalAmount / budget, 12 / goalMonths) - 1) * 100;
   }, [budget, goalAmount, goalMonths]);
 
-  const goalAchievable = portfolioReturn >= requiredReturn;
-  const bestCaseValue = compoundGrowth(budget, portfolioReturn * 1.5, goalMonths);
+  // Find the LOWEST risk profile that can achieve the goal
+  const recommendedProfile = useMemo(() => {
+    for (const { profile } of RISK_PROFILES_ORDERED) {
+      const ret = getPortfolioReturn(profile);
+      if (ret >= requiredReturn) return profile;
+    }
+    return null; // No profile can achieve it
+  }, [requiredReturn]);
+
+  // Use recommended profile if available, otherwise use the user's current one
+  const activeProfile = recommendedProfile || riskProfile;
+  const allocations = PORTFOLIOS[activeProfile];
+  const riskInfo = RISK_DETAILS[activeProfile];
+  const portfolioReturn = getPortfolioReturn(activeProfile);
+  const projectedValue = compoundGrowth(budget, portfolioReturn, goalMonths);
+  const goalAchievable = recommendedProfile !== null;
+
+  // Best case for the most aggressive profile
+  const aggressiveReturn = getPortfolioReturn('aggressive');
+  const bestPossibleValue = compoundGrowth(budget, aggressiveReturn, goalMonths);
   const worstCaseValue = compoundGrowth(budget, Math.max(0, portfolioReturn * 0.3), goalMonths);
+  const bestCaseValue = compoundGrowth(budget, portfolioReturn * 1.5, goalMonths);
 
   return (
     <div className="bg-sf-card border border-border rounded-xl p-3 sm:p-4 space-y-4">
       <div>
         <h3 className="text-sm sm:text-base font-semibold text-foreground">💼 Goal-Based Portfolio Builder</h3>
-        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Tell us your starting budget, target, and timeframe — we'll show you what's realistic.</p>
-      </div>
-
-      {/* Risk Profile with detailed explanation */}
-      <div className="bg-background/50 border border-border/50 rounded-lg p-3 space-y-2">
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] text-muted-foreground font-mono uppercase shrink-0">Risk</span>
-          <input
-            type="range" min={1} max={5} step={1}
-            value={riskLevel}
-            onChange={e => onRiskLevelChange(Number(e.target.value) as RiskLevel)}
-            className="flex-1 accent-primary"
-          />
-          <span className={`text-[10px] sm:text-xs font-medium shrink-0 ${riskInfo.color}`}>
-            {meta.icon} {meta.label}
-          </span>
-        </div>
-        <p className="text-[10px] sm:text-[11px] text-muted-foreground leading-relaxed">{riskInfo.desc}</p>
-        <div className="grid grid-cols-3 gap-2 pt-1">
-          <div className="text-center">
-            <div className="text-[9px] text-muted-foreground">Expected Return</div>
-            <div className="text-xs font-mono font-bold text-positive">{riskInfo.target}</div>
-          </div>
-          <div className="text-center">
-            <div className="text-[9px] text-muted-foreground">Volatility</div>
-            <div className="text-xs font-mono font-bold text-warning">{riskInfo.volatility}</div>
-          </div>
-          <div className="text-center">
-            <div className="text-[9px] text-muted-foreground">Max Drawdown</div>
-            <div className="text-xs font-mono font-bold text-negative">{riskInfo.drawdown}</div>
-          </div>
-        </div>
+        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Set your budget, target, and timeframe — we'll find the safest path to get there.</p>
       </div>
 
       {/* Goal inputs */}
@@ -169,31 +159,41 @@ export default function PortfolioBuilder({ riskProfile, riskLevel, onRiskLevelCh
         </div>
       </div>
 
-      {/* Goal feasibility verdict */}
+      {/* Recommended risk profile */}
       <div className={`rounded-lg p-3 border ${goalAchievable ? 'bg-positive/5 border-positive/20' : 'bg-warning/5 border-warning/20'}`}>
         <div className="flex items-start gap-2">
-          <Target className={`w-4 h-4 mt-0.5 shrink-0 ${goalAchievable ? 'text-positive' : 'text-warning'}`} />
-          <div className="space-y-1">
+          {goalAchievable ? (
+            <Shield className="w-4 h-4 mt-0.5 shrink-0 text-positive" />
+          ) : (
+            <Target className="w-4 h-4 mt-0.5 shrink-0 text-warning" />
+          )}
+          <div className="space-y-1.5">
             {goalAchievable ? (
               <>
-                <p className="text-xs font-semibold text-positive">✅ Goal is achievable!</p>
+                <p className="text-xs font-semibold text-positive">
+                  ✅ Lowest-risk path: {riskInfo.label}
+                </p>
                 <p className="text-[10px] sm:text-[11px] text-muted-foreground leading-relaxed">
-                  Starting with <strong className="text-foreground">{fmtPrice(budget)}</strong> at your <strong className="text-foreground">{meta.label}</strong> risk level, 
-                  you could reach approximately <strong className="text-positive">{fmtPrice(projectedValue)}</strong> in {goalMonths} months 
-                  ({(goalMonths / 12).toFixed(1)} years) based on a projected annual return of <strong className="text-foreground">{portfolioReturn.toFixed(1)}%</strong>.
+                  To grow <strong className="text-foreground">{fmtPrice(budget)}</strong> to <strong className="text-foreground">{fmtPrice(goalAmount)}</strong> in {goalMonths} months, 
+                  you need <strong className="text-foreground">{requiredReturn.toFixed(1)}% p.a.</strong> returns. 
+                  The <strong className={riskInfo.color}>{RISK_DETAILS[activeProfile].label}</strong> portfolio projects <strong className="text-positive">{portfolioReturn.toFixed(1)}% p.a.</strong> — 
+                  achieving approximately <strong className="text-positive">{fmtPrice(projectedValue)}</strong>.
+                </p>
+                <p className="text-[9px] text-muted-foreground">
+                  This is the <strong className="text-positive">safest approach</strong> that can reach your target. Higher risk profiles would also work but expose you to more volatility.
                 </p>
               </>
             ) : (
               <>
-                <p className="text-xs font-semibold text-warning">⚠️ Goal requires {requiredReturn.toFixed(1)}% annual returns</p>
+                <p className="text-xs font-semibold text-warning">⚠️ Goal requires {requiredReturn.toFixed(1)}% p.a. — beyond all risk profiles</p>
                 <p className="text-[10px] sm:text-[11px] text-muted-foreground leading-relaxed">
-                  To grow <strong className="text-foreground">{fmtPrice(budget)}</strong> to <strong className="text-foreground">{fmtPrice(goalAmount)}</strong> in {goalMonths} months 
-                  requires <strong className="text-negative">{requiredReturn.toFixed(1)}% p.a.</strong> — your current {meta.label} portfolio projects about <strong className="text-foreground">{portfolioReturn.toFixed(1)}% p.a.</strong>
+                  Even the most aggressive portfolio projects ~{aggressiveReturn.toFixed(1)}% p.a., 
+                  reaching approximately <strong className="text-foreground">{fmtPrice(bestPossibleValue)}</strong> in {goalMonths} months 
+                  — short of your <strong className="text-foreground">{fmtPrice(goalAmount)}</strong> target.
                 </p>
-                <p className="text-[10px] text-muted-foreground">
-                  <strong className="text-foreground">Best realistic scenario:</strong> Starting at {fmtPrice(budget)} with {meta.label} risk, you could reach approximately <strong className="text-positive">{fmtPrice(bestCaseValue)}</strong> (best case) 
-                  or <strong className="text-warning">{fmtPrice(worstCaseValue)}</strong> (worst case) in {goalMonths} months.
-                  {requiredReturn > 30 && ' Consider increasing your budget, extending your timeframe, or accepting a higher risk level.'}
+                <p className="text-[10px] text-muted-foreground font-medium">
+                  💡 <strong>Options:</strong> Increase your budget, extend your timeframe, or lower your target.
+                  The best realistic outcome at lowest risk ({RISK_DETAILS[activeProfile].label}) is <strong className="text-positive">{fmtPrice(projectedValue)}</strong>.
                 </p>
               </>
             )}
@@ -201,11 +201,38 @@ export default function PortfolioBuilder({ riskProfile, riskLevel, onRiskLevelCh
         </div>
       </div>
 
+      {/* Risk profile details */}
+      <div className="bg-background/50 border border-border/50 rounded-lg p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className={`text-xs font-semibold ${riskInfo.color}`}>{riskInfo.label}</span>
+          {goalAchievable && recommendedProfile !== riskProfile && (
+            <span className="text-[9px] bg-positive/10 text-positive px-2 py-0.5 rounded-full border border-positive/20 font-medium">
+              Recommended for your goal
+            </span>
+          )}
+        </div>
+        <p className="text-[10px] sm:text-[11px] text-muted-foreground leading-relaxed">{riskInfo.desc}</p>
+        <div className="grid grid-cols-3 gap-2 pt-1">
+          <div className="text-center">
+            <div className="text-[9px] text-muted-foreground">Expected Return</div>
+            <div className="text-xs font-mono font-bold text-positive">{riskInfo.target}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-[9px] text-muted-foreground">Volatility</div>
+            <div className="text-xs font-mono font-bold text-warning">{riskInfo.volatility}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-[9px] text-muted-foreground">Max Drawdown</div>
+            <div className="text-xs font-mono font-bold text-destructive">{riskInfo.drawdown}</div>
+          </div>
+        </div>
+      </div>
+
       {/* Projected outcomes */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-negative/5 rounded-lg p-2 text-center border border-negative/10">
+        <div className="bg-destructive/5 rounded-lg p-2 text-center border border-destructive/10">
           <div className="text-[9px] text-muted-foreground">Worst Case</div>
-          <div className="text-sm font-mono font-bold text-negative">{fmtPrice(worstCaseValue)}</div>
+          <div className="text-sm font-mono font-bold text-destructive">{fmtPrice(worstCaseValue)}</div>
           <div className="text-[9px] text-muted-foreground">{goalMonths}mo</div>
         </div>
         <div className="bg-primary/5 rounded-lg p-2 text-center border border-primary/10">
@@ -264,8 +291,7 @@ export default function PortfolioBuilder({ riskProfile, riskLevel, onRiskLevelCh
       <div className="flex items-start gap-1.5 bg-muted/30 rounded-md p-2">
         <Info className="w-3 h-3 text-primary mt-0.5 shrink-0" />
         <p className="text-[9px] text-muted-foreground/70 italic leading-relaxed">
-          Projections are based on historical average returns and are not guaranteed. Past performance doesn't guarantee future results. 
-          "Worst case" uses 30% of the expected return; "Best case" uses 150%. Actual returns may differ significantly. This is not financial advice.
+          Projections are based on historical average returns and are not guaranteed. Past performance doesn't guarantee future results. This is not financial advice.
         </p>
       </div>
     </div>
