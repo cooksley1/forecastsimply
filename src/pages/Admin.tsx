@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import AdminAnalyticsTab from '@/components/admin/AdminAnalyticsTab';
 import AdminSubscribersTab from '@/components/admin/AdminSubscribersTab';
+import AdminMessagesTab from '@/components/admin/AdminMessagesTab';
 
 // ── Types ──
 interface LoginRecord {
@@ -558,6 +559,7 @@ export default function Admin() {
         <Tabs defaultValue="analytics" className="space-y-4">
           <TabsList className="flex flex-wrap h-auto gap-1 p-1">
             <TabsTrigger value="analytics">📊 Analytics</TabsTrigger>
+            <TabsTrigger value="messages">✉️ Messages</TabsTrigger>
             <TabsTrigger value="users">👥 Users</TabsTrigger>
             <TabsTrigger value="subscribers">📧 Subscribers</TabsTrigger>
             <TabsTrigger value="digests">📰 Digests</TabsTrigger>
@@ -566,6 +568,11 @@ export default function Admin() {
           {/* ── Analytics Tab ── */}
           <TabsContent value="analytics">
             <AdminAnalyticsTab />
+          </TabsContent>
+
+          {/* ── Messages Tab ── */}
+          <TabsContent value="messages">
+            <AdminMessagesTab />
           </TabsContent>
 
           {/* ── Users Tab ── */}
