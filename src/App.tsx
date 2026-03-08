@@ -23,6 +23,7 @@ import HowItWorks from "./pages/HowItWorks";
 import Changelog from "./pages/Changelog";
 import NotFound from "./pages/NotFound";
 import CookieBanner from "./components/CookieBanner";
+import UpdatePrompt from "./components/UpdatePrompt";
 import { toast } from "sonner";
 
 const queryClient = new QueryClient();
@@ -68,6 +69,7 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <CookieBanner />
+                <UpdatePrompt />
               </BrowserRouter>
             </TooltipProvider>
           </GlobalErrorHandler>
