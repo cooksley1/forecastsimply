@@ -83,9 +83,13 @@ function getPortfolioReturn(profile: RiskProfile): number {
 }
 
 export default function PortfolioBuilder({ riskProfile, riskLevel, onRiskLevelChange }: Props) {
-  const [budget, setBudget] = useState(1000);
-  const [goalAmount, setGoalAmount] = useState(10000);
-  const [goalMonths, setGoalMonths] = useState(60);
+  const [budgetStr, setBudgetStr] = useState('1000');
+  const [goalAmountStr, setGoalAmountStr] = useState('10000');
+  const [goalMonthsStr, setGoalMonthsStr] = useState('60');
+
+  const budget = Number(budgetStr) || 0;
+  const goalAmount = Number(goalAmountStr) || 0;
+  const goalMonths = Math.max(1, Number(goalMonthsStr) || 0);
 
   const meta = getRiskMeta(riskLevel);
 
@@ -132,8 +136,8 @@ export default function PortfolioBuilder({ riskProfile, riskLevel, onRiskLevelCh
           <div className="relative">
             <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
             <input
-              type="number" value={budget}
-              onChange={e => setBudget(Math.max(0, Number(e.target.value)))}
+              type="text" inputMode="numeric" value={budgetStr}
+              onChange={e => setBudgetStr(e.target.value.replace(/[^0-9.]/g, ''))}
               className="w-full bg-background border border-border rounded-lg pl-6 pr-2 py-1.5 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
             />
           </div>
@@ -143,8 +147,8 @@ export default function PortfolioBuilder({ riskProfile, riskLevel, onRiskLevelCh
           <div className="relative">
             <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
             <input
-              type="number" value={goalAmount}
-              onChange={e => setGoalAmount(Math.max(0, Number(e.target.value)))}
+              type="text" inputMode="numeric" value={goalAmountStr}
+              onChange={e => setGoalAmountStr(e.target.value.replace(/[^0-9.]/g, ''))}
               className="w-full bg-background border border-border rounded-lg pl-6 pr-2 py-1.5 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
             />
           </div>
@@ -152,8 +156,8 @@ export default function PortfolioBuilder({ riskProfile, riskLevel, onRiskLevelCh
         <div>
           <label className="text-[10px] text-muted-foreground font-mono block mb-1">TIMEFRAME (MONTHS)</label>
           <input
-            type="number" value={goalMonths} min={1} max={360}
-            onChange={e => setGoalMonths(Math.max(1, Math.min(360, Number(e.target.value))))}
+            type="text" inputMode="numeric" value={goalMonthsStr}
+            onChange={e => setGoalMonthsStr(e.target.value.replace(/[^0-9]/g, ''))}
             className="w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
           />
         </div>

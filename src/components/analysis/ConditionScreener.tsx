@@ -302,9 +302,10 @@ export default function ConditionScreener({ assetType, picks, onSelect }: Props)
               ))}
             </select>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={cond.value}
-              onChange={e => updateCondition(cond.id, { value: Number(e.target.value) })}
+              onChange={e => { const v = e.target.value; if (v === '' || v === '-' || !isNaN(Number(v))) updateCondition(cond.id, { value: v === '' || v === '-' ? v as any : Number(v) }); }}
               className="w-16 text-[11px] bg-background border border-border rounded px-2 py-1 text-foreground"
             />
             <button onClick={() => removeCondition(cond.id)} className="text-destructive text-xs hover:text-destructive/80">✕</button>
