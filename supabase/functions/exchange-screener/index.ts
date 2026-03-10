@@ -15,7 +15,7 @@ interface YahooQuote {
 
 interface ExchangeConfig {
   region: string;
-  exchangeFilter?: string; // Yahoo exchange code e.g. 'NYQ', 'NMS'
+  exchangeFilter?: string;
   suffix: string;
   maxEquities: number;
   maxEtfs: number;
@@ -30,6 +30,44 @@ const EXCHANGE_CONFIGS: Record<string, ExchangeConfig> = {
   NASDAQ: { region: 'us', exchangeFilter: 'NMS', suffix: '', maxEquities: 4500, maxEtfs: 300 },
 };
 
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+
+/**
+ * Get Yahoo Finance crumb + cookies for authenticated API access.
+ */
+async function getYahooSession(): Promise<{ crumb: string; cookies: string }> {
+  // Step 1: Visit Yahoo Finance to get cookies
+  const initRes = await fetch('https://finance.yahoo.com/quote/AAPL/', {
+    headers: { 'User-Agent': UA },
+    redirect: 'follow',
+  });
+
+  const setCookieHeaders = initRes.headers.getSetCookie?.() || [];
+  const cookieStr = setCookieHeaders
+    .map(c => c.split(';')[0])
+    .join('; ');
+
+  // Consume body
+  await initRes.text();
+
+  // Step 2: Get the crumb using the cookies
+  const crumbRes = await fetch('https://query2.finance.yahoo.com/v1/test/getcrumb', {
+    headers: {
+      'User-Agent': UA,
+      'Cookie': cookieStr,
+    },
+  });
+
+  if (!crumbRes.ok) {
+    throw new Error(`Failed to get crumb: ${crumbRes.status}`);
+  }
+
+  const crumb = await crumbRes.text();
+  console.log(`[screener] Got crumb: ${crumb.substring(0, 8)}...`);
+
+  return { crumb, cookies: cookieStr };
+}
+
 /**
  * Discover equities or ETFs using Yahoo Finance screener API.
  * Sorted by market cap descending.
@@ -38,6 +76,15 @@ async function discoverStocks(
   config: ExchangeConfig,
   quoteType: 'EQUITY' | 'ETF',
 ): Promise<YahooQuote[]> {
+  // Get authenticated session
+  let session: { crumb: string; cookies: string };
+  try {
+    session = await getYahooSession();
+  } catch (err) {
+    console.error('[screener] Failed to get Yahoo session:', err);
+    return [];
+  }
+
   const allQuotes: YahooQuote[] = [];
   let offset = 0;
   const size = 250;
@@ -53,11 +100,12 @@ async function discoverStocks(
         operands.push({ operator: 'EQ', operands: ['exchange', config.exchangeFilter] });
       }
 
-      const res = await fetch('https://query2.finance.yahoo.com/v1/finance/screener', {
+      const res = await fetch(`https://query2.finance.yahoo.com/v1/finance/screener?crumb=${encodeURIComponent(session.crumb)}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'User-Agent': UA,
+          'Cookie': session.cookies,
         },
         body: JSON.stringify({
           size,
@@ -75,6 +123,8 @@ async function discoverStocks(
 
       if (!res.ok) {
         console.warn(`[screener] Yahoo screener returned ${res.status} at offset ${offset}`);
+        const body = await res.text();
+        console.warn(`[screener] Response body: ${body.substring(0, 200)}`);
         break;
       }
 
