@@ -579,7 +579,35 @@ export default function Index() {
     const tfDays = timeframeDaysForRank || RANK_TIMEFRAME_DAYS[rankTimeframe];
     const results: Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }> = {};
 
+    // Try to use daily analysis cache first (instant results)
+    const cacheSource = assetType === 'crypto' ? dailyCryptoAnalysis : assetType === 'stocks' ? dailyStockAnalysis : [];
+    if (cacheSource.length > 0) {
+      const cacheMap = new Map(cacheSource.map(c => [c.asset_id, c]));
+      let usedCache = 0;
+      for (const pick of picks) {
+        const cached = cacheMap.get(pick.id);
+        if (cached) {
+          results[pick.id] = {
+            label: cached.signal_label,
+            score: cached.signal_score,
+            confidence: cached.confidence,
+            projectedReturn: cached.forecast_return_pct,
+          };
+          usedCache++;
+        }
+      }
+      // If cache covered most picks, use it
+      if (usedCache > picks.length * 0.5) {
+        console.log(`[rank] Used cached analysis for ${usedCache}/${picks.length} assets`);
+        setRankedPicks(results);
+        setRanking(false);
+        return;
+      }
+    }
+
+    // Fallback: compute on-the-fly (for uncached assets or when cache is empty)
     const fetchOne = async (pick: { id: string }) => {
+      if (results[pick.id]) return; // already from cache
       try {
         let closes: number[], timestamps: number[], volumes: number[];
         if (assetType === 'crypto') {
@@ -602,7 +630,6 @@ export default function Index() {
         }
         const ta = processTA(closes, timestamps, volumes, 30, assetType, ['holt'], 3);
         
-        // Compute projected return from forecast
         const lastClose = closes[closes.length - 1];
         let projectedReturn: number | undefined;
         let peakMonths: number | undefined;
@@ -613,7 +640,6 @@ export default function Index() {
           const forecastEndVal = forecastEndPt.value;
           projectedReturn = ((forecastEndVal - lastClose) / lastClose) * 100;
           
-          // Find peak in forecast
           const forecastValues = ta.forecast.map(f => f.value);
           const peakVal = Math.max(...forecastValues);
           const peakIdx = forecastValues.indexOf(peakVal);
@@ -621,7 +647,6 @@ export default function Index() {
           const peakFraction = peakIdx / totalForecastDays;
           const tfMonths = tfDays / 30;
           
-          // If peak is significantly before end and price drops after
           if (peakIdx < totalForecastDays * 0.75 && peakVal > forecastEndVal * 1.05) {
             peakMonths = Math.max(1, Math.round(peakFraction * tfMonths));
             const dropFromPeak = ((forecastEndVal - peakVal) / peakVal) * 100;
@@ -641,7 +666,7 @@ export default function Index() {
 
     setRankedPicks(results);
     setRanking(false);
-  }, [getQuickPicks, assetType, rankTimeframe]);
+  }, [getQuickPicks, assetType, rankTimeframe, dailyStockAnalysis, dailyCryptoAnalysis]);
 
   const handleCurrencyChange = useCallback((code: string) => {
     const newVal = code === 'none' ? null : code;
