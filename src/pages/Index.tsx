@@ -805,7 +805,7 @@ export default function Index() {
                 onSelect={handleQuickPick}
                 loading={loading || (screenerLoading && (useStockScreener || useEtfScreener)) || (cryptoScreenerLoading && assetType === 'crypto')}
                 onRank={handleRankPicks}
-                ranking={ranking}
+                ranking={ranking || ((assetType === 'stocks' ? dailyStockLoading : dailyCryptoLoading) && pickSort !== 'default')}
                 showDividends={assetType === 'stocks'}
                 sortBy={pickSort}
                 onSortChange={setPickSort}
@@ -814,6 +814,12 @@ export default function Index() {
                 onRankTimeframeChange={(tf) => { setRankTimeframe(tf); setRankedPicks({}); }}
                 watchlistIds={new Set(watchlist.filter(w => w.assetType === assetType).slice(0, 5).map(w => w.id))}
               />
+              {/* Freshness notice when using cached data */}
+              {pickSort !== 'default' && (assetType === 'stocks' || assetType === 'crypto') && (dailyStockAnalysis.length > 0 || dailyCryptoAnalysis.length > 0) && (
+                <p className="text-[9px] text-muted-foreground/70 italic text-center">
+                  ⏱ Results from pre-computed daily analysis (runs 3am AEST). Select any asset for a live re-verification.
+                </p>
+              )}
             </>
           )}
         </div>
