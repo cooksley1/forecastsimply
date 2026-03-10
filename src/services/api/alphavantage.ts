@@ -5,7 +5,7 @@ const STORAGE_KEY = 'sf_avk';
 const USAGE_DATE_KEY = 'sf_avd';
 const USAGE_COUNT_KEY = 'sf_avc';
 const CACHE_TTL = 10 * 60 * 1000;
-const DEFAULT_KEY = '22SQ92JY3AWFQBJ8';
+const DEFAULT_KEY = 'DDA2XK5P7Q9CO756';
 
 export function getAVApiKey(): string {
   try { return localStorage.getItem(STORAGE_KEY) || DEFAULT_KEY; } catch { return DEFAULT_KEY; }
