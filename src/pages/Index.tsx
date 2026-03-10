@@ -49,6 +49,7 @@ import ExchangeSelector, { STOCK_EXCHANGES, ETF_EXCHANGES } from '@/components/s
 import StickySubNav from '@/components/layout/StickySubNav';
 import { useExchangeScreener, SCREENER_SUPPORTED, type ScreenerSubgroup } from '@/hooks/useExchangeScreener';
 import { useCryptoScreener } from '@/hooks/useCryptoScreener';
+import { useDailyAnalysis } from '@/hooks/useDailyAnalysis';
 import SocialShare from '@/components/SocialShare';
 import ReportButton from '@/components/analysis/ReportButton';
 import SmartFeed from '@/components/SmartFeed';
