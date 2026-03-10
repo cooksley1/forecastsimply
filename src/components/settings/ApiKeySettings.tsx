@@ -27,7 +27,7 @@ export default function ApiKeySettings({ open, onClose }: Props) {
     if (open) {
       setCgKey(getStoredApiKey() || '');
       const storedAv = getAVApiKey();
-      setAvKey(storedAv === '22SQ92JY3AWFQBJ8' ? '' : storedAv);
+      setAvKey(storedAv === 'DDA2XK5P7Q9CO756' ? '' : storedAv);
       setFmpKey(getFMPApiKey() || '');
       setSaved(false);
       setAvUsage(getAVDailyUsage());
