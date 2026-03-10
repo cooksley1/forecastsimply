@@ -49,6 +49,7 @@ import ExchangeSelector, { STOCK_EXCHANGES, ETF_EXCHANGES } from '@/components/s
 import StickySubNav from '@/components/layout/StickySubNav';
 import { useExchangeScreener, SCREENER_SUPPORTED, type ScreenerSubgroup } from '@/hooks/useExchangeScreener';
 import { useCryptoScreener } from '@/hooks/useCryptoScreener';
+import { useDailyAnalysis } from '@/hooks/useDailyAnalysis';
 import SocialShare from '@/components/SocialShare';
 import ReportButton from '@/components/analysis/ReportButton';
 import SmartFeed from '@/components/SmartFeed';
@@ -118,6 +119,19 @@ export default function Index() {
   // Crypto screener — top 500 coins
   const { coins: cryptoCoins, loading: cryptoScreenerLoading } = useCryptoScreener(assetType === 'crypto');
 
+  // Daily pre-computed analysis cache
+  const dailyAnalysisTimeframe = RANK_TIMEFRAME_DAYS[rankTimeframe] || 90;
+  const { data: dailyStockAnalysis, loading: dailyStockLoading } = useDailyAnalysis({
+    assetType: 'stocks',
+    exchange: stockExchange,
+    timeframeDays: dailyAnalysisTimeframe,
+    enabled: assetType === 'stocks',
+  });
+  const { data: dailyCryptoAnalysis, loading: dailyCryptoLoading } = useDailyAnalysis({
+    assetType: 'crypto',
+    timeframeDays: dailyAnalysisTimeframe,
+    enabled: assetType === 'crypto',
+  });
   const currentAssetRef = useRef<{ id: string; type: AssetType } | null>(null);
   const isFirstRender = useRef(true);
 
@@ -565,7 +579,35 @@ export default function Index() {
     const tfDays = timeframeDaysForRank || RANK_TIMEFRAME_DAYS[rankTimeframe];
     const results: Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }> = {};
 
+    // Try to use daily analysis cache first (instant results)
+    const cacheSource = assetType === 'crypto' ? dailyCryptoAnalysis : assetType === 'stocks' ? dailyStockAnalysis : [];
+    if (cacheSource.length > 0) {
+      const cacheMap = new Map(cacheSource.map(c => [c.asset_id, c]));
+      let usedCache = 0;
+      for (const pick of picks) {
+        const cached = cacheMap.get(pick.id);
+        if (cached) {
+          results[pick.id] = {
+            label: cached.signal_label,
+            score: cached.signal_score,
+            confidence: cached.confidence,
+            projectedReturn: cached.forecast_return_pct,
+          };
+          usedCache++;
+        }
+      }
+      // If cache covered most picks, use it
+      if (usedCache > picks.length * 0.5) {
+        console.log(`[rank] Used cached analysis for ${usedCache}/${picks.length} assets`);
+        setRankedPicks(results);
+        setRanking(false);
+        return;
+      }
+    }
+
+    // Fallback: compute on-the-fly (for uncached assets or when cache is empty)
     const fetchOne = async (pick: { id: string }) => {
+      if (results[pick.id]) return; // already from cache
       try {
         let closes: number[], timestamps: number[], volumes: number[];
         if (assetType === 'crypto') {
@@ -588,7 +630,6 @@ export default function Index() {
         }
         const ta = processTA(closes, timestamps, volumes, 30, assetType, ['holt'], 3);
         
-        // Compute projected return from forecast
         const lastClose = closes[closes.length - 1];
         let projectedReturn: number | undefined;
         let peakMonths: number | undefined;
@@ -599,7 +640,6 @@ export default function Index() {
           const forecastEndVal = forecastEndPt.value;
           projectedReturn = ((forecastEndVal - lastClose) / lastClose) * 100;
           
-          // Find peak in forecast
           const forecastValues = ta.forecast.map(f => f.value);
           const peakVal = Math.max(...forecastValues);
           const peakIdx = forecastValues.indexOf(peakVal);
@@ -607,7 +647,6 @@ export default function Index() {
           const peakFraction = peakIdx / totalForecastDays;
           const tfMonths = tfDays / 30;
           
-          // If peak is significantly before end and price drops after
           if (peakIdx < totalForecastDays * 0.75 && peakVal > forecastEndVal * 1.05) {
             peakMonths = Math.max(1, Math.round(peakFraction * tfMonths));
             const dropFromPeak = ((forecastEndVal - peakVal) / peakVal) * 100;
@@ -627,7 +666,7 @@ export default function Index() {
 
     setRankedPicks(results);
     setRanking(false);
-  }, [getQuickPicks, assetType, rankTimeframe]);
+  }, [getQuickPicks, assetType, rankTimeframe, dailyStockAnalysis, dailyCryptoAnalysis]);
 
   const handleCurrencyChange = useCallback((code: string) => {
     const newVal = code === 'none' ? null : code;
@@ -766,7 +805,7 @@ export default function Index() {
                 onSelect={handleQuickPick}
                 loading={loading || (screenerLoading && (useStockScreener || useEtfScreener)) || (cryptoScreenerLoading && assetType === 'crypto')}
                 onRank={handleRankPicks}
-                ranking={ranking}
+                ranking={ranking || ((assetType === 'stocks' ? dailyStockLoading : dailyCryptoLoading) && pickSort !== 'default')}
                 showDividends={assetType === 'stocks'}
                 sortBy={pickSort}
                 onSortChange={setPickSort}
@@ -775,6 +814,12 @@ export default function Index() {
                 onRankTimeframeChange={(tf) => { setRankTimeframe(tf); setRankedPicks({}); }}
                 watchlistIds={new Set(watchlist.filter(w => w.assetType === assetType).slice(0, 5).map(w => w.id))}
               />
+              {/* Freshness notice when using cached data */}
+              {pickSort !== 'default' && (assetType === 'stocks' || assetType === 'crypto') && (dailyStockAnalysis.length > 0 || dailyCryptoAnalysis.length > 0) && (
+                <p className="text-[9px] text-muted-foreground/70 italic text-center">
+                  ⏱ Results from pre-computed daily analysis (runs 3am AEST). Select any asset for a live re-verification.
+                </p>
+              )}
             </>
           )}
         </div>

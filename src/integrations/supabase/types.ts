@@ -95,6 +95,87 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_analysis_cache: {
+        Row: {
+          analyzed_at: string
+          asset_id: string
+          asset_type: string
+          bb_position: number | null
+          change_pct: number | null
+          confidence: number | null
+          dividend_yield: number | null
+          exchange: string | null
+          forecast_return_pct: number | null
+          id: string
+          macd_histogram: number | null
+          market_phase: string | null
+          name: string
+          price: number
+          rsi: number | null
+          signal_label: string | null
+          signal_score: number | null
+          sma20: number | null
+          sma50: number | null
+          stochastic_k: number | null
+          stop_loss: number | null
+          symbol: string
+          target_price: number | null
+          timeframe_days: number
+        }
+        Insert: {
+          analyzed_at?: string
+          asset_id: string
+          asset_type: string
+          bb_position?: number | null
+          change_pct?: number | null
+          confidence?: number | null
+          dividend_yield?: number | null
+          exchange?: string | null
+          forecast_return_pct?: number | null
+          id?: string
+          macd_histogram?: number | null
+          market_phase?: string | null
+          name: string
+          price?: number
+          rsi?: number | null
+          signal_label?: string | null
+          signal_score?: number | null
+          sma20?: number | null
+          sma50?: number | null
+          stochastic_k?: number | null
+          stop_loss?: number | null
+          symbol: string
+          target_price?: number | null
+          timeframe_days?: number
+        }
+        Update: {
+          analyzed_at?: string
+          asset_id?: string
+          asset_type?: string
+          bb_position?: number | null
+          change_pct?: number | null
+          confidence?: number | null
+          dividend_yield?: number | null
+          exchange?: string | null
+          forecast_return_pct?: number | null
+          id?: string
+          macd_histogram?: number | null
+          market_phase?: string | null
+          name?: string
+          price?: number
+          rsi?: number | null
+          signal_label?: string | null
+          signal_score?: number | null
+          sma20?: number | null
+          sma50?: number | null
+          stochastic_k?: number | null
+          stop_loss?: number | null
+          symbol?: string
+          target_price?: number | null
+          timeframe_days?: number
+        }
+        Relationships: []
+      }
       login_history: {
         Row: {
           city: string | null
