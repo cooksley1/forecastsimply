@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { BookOpen, ChevronDown } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { BookOpen, ChevronDown, ShoppingCart, TrendingUp, Package, TrendingDown } from 'lucide-react';
 
 interface Term {
   term: string;
   short: string;
   detail: string;
+  richDetail?: ReactNode;
 }
 
 const TERMS: Term[] = [
@@ -61,7 +62,28 @@ const TERMS: Term[] = [
   {
     term: 'Market Phase',
     short: 'The current stage of the market cycle — tells you "where we are" in the bigger picture.',
-    detail: 'Markets move in four phases: Accumulation — smart money buys quietly after a downturn; prices are flat and sentiment is negative. Markup — prices start rising as more buyers join; this is the main uptrend. Distribution — early buyers take profits near the top; prices go sideways with high volatility. Decline — selling accelerates and prices fall; this is the downtrend. Knowing the phase helps you decide whether to buy, hold, or stay cautious.',
+    detail: 'Markets move in four phases. Knowing the phase helps you decide whether to buy, hold, or stay cautious.',
+    richDetail: (
+      <div className="space-y-2">
+        <p className="text-[11px] text-muted-foreground leading-relaxed">Markets move in four phases. Knowing the current phase helps you decide whether to buy, hold, or stay cautious.</p>
+        <div className="grid grid-cols-1 gap-1.5">
+          {[
+            { phase: 'Accumulation', icon: <ShoppingCart className="w-3 h-3" />, color: 'bg-primary/10 text-primary border-primary/20', desc: 'Smart money buys quietly after a downturn. Prices are flat, sentiment is negative — but opportunity is building.' },
+            { phase: 'Markup', icon: <TrendingUp className="w-3 h-3" />, color: 'bg-positive/10 text-positive border-positive/20', desc: 'Prices start rising as more buyers join. This is the main uptrend — the best phase to be invested.' },
+            { phase: 'Distribution', icon: <Package className="w-3 h-3" />, color: 'bg-warning/10 text-warning border-warning/20', desc: 'Early buyers take profits near the top. Prices go sideways with high volatility — be cautious.' },
+            { phase: 'Decline', icon: <TrendingDown className="w-3 h-3" />, color: 'bg-negative/10 text-negative border-negative/20', desc: 'Selling accelerates and prices fall. This is the downtrend — capital preservation is key.' },
+          ].map(p => (
+            <div key={p.phase} className={`flex items-start gap-2 rounded-md p-2 border ${p.color}`}>
+              <div className="mt-0.5 shrink-0">{p.icon}</div>
+              <div>
+                <span className="text-[11px] font-semibold">{p.phase}</span>
+                <p className="text-[10px] leading-relaxed opacity-80">{p.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
   },
   {
     term: 'Signal Score',
@@ -110,8 +132,12 @@ export default function Glossary() {
                 </button>
                 {isExpanded && (
                   <div className="px-3 pb-2.5 space-y-1.5">
-                    <p className="text-[11px] text-primary/90 font-medium">{t.short}</p>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">{t.detail}</p>
+                    {t.richDetail ? t.richDetail : (
+                      <>
+                        <p className="text-[11px] text-primary/90 font-medium">{t.short}</p>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">{t.detail}</p>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
