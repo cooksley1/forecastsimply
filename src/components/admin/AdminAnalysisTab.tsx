@@ -54,7 +54,7 @@ export default function AdminAnalysisTab() {
             Authorization: `Bearer ${session.access_token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ asset_type: assetType, offset: 0 }),
+          body: JSON.stringify({ asset_type: assetType, offset: 0, timeframe: selectedTimeframe }),
         }
       );
       const result = await res.json();
