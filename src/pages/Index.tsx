@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { LineChart, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
+import { canRankRefresh, recordRankRefresh } from '@/utils/refreshLimit';
 import PriceAlertDialog from '@/components/alerts/PriceAlertDialog';
 import type { SortCriteria, RankTimeframe } from '@/components/search/QuickPicks';
 import { RANK_TIMEFRAME_DAYS } from '@/components/search/QuickPicks';
@@ -632,6 +634,14 @@ export default function Index() {
         return;
       }
     }
+
+    // Check daily refresh limit before falling back to live API calls
+    if (!canRankRefresh()) {
+      toast.error('Daily live refresh limit reached. Add your own API keys in Account → API Keys for unlimited refreshes.', { duration: 6000 });
+      setRanking(false);
+      return;
+    }
+    recordRankRefresh();
 
     // Fallback: compute on-the-fly (for uncached assets or when cache is empty)
     const fetchOne = async (pick: { id: string }) => {

@@ -6,6 +6,7 @@ import { SUPPORTED_CURRENCIES } from '@/utils/currencyConversion';
 import type { WatchlistItem } from '@/types/assets';
 import PriceAlertsList from '@/components/alerts/PriceAlertsList';
 import PushNotificationToggle from '@/components/alerts/PushNotificationToggle';
+import ApiKeySettings from '@/components/settings/ApiKeySettings';
 
 interface Props {
   open: boolean;
@@ -83,7 +84,7 @@ const ASSET_TYPE_ICONS: Record<string, string> = {
 export default function AccountPanel({ open, onClose, watchlist = [], onWatchlistRemove, onWatchlistClear, onWatchlistNoteUpdate }: Props) {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'watchlist' | 'newsletter' | 'alerts'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'watchlist' | 'newsletter' | 'alerts' | 'apikeys'>('profile');
   const [alertRefreshKey, setAlertRefreshKey] = useState(0);
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -248,6 +249,7 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
   const tabs = [
     { key: 'profile' as const, label: '👤 Profile' },
     { key: 'preferences' as const, label: '⚙️ Prefs' },
+    { key: 'apikeys' as const, label: '🔑 API Keys' },
     { key: 'alerts' as const, label: '🔔 Alerts' },
     { key: 'newsletter' as const, label: '📬 Digest' },
     { key: 'watchlist' as const, label: '⭐ Watchlist' },
@@ -499,6 +501,11 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
               <p className={`text-[10px] text-center ${nlMsg.includes('Failed') ? 'text-destructive' : 'text-primary'}`}>{nlMsg}</p>
             )}
           </div>
+        )}
+
+        {/* API Keys Tab */}
+        {activeTab === 'apikeys' && (
+          <ApiKeySettings embedded />
         )}
 
         {/* Alerts Tab */}
