@@ -194,20 +194,40 @@ export default function ForecastReplayChart({ data, entryPrice, targetPrice, sto
         </ResponsiveContainer>
       </div>
 
-      {/* Scrubber slider */}
+      {/* Scrubber slider with tooltip */}
       <div className="flex items-center gap-2">
         <span className="text-[9px] text-muted-foreground font-mono w-6 text-right shrink-0">1</span>
-        <input
-          type="range"
-          min={1}
-          max={total}
-          value={visibleCount}
-          onChange={(e) => {
-            stop();
-            setVisibleCount(Number(e.target.value));
-          }}
-          className="flex-1 h-1.5 appearance-none bg-muted rounded-full cursor-pointer accent-primary [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0"
-        />
+        <div className="relative flex-1">
+          {/* Tooltip */}
+          <div
+            className="absolute -top-8 pointer-events-none transition-all duration-100"
+            style={{
+              left: `${total > 1 ? ((visibleCount - 1) / (total - 1)) * 100 : 0}%`,
+              transform: 'translateX(-50%)',
+            }}
+          >
+            <div className="bg-popover border border-border rounded-md px-1.5 py-0.5 shadow-lg whitespace-nowrap">
+              <span className="text-[8px] text-foreground font-mono">
+                {data[visibleCount - 1]?.date} · ${data[visibleCount - 1]?.actual != null
+                  ? (data[visibleCount - 1].actual! >= 1000
+                    ? `${(data[visibleCount - 1].actual! / 1000).toFixed(2)}k`
+                    : data[visibleCount - 1].actual!.toFixed(2))
+                  : '—'}
+              </span>
+            </div>
+          </div>
+          <input
+            type="range"
+            min={1}
+            max={total}
+            value={visibleCount}
+            onChange={(e) => {
+              stop();
+              setVisibleCount(Number(e.target.value));
+            }}
+            className="w-full h-1.5 appearance-none bg-muted rounded-full cursor-pointer accent-primary [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0"
+          />
+        </div>
         <span className="text-[9px] text-muted-foreground font-mono w-6 shrink-0">{total}</span>
       </div>
 
