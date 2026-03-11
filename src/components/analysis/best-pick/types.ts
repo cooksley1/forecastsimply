@@ -19,6 +19,35 @@ export interface BestPick {
   macd_histogram: number | null;
   stochastic_k: number | null;
   analyzed_at: string;
+  /** Client-computed composite rank score (0–100). Higher = better overall pick. */
+  composite_score?: number;
+}
+
+/**
+ * Composite score blending signal strength, forecast return, and confidence.
+ *
+ * Weights (tuned for profit-maximising with confirmation):
+ *   - Signal score  : 40% — technical conviction (normalised from ±15 to 0–100)
+ *   - Forecast return: 35% — projected upside (capped at 50% for normalisation)
+ *   - Confidence     : 25% — model confidence (already 0–100)
+ *
+ * The result is 0–100 where 100 = strongest confirmed upside.
+ */
+export function computeCompositeScore(pick: {
+  signal_score: number;
+  forecast_return_pct: number;
+  confidence: number;
+}): number {
+  // Normalise signal_score from range [-15, 15] → [0, 100]
+  const normSignal = Math.max(0, Math.min(100, ((pick.signal_score + 15) / 30) * 100));
+
+  // Normalise forecast return: cap at 50% upside for scoring purposes
+  const normReturn = Math.max(0, Math.min(100, (pick.forecast_return_pct / 50) * 100));
+
+  // Confidence is already 0–100
+  const normConf = Math.max(0, Math.min(100, pick.confidence));
+
+  return Math.round(normSignal * 0.4 + normReturn * 0.35 + normConf * 0.25);
 }
 
 export type AssetClass = 'crypto' | 'stocks' | 'etfs';

@@ -62,6 +62,10 @@ export default function PickCompareCard({ pick, rank, assetClass, onViewAsset }:
 
       {/* Key metrics grid */}
       <div className="grid grid-cols-2 gap-1.5">
+        <div className="bg-primary/10 rounded-md p-1.5 border border-primary/20 text-center col-span-2">
+          <span className="text-[8px] text-primary/80 block">Composite Score</span>
+          <span className="text-[11px] font-mono font-bold text-primary">{pick.composite_score ?? '—'}/100</span>
+        </div>
         <div className="bg-background/50 rounded-md p-1.5 border border-border/30 text-center">
           <span className="text-[8px] text-muted-foreground block">Return</span>
           <span className="text-[11px] font-mono font-bold text-positive">+{pick.forecast_return_pct.toFixed(1)}%</span>

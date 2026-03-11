@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Crosshair, Loader2, Sparkles, LayoutGrid, Target as TargetIcon,
 } from 'lucide-react';
-import { BestPick, AssetClass, Timeframe, ASSET_OPTIONS, TIMEFRAME_OPTIONS } from './best-pick/types';
+import { BestPick, AssetClass, Timeframe, ASSET_OPTIONS, TIMEFRAME_OPTIONS, computeCompositeScore } from './best-pick/types';
 import PickDetailCard from './best-pick/PickDetailCard';
 import PickCompareCard from './best-pick/PickCompareCard';
 
@@ -32,14 +32,15 @@ export default function BestPickFinder({ onViewAsset }: Props) {
     const limit = viewMode === 'compare' ? 3 : 1;
 
     try {
+      // Fetch a wider pool, then rank by composite score client-side
       const { data, error: dbError } = await supabase
         .from('daily_analysis_cache')
         .select('*')
         .eq('asset_type', assetClass === 'etfs' ? 'stocks' : assetClass)
         .eq('timeframe_days', days)
         .gte('signal_score', 1)
-        .order('forecast_return_pct', { ascending: false })
-        .limit(limit);
+        .order('signal_score', { ascending: false })
+        .limit(20);
 
       if (dbError) throw dbError;
 
@@ -48,7 +49,14 @@ export default function BestPickFinder({ onViewAsset }: Props) {
         return;
       }
 
-      setResults(data as BestPick[]);
+      // Compute composite score and sort
+      const scored = data.map(row => ({
+        ...row,
+        composite_score: computeCompositeScore(row as any),
+      }));
+      scored.sort((a, b) => (b.composite_score ?? 0) - (a.composite_score ?? 0));
+
+      setResults(scored.slice(0, limit) as BestPick[]);
     } catch (e: any) {
       setError(e.message || 'Failed to find the best pick');
     } finally {

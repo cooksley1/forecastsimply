@@ -69,9 +69,14 @@ export default function PickDetailCard({ result, assetClass, onViewAsset }: Prop
           <Zap className="w-3.5 h-3.5 text-primary" /> Why this pick
         </h4>
         <div className="grid grid-cols-2 gap-2">
+          <div className="bg-primary/10 rounded-lg p-2.5 border border-primary/20 space-y-0.5 col-span-2">
+            <span className="text-[9px] text-primary/80 uppercase">Composite Score</span>
+            <p className="text-sm font-mono font-bold text-primary">{result.composite_score ?? '—'}/100</p>
+            <p className="text-[8px] text-muted-foreground">Blends signal strength (40%) + forecast return (35%) + confidence (25%)</p>
+          </div>
           <div className="bg-muted/20 rounded-lg p-2.5 border border-border/40 space-y-0.5">
             <span className="text-[9px] text-muted-foreground uppercase">Signal Score</span>
-            <p className="text-sm font-mono font-bold text-foreground">{result.signal_score}/100</p>
+            <p className="text-sm font-mono font-bold text-foreground">{result.signal_score}/15</p>
           </div>
           <div className="bg-muted/20 rounded-lg p-2.5 border border-border/40 space-y-0.5">
             <span className="text-[9px] text-muted-foreground uppercase">Confidence</span>
