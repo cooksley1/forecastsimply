@@ -718,7 +718,7 @@ export default function Index() {
 
     setRankedPicks(results);
     setRanking(false);
-  }, [getQuickPicks, assetType, rankTimeframe, dailyStockAnalysis, dailyCryptoAnalysis, isExempt]);
+  }, [getQuickPicks, assetType, timeframeDays, dailyStockAnalysis, dailyCryptoAnalysis, isExempt]);
 
   const handleCurrencyChange = useCallback((code: string) => {
     const newVal = code === 'none' ? null : code;
