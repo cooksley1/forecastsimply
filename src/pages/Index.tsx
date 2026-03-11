@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { LineChart, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { canRankRefresh, recordRankRefresh } from '@/utils/refreshLimit';
+import { useRefreshExempt } from '@/hooks/useRefreshExempt';
 import PriceAlertDialog from '@/components/alerts/PriceAlertDialog';
 import type { SortCriteria, RankTimeframe } from '@/components/search/QuickPicks';
 import { RANK_TIMEFRAME_DAYS } from '@/components/search/QuickPicks';
