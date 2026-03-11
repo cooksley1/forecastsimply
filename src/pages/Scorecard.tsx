@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useAllPicks, useAllSnapshots, type TrackedPick } from '@/hooks/useTrackedPicks';
+import ForecastReplayChart from '@/components/analysis/ForecastReplayChart';
 import { Trophy, TrendingUp, TrendingDown, Target, BarChart3, Calendar, ChevronDown, ChevronUp, ArrowLeft, Sparkles, Loader2, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEO from '@/components/SEO';
