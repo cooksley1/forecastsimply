@@ -449,63 +449,59 @@ export function generateRecommendations(
 ): Recommendation[] {
   const recs: Recommendation[] = [];
 
-  // Compute aggregate forecast return
-  const forecastReturnPct = computeForecastReturn(currentPrice, forecastTarget, forecasts);
-  const regime = classifyRegime(forecastReturnPct);
+   // Compute aggregate forecast return
+   const forecastReturnPct = computeForecastReturn(currentPrice, forecastTarget, forecasts);
+   const regime = classifyRegime(forecastReturnPct);
 
-  // Extract indicator signals (use provided indicators or build minimal set)
-  const indSignals: IndicatorSignals = indicators
-    ? extractSignals(indicators, currentPrice)
-    : { rsi: 0, macd: 0, emaCross: 0, volume: 0, volatility: 0 };
+   // Extract indicator signals (still used for confidence + reasoning)
+   const indSignals: IndicatorSignals = indicators
+     ? extractSignals(indicators, currentPrice)
+     : { rsi: 0, macd: 0, emaCross: 0, volume: 0, volatility: 0 };
 
-  // Generate per-timeframe recommendations
-  for (const horizon of ['short', 'mid', 'long'] as const) {
-    // Step 1: Weighted trend score
-    const trendScore = computeTrendScore(indSignals, horizon);
+   // ── USE MAIN SIGNAL ENGINE AS SOURCE OF TRUTH ──
+   // signal.label comes from computeSignal() in signals.ts (10-indicator composite)
+   const baseLabel = signal.label; // 'Strong Buy' | 'Buy' | 'Hold' | 'Sell' | 'Strong Sell'
 
-    // Step 2: Map score to label
-    let { label, color } = scoreToLabel(trendScore);
+   // Generate per-timeframe recommendations
+   for (const horizon of ['short', 'mid', 'long'] as const) {
+     // Step 1: Start from the MAIN signal (same for all horizons)
+     // Step 2: Apply soft forecast nudge (±1 level max)
+     let { label, color } = softForecastNudge(baseLabel, forecastReturnPct);
 
-    // Step 3: Apply override rules (forecast contradiction)
-    label = applyOverrides(label, forecastReturnPct);
+     // Step 3: Derive color from final label
+     color = ['Strong Buy', 'Buy'].includes(label)
+       ? 'green'
+       : label === 'Hold' ? 'amber' : 'red';
 
-    // Step 4: Align to market regime
-    ({ label, color } = alignToRegime(label, regime));
+     // Step 4: Asset-specific label
+     const displayLabel = getAssetLabel(label, assetType);
 
-    // Step 5: Re-apply overrides after alignment
-    label = applyOverrides(label, forecastReturnPct);
-    color = ['Strong Buy', 'Buy', 'Hold'].includes(label)
-      ? (label === 'Hold' ? 'amber' : 'green')
-      : 'red';
+     // Step 5: Compute entry / target / stop-loss with validation
+     const { entry, target, stopLoss } = computeLevels(
+       currentPrice, label, horizon, riskLevel, forecastReturnPct,
+     );
 
-    // Step 6: Asset-specific label
-    const displayLabel = getAssetLabel(label, assetType);
+     // Step 6: Confidence (use main signal's confidence as base, blend with indicator alignment)
+     const algoConfidence = computeConfidence(indSignals, signal.score, forecastReturnPct);
+     const confidence = Math.round(0.6 * signal.confidence + 0.4 * algoConfidence);
 
-    // Step 7: Compute entry / target / stop-loss with validation
-    const { entry, target, stopLoss } = computeLevels(
-      currentPrice, label, horizon, riskLevel, forecastReturnPct,
-    );
+     // Step 7: Reasoning
+     const reasoning = buildReasoning(
+       horizon, indSignals, signal.score, forecastReturnPct,
+       regime, label, riskLevel, currentRsi,
+     );
 
-    // Step 8: Confidence
-    const confidence = computeConfidence(indSignals, trendScore, forecastReturnPct);
-
-    // Step 9: Reasoning
-    const reasoning = buildReasoning(
-      horizon, indSignals, trendScore, forecastReturnPct,
-      regime, label, riskLevel, currentRsi,
-    );
-
-    recs.push(validateAndFixRec({
-      horizon,
-      label: displayLabel,
-      action: label,
-      confidence,
-      color,
-      entry,
-      target,
-      stopLoss,
-      reasoning,
-    }));
+     recs.push(validateAndFixRec({
+       horizon,
+       label: displayLabel,
+       action: label,
+       confidence: Math.max(20, Math.min(95, confidence)),
+       color,
+       entry,
+       target,
+       stopLoss,
+       reasoning,
+     }));
   }
 
   // DCA for ETFs
