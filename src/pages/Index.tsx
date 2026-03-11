@@ -38,6 +38,7 @@ import BreakoutFinder from '@/components/analysis/BreakoutFinder';
 import ConditionScreener from '@/components/analysis/ConditionScreener';
 import StrategyBacktester from '@/components/analysis/StrategyBacktester';
 import IndicatorBuilder from '@/components/analysis/IndicatorBuilder';
+import Glossary from '@/components/analysis/Glossary';
 import { getCoinData, searchCoins } from '@/services/api/coingecko';
 import { getDIACryptoPrice, geckoIdToDIASymbol } from '@/services/api/dia';
 import { getStockChart } from '@/services/api/yahoo';
@@ -1062,6 +1063,9 @@ export default function Index() {
 
               {/* Indicators */}
               <div id="section-indicators" className="scroll-mt-36"><MemoIndicatorsPanel indicators={technicalData.indicators} currentPrice={assetInfo.price} /></div>
+
+              {/* Glossary */}
+              <div className="lg:col-span-2 scroll-mt-36"><Glossary /></div>
 
               {/* Analysis Text — full width */}
               <div id="section-analysis" className="lg:col-span-2 scroll-mt-36">
