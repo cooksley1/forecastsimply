@@ -784,7 +784,7 @@ export default function Index() {
 
           {/* Asset-specific filters — only when NOT in overview and NOT viewing analysis */}
           {!overviewMode && !showAnalysis && (
-            <>
+            <div className="space-y-2">
               {assetType === 'forex' && <ForexPairSelector onAnalyse={(pairId) => analyseForex(pairId)} loading={loading} />}
               {(assetType === 'stocks' || assetType === 'etfs') && (
                 <div className="space-y-2">
@@ -877,13 +877,12 @@ export default function Index() {
                 onRankTimeframeChange={(tf) => { setRankTimeframe(tf); setRankedPicks({}); setTimeframeDays(RANK_TIMEFRAME_DAYS[tf] || 90); }}
                 watchlistIds={new Set(watchlist.filter(w => w.assetType === assetType).slice(0, 5).map(w => w.id))}
               />
-              {/* Freshness notice when using cached data */}
               {pickSort !== 'default' && (assetType === 'stocks' || assetType === 'crypto') && (dailyStockAnalysis.length > 0 || dailyCryptoAnalysis.length > 0) && (
                 <p className="text-[9px] text-muted-foreground/70 italic text-center">
                   ⏱ Results from pre-computed daily analysis (runs 3am AEST). Select any asset for a live re-verification.
                 </p>
               )}
-            </>
+            </div>
           )}
         </div>
 
