@@ -449,11 +449,14 @@ Deno.serve(async (req) => {
   const db = createClient(supabaseUrl, serviceKey);
 
   const url = new URL(req.url);
-  const assetType = url.searchParams.get('asset_type') || 'stocks';
-  const exchange = url.searchParams.get('exchange') || 'ASX';
-  const offset = parseInt(url.searchParams.get('offset') || '0');
-  const batchSize = parseInt(url.searchParams.get('batch_size') || String(BATCH_SIZE));
-  const timeframeDays = parseInt(url.searchParams.get('timeframe') || '90');
+  // Support both query params and JSON body
+  let bodyParams: Record<string, any> = {};
+  try { bodyParams = await req.json(); } catch {}
+  const assetType = url.searchParams.get('asset_type') || bodyParams.asset_type || 'stocks';
+  const exchange = url.searchParams.get('exchange') || bodyParams.exchange || 'ASX';
+  const offset = parseInt(url.searchParams.get('offset') || bodyParams.offset || '0');
+  const batchSize = parseInt(url.searchParams.get('batch_size') || bodyParams.batch_size || String(BATCH_SIZE));
+  const timeframeDays = parseInt(url.searchParams.get('timeframe') || bodyParams.timeframe || '90');
 
   const startTime = Date.now();
   const results = { processed: 0, succeeded: 0, failed: 0, skipped: 0 };
