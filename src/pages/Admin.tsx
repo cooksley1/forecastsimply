@@ -563,6 +563,7 @@ export default function Admin() {
             <TabsTrigger value="users">👥 Users</TabsTrigger>
             <TabsTrigger value="subscribers">📧 Subscribers</TabsTrigger>
             <TabsTrigger value="digests">📰 Digests</TabsTrigger>
+            <TabsTrigger value="analysis">🔬 Analysis</TabsTrigger>
           </TabsList>
 
           {/* ── Analytics Tab ── */}
