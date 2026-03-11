@@ -44,7 +44,43 @@ export default function AdminAnalysisTab() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchStats(); }, []);
+  useEffect(() => {
+    fetchStats();
+    // Load excluded suffixes
+    supabase.from('app_config').select('value').eq('key', 'excluded_email_suffixes').maybeSingle()
+      .then(({ data }) => {
+        if (data?.value && Array.isArray(data.value)) {
+          setExcludedSuffixes((data.value as any[]).map(String));
+        }
+      });
+  }, []);
+
+  const saveSuffixes = async (updated: string[]) => {
+    setSuffixSaving(true);
+    const { error } = await supabase.from('app_config' as any)
+      .update({ value: updated, updated_at: new Date().toISOString() } as any)
+      .eq('key', 'excluded_email_suffixes');
+    setSuffixSaving(false);
+    if (error) {
+      toast.error('Failed to save: ' + error.message);
+    } else {
+      setExcludedSuffixes(updated);
+      toast.success('Excluded suffixes updated');
+    }
+  };
+
+  const addSuffix = () => {
+    const s = newSuffix.trim().toLowerCase();
+    if (!s) return;
+    const formatted = s.startsWith('@') ? s : `@${s}`;
+    if (excludedSuffixes.includes(formatted)) { toast.error('Already added'); return; }
+    saveSuffixes([...excludedSuffixes, formatted]);
+    setNewSuffix('');
+  };
+
+  const removeSuffix = (s: string) => {
+    saveSuffixes(excludedSuffixes.filter(x => x !== s));
+  };
 
   const triggerAnalysis = async (assetType: 'stocks' | 'crypto') => {
     setRunning(assetType);
