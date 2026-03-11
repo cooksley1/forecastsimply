@@ -68,7 +68,7 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
               {isAdmin && (
                 <button
                   onClick={() => navigate('/admin')}
-                  className="p-1.5 sm:p-2 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-all hidden sm:flex"
+                  className="p-1.5 sm:p-2 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-all flex"
                   title="Admin Panel"
                 >
                   <Shield className="w-4 h-4" />
