@@ -941,7 +941,7 @@ export default function Index() {
 
         {/* ── ANALYSIS RESULTS — Card Grid Layout ── */}
         {showAnalysis && (
-          <div key="analysis-view" className="space-y-4">
+          <div className="space-y-4">
             {/* Signal + metadata bar */}
             <div id="section-signal" className="flex flex-col sm:flex-row sm:items-center gap-3 scroll-mt-36">
               <SignalPanel signal={technicalData.signal} price={assetInfo.price} name={assetInfo.name} symbol={assetInfo.symbol} />
