@@ -887,20 +887,27 @@ export default function Index() {
           )}
         </div>
 
-        {/* Smart Feed — only show in per-asset mode */}
-        {!overviewMode && (
-          <SmartFeed
-            watchlist={watchlist}
-            assetType={assetType}
-            exchange={assetType === 'stocks' ? stockExchange : assetType === 'etfs' ? etfExchange : undefined}
-            onSelectAsset={(id, type) => {
-              if (type === 'crypto') analyseCrypto(id);
-              else if (type === 'stocks') analyseStock(id, 'stocks');
-              else if (type === 'etfs') analyseStock(id, 'etfs');
-              else if (type === 'forex') analyseForex(id);
-            }}
-          />
-        )}
+        {/* Wrap all mutually exclusive view sections in a single keyed container
+            to prevent React insertBefore crashes during view transitions */}
+        {(() => {
+          const viewMode = showAnalysis ? 'analysis' : overviewMode ? 'overview' : loading ? 'loading' : error ? 'error' : 'dashboard';
+          return (
+            <div key={viewMode}>
+              {/* Smart Feed — only show in per-asset mode */}
+              {!overviewMode && (
+                <SmartFeed
+                  watchlist={watchlist}
+                  assetType={assetType}
+                  exchange={assetType === 'stocks' ? stockExchange : assetType === 'etfs' ? etfExchange : undefined}
+                  onSelectAsset={(id, type) => {
+                    if (type === 'crypto') analyseCrypto(id);
+                    else if (type === 'stocks') analyseStock(id, 'stocks');
+                    else if (type === 'etfs') analyseStock(id, 'etfs');
+                    else if (type === 'forex') analyseForex(id);
+                  }}
+                />
+              )}
+
 
         {loading && (
           <div className="text-center py-12">
