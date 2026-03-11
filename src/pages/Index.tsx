@@ -124,17 +124,16 @@ export default function Index() {
   // Crypto screener — top 500 coins
   const { coins: cryptoCoins, loading: cryptoScreenerLoading } = useCryptoScreener(assetType === 'crypto');
 
-  // Daily pre-computed analysis cache — fetch for the selected timeframe
-  const dailyAnalysisTimeframe = RANK_TIMEFRAME_DAYS[rankTimeframe] || 90;
+  // Daily pre-computed analysis cache — always use the user's selected timeframe for consistency
   const { data: dailyStockAnalysis, loading: dailyStockLoading } = useDailyAnalysis({
     assetType: 'stocks',
     exchange: stockExchange,
-    timeframeDays: dailyAnalysisTimeframe,
+    timeframeDays: timeframeDays,
     enabled: assetType === 'stocks',
   });
   const { data: dailyCryptoAnalysis, loading: dailyCryptoLoading } = useDailyAnalysis({
     assetType: 'crypto',
-    timeframeDays: dailyAnalysisTimeframe,
+    timeframeDays: timeframeDays,
     enabled: assetType === 'crypto',
   });
   const currentAssetRef = useRef<{ id: string; type: AssetType } | null>(null);
@@ -613,7 +612,7 @@ export default function Index() {
   const handleRankPicks = useCallback(async (timeframeDaysForRank?: number) => {
     setRanking(true);
     const picks = getQuickPicks();
-    const tfDays = timeframeDaysForRank || RANK_TIMEFRAME_DAYS[rankTimeframe];
+    const tfDays = timeframeDaysForRank || timeframeDays;
     const results: Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }> = {};
 
     // If picks already have signals from cache (via getQuickPicks), short-circuit
@@ -719,7 +718,7 @@ export default function Index() {
 
     setRankedPicks(results);
     setRanking(false);
-  }, [getQuickPicks, assetType, rankTimeframe, dailyStockAnalysis, dailyCryptoAnalysis, isExempt]);
+  }, [getQuickPicks, assetType, timeframeDays, dailyStockAnalysis, dailyCryptoAnalysis, isExempt]);
 
   const handleCurrencyChange = useCallback((code: string) => {
     const newVal = code === 'none' ? null : code;
@@ -755,7 +754,7 @@ export default function Index() {
         assetType={assetType}
         overviewMode={overviewMode}
         onOverviewToggle={setOverviewMode}
-        onAssetChange={(t) => { setAssetType(t); setOverviewMode(false); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); setPickSort('default'); setTechnicalData(null); setAssetInfo(null); setRankTimeframe(t === 'crypto' ? '1M' : '6M'); }}
+        onAssetChange={(t) => { setAssetType(t); setOverviewMode(false); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); setPickSort('default'); setTechnicalData(null); setAssetInfo(null); const tf = t === 'crypto' ? '3M' : '6M'; setRankTimeframe(tf); setTimeframeDays(RANK_TIMEFRAME_DAYS[tf] || 90); }}
         showSections={!!showAnalysis}
       />
 
@@ -864,7 +863,7 @@ export default function Index() {
                 onSortChange={setPickSort}
                 maxVisible={15}
                 rankTimeframe={rankTimeframe}
-                onRankTimeframeChange={(tf) => { setRankTimeframe(tf); setRankedPicks({}); }}
+                onRankTimeframeChange={(tf) => { setRankTimeframe(tf); setRankedPicks({}); setTimeframeDays(RANK_TIMEFRAME_DAYS[tf] || 90); }}
                 watchlistIds={new Set(watchlist.filter(w => w.assetType === assetType).slice(0, 5).map(w => w.id))}
               />
               {/* Freshness notice when using cached data */}
