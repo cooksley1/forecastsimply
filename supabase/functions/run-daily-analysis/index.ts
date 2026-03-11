@@ -109,11 +109,11 @@ interface AnalysisResult {
 }
 
 function analyseCloses(closes: number[]): AnalysisResult | null {
-  if (closes.length < 30) return null;
+  if (closes.length < 15) return null;
 
   const currentPrice = closes[closes.length - 1];
-  const sma20Arr = sma(closes, 20);
-  const sma50Arr = sma(closes, Math.min(50, Math.floor(closes.length * 0.4)));
+  const sma20Arr = sma(closes, Math.min(20, closes.length - 1));
+  const sma50Arr = sma(closes, Math.min(50, Math.max(Math.floor(closes.length * 0.6), 10)));
   const rsiValues = rsi(closes);
   const bb = bollingerBands(closes);
   const macdResult = macd(closes);
