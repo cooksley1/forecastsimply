@@ -163,6 +163,46 @@ export default function SignalPanel({ signal, price, name, symbol }: Props) {
             )}
           </p>
         </div>
+
+        {/* Signal Agreement Meter */}
+        {total > 0 && (
+          <div className="mt-3 pt-3 border-t border-border/50">
+            <div className="flex items-center justify-between text-[10px] sm:text-xs mb-1.5">
+              <span className="font-semibold text-foreground/80">Signal Agreement</span>
+              <span className="font-mono text-muted-foreground">
+                {signal.color === 'red' ? bearish.length : bullish.length}/{total} indicators agree
+              </span>
+            </div>
+            <div className="flex h-2.5 rounded-full overflow-hidden bg-muted gap-px">
+              {bullish.length > 0 && (
+                <div
+                  className="bg-positive rounded-l-full transition-all"
+                  style={{ width: `${(bullish.length / total) * 100}%` }}
+                  title={`${bullish.length} bullish`}
+                />
+              )}
+              {neutral.length > 0 && (
+                <div
+                  className="bg-muted-foreground/30 transition-all"
+                  style={{ width: `${(neutral.length / total) * 100}%` }}
+                  title={`${neutral.length} neutral`}
+                />
+              )}
+              {bearish.length > 0 && (
+                <div
+                  className="bg-negative rounded-r-full transition-all"
+                  style={{ width: `${(bearish.length / total) * 100}%` }}
+                  title={`${bearish.length} bearish`}
+                />
+              )}
+            </div>
+            <div className="flex justify-between mt-1 text-[9px]">
+              <span className="text-positive font-medium">{bullish.length} bullish</span>
+              {neutral.length > 0 && <span className="text-muted-foreground">{neutral.length} neutral</span>}
+              <span className="text-negative font-medium">{bearish.length} bearish</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Indicator Breakdown */}
