@@ -612,7 +612,7 @@ export default function Index() {
   const handleRankPicks = useCallback(async (timeframeDaysForRank?: number) => {
     setRanking(true);
     const picks = getQuickPicks();
-    const tfDays = timeframeDaysForRank || RANK_TIMEFRAME_DAYS[rankTimeframe];
+    const tfDays = timeframeDaysForRank || timeframeDays;
     const results: Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }> = {};
 
     // If picks already have signals from cache (via getQuickPicks), short-circuit
