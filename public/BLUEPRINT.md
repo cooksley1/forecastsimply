@@ -204,8 +204,11 @@ supabase/
     ├── curated-digest/index.ts    # AI market digest generation
     ├── exchange-screener/index.ts # Stock exchange screening
     ├── get-vapid-key/index.ts     # Return VAPID public key
+    ├── lock-monthly-picks/index.ts # Cron: lock top monthly picks
     ├── refresh-market-data/index.ts # Cron: warm market data cache
+    ├── run-daily-analysis/index.ts # Cron: full 15-indicator analysis + cross-timeframe dampening
     ├── send-digest/index.ts       # Send digest emails via Resend
+    ├── snapshot-picks/index.ts    # Cron: daily pick price snapshots
     ├── yahoo-proxy/index.ts       # Yahoo Finance CORS proxy
     └── yahoo-search/index.ts      # Yahoo Finance search proxy
 ```
