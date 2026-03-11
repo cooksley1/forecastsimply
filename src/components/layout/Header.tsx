@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
-import { Settings, Sun, Moon, Shield, User, Bell, Trophy } from 'lucide-react';
+import { Settings, Sun, Moon, Shield, User, Trophy, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
 import ApiKeySettings from '@/components/settings/ApiKeySettings';
 import LoginDialog from '@/components/auth/LoginDialog';
 import AccountPanel from '@/components/account/AccountPanel';
 import WatchlistDropdown from '@/components/layout/WatchlistDropdown';
 import { getStoredApiKey } from '@/components/settings/ApiKeySettings';
+import { checkAndApplyLatestVersion } from '@/utils/appUpdate';
 import type { WatchlistItem } from '@/types/assets';
 import logoStackedDark from '@/assets/logo-stacked.svg';
 import logoStackedLight from '@/assets/logo-stacked-light.svg';
@@ -26,12 +28,28 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
   const { user, loading: authLoading, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { isAdmin } = useAdminCheck();
   const navigate = useNavigate();
   const hasKey = !!getStoredApiKey();
   const logo = theme === 'dark' ? logoStackedDark : logoStackedLight;
+
+  const handleUpdateCheck = async () => {
+    if (checkingUpdate) return;
+
+    setCheckingUpdate(true);
+    const result = await checkAndApplyLatestVersion();
+
+    if (result === 'up-to-date') {
+      toast.success('You already have the latest version.');
+    } else if (result === 'error') {
+      toast.error('Update check failed. Please try again.');
+    }
+
+    setCheckingUpdate(false);
+  };
 
   return (
     <>
@@ -57,6 +75,14 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
                 title="Performance Scorecard"
               >
                 <Trophy className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleUpdateCheck}
+                disabled={checkingUpdate}
+                className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                title={checkingUpdate ? 'Checking for updates...' : 'Check for updates'}
+              >
+                <RefreshCw className={`w-4 h-4 ${checkingUpdate ? 'animate-spin' : ''}`} />
               </button>
               <button
                 onClick={toggleTheme}
