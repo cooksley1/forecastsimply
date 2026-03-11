@@ -1,7 +1,8 @@
 import { useActivePicks, useAllSnapshots } from '@/hooks/useTrackedPicks';
-import { TrendingUp, TrendingDown, Minus, Trophy, ArrowRight, Activity, Info } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Trophy, ArrowRight, Activity, Info, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import ForecastReplayChart from '@/components/analysis/ForecastReplayChart';
 
 const ASSET_ICONS: Record<string, string> = { crypto: '₿', stocks: '📈', etfs: '📊' };
 
