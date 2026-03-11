@@ -124,7 +124,7 @@ export default function Landing() {
             <Link to="/disclaimer" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">Disclaimer</Link>
           </div>
           <p className="text-center text-[10px] text-muted-foreground italic">Not financial advice. Always do your own research.</p>
-          <p className="text-center text-[9px] text-muted-foreground/40 font-mono">v{APP_VERSION}</p>
+          <p className="text-center text-[9px] text-muted-foreground/40 font-mono">ver. {APP_VERSION}</p>
         </div>
       </footer>
 
