@@ -1174,7 +1174,10 @@ export default function Index() {
             <StrategyBacktester assetId={null} assetType={assetType} assetName={null} technicalData={null} />
             <PortfolioBuilder riskProfile={riskProfile} riskLevel={riskLevel} onRiskLevelChange={setRiskLevel} />
           </div>
-        )}
+            )}
+            </div>
+          );
+        })()}
       </main>
 
       <footer className="border-t border-border mt-8 py-6 px-3">
