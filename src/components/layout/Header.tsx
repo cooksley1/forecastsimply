@@ -77,6 +77,14 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
                 <Trophy className="w-4 h-4" />
               </button>
               <button
+                onClick={handleUpdateCheck}
+                disabled={checkingUpdate}
+                className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                title={checkingUpdate ? 'Checking for updates...' : 'Check for updates'}
+              >
+                <RefreshCw className={`w-4 h-4 ${checkingUpdate ? 'animate-spin' : ''}`} />
+              </button>
+              <button
                 onClick={toggleTheme}
                 className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
                 title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
