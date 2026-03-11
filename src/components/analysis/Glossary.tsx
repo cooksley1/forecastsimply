@@ -59,6 +59,11 @@ const TERMS: Term[] = [
     detail: 'An R:R of 2.0 means your potential profit is twice your potential loss. Generally, 2.0 or higher is considered good. Below 1.0 means you\'re risking more than you could gain — usually not worth it.',
   },
   {
+    term: 'Market Phase',
+    short: 'The current stage of the market cycle — tells you "where we are" in the bigger picture.',
+    detail: 'Markets move in four phases: Accumulation — smart money buys quietly after a downturn; prices are flat and sentiment is negative. Markup — prices start rising as more buyers join; this is the main uptrend. Distribution — early buyers take profits near the top; prices go sideways with high volatility. Decline — selling accelerates and prices fall; this is the downtrend. Knowing the phase helps you decide whether to buy, hold, or stay cautious.',
+  },
+  {
     term: 'Signal Score',
     short: 'A combined rating from all indicators, from −100 to +100.',
     detail: 'The signal score weighs every indicator together to give one overall reading. A high positive score = Strong Buy. A high negative score = Strong Sell. Near zero = Hold. This is the number you should follow — individual indicator readings are just context.',
