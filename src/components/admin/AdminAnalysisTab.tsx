@@ -279,6 +279,47 @@ export default function AdminAnalysisTab() {
           ))}
         </div>
       )}
+      {/* Refresh Limit Exemptions */}
+      <div className="border border-border rounded-xl bg-card p-4 space-y-3">
+        <div>
+          <h3 className="text-xs font-semibold text-foreground">🔓 Refresh Limit Exemptions</h3>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            Admins are always exempt. Add email suffixes below to exempt other users from the daily live refresh limit.
+          </p>
+        </div>
+
+        {/* Current suffixes */}
+        {excludedSuffixes.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {excludedSuffixes.map(s => (
+              <span key={s} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-mono text-primary">
+                {s}
+                <button onClick={() => removeSuffix(s)} className="hover:text-destructive transition-colors" disabled={suffixSaving}>✕</button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Add new */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newSuffix}
+            onChange={e => setNewSuffix(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addSuffix()}
+            placeholder="@company.com"
+            className="flex-1 bg-background border border-border rounded-lg px-3 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
+          />
+          <Button size="sm" onClick={addSuffix} disabled={suffixSaving || !newSuffix.trim()}>
+            {suffixSaving ? '...' : 'Add'}
+          </Button>
+        </div>
+
+        <p className="text-[9px] text-muted-foreground">
+          e.g. <code className="font-mono text-primary/70">@myteam.com</code> — any user with this email suffix gets unlimited live refreshes.
+        </p>
+      </div>
+
       {/* Info */}
       <div className="bg-muted/40 border border-border/60 rounded-lg px-4 py-3 space-y-1">
         <p className="text-[11px] font-semibold text-foreground">How it works</p>
