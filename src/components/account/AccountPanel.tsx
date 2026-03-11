@@ -6,6 +6,7 @@ import { SUPPORTED_CURRENCIES } from '@/utils/currencyConversion';
 import type { WatchlistItem } from '@/types/assets';
 import PriceAlertsList from '@/components/alerts/PriceAlertsList';
 import PushNotificationToggle from '@/components/alerts/PushNotificationToggle';
+import WatchlistAlertSettings from '@/components/alerts/WatchlistAlertSettings';
 import ApiKeySettings from '@/components/settings/ApiKeySettings';
 
 interface Props {
