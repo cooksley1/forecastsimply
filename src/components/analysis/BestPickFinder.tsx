@@ -72,8 +72,7 @@ export default function BestPickFinder({ onViewAsset }: Props) {
         .select('*')
         .eq('asset_type', assetClass === 'etfs' ? 'stocks' : assetClass)
         .eq('timeframe_days', days)
-        .gte('signal_score', 10) // Only positive signals
-        .gte('confidence', 50) // Minimum confidence
+        .gte('signal_score', 1) // Positive signals only
         .order('forecast_return_pct', { ascending: false })
         .limit(1);
 
