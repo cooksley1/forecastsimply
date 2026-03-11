@@ -76,7 +76,9 @@
 src/
 ├── analysis/                   # Core analysis engine
 │   ├── indicators.ts            # 15 technical indicator calculations (SMA, EMA, RSI, BB, MACD, Stochastic, S/R, ATR, OBV, VWAP, Ichimoku, Fibonacci, EMA Pair)
-│   ├── signals.ts               # 11-factor composite signal scoring with breakdowns
+│   ├── signals.ts               # 15-factor composite signal scoring with breakdowns
+│   ├── marketStructure.ts       # BOS, CHoCH, Supply/Demand zones, Fibonacci, Volume Profile
+│   ├── crossTimeframe.ts        # Cross-timeframe signal consistency dampening
 │   ├── forecast.ts              # 5 forecast models (Ensemble, Linear, Holt, EMA Momentum, Monte Carlo)
 │   ├── recommendations.ts       # 14-step recommendation engine with regime alignment
 │   ├── tradeSetup.ts            # ATR-based entry/exit trade setups with risk scaling
