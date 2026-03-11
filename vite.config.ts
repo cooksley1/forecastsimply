@@ -21,6 +21,8 @@ export default defineConfig(({ mode }) => ({
       includeAssets: ["favicon.svg", "favicon.ico", "favicon-light.svg"],
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/],
+        skipWaiting: true,
+        clientsClaim: true,
       },
       manifest: {
         name: "ForecastSimply — Analyse · Forecast · Decide",
