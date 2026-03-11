@@ -320,11 +320,33 @@ export default function QuickPicks({
 
       {/* Card grid */}
       {allOrdered.length === 0 ? (
-        <p className="text-xs text-muted-foreground italic py-3 text-center">
-          {hasRanked
-            ? `0 assets meet the ${SORT_OPTIONS.find(o => o.value === sortBy)?.label || 'selected'} criteria for this ${rankTimeframe} timeframe.`
-            : 'No assets available.'}
-        </p>
+        <div className="py-4 text-center space-y-2">
+          {hasRanked ? (
+            <>
+              <p className="text-xs text-muted-foreground italic">
+                0 assets meet the {SORT_OPTIONS.find(o => o.value === sortBy)?.label || 'selected'} criteria for the {rankTimeframe} timeframe.
+              </p>
+              {rankTimeframe !== '3M' && (
+                <div className="flex flex-col items-center gap-1.5 px-4">
+                  <p className="text-[10px] text-muted-foreground">
+                    Data for this timeframe may not have been generated yet.
+                  </p>
+                  <button
+                    onClick={() => {
+                      onRankTimeframeChange?.('3M');
+                      if (onRank) onRank(RANK_TIMEFRAME_DAYS['3M']);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-[11px] font-medium text-primary hover:bg-primary/20 transition-colors"
+                  >
+                    <span>📊</span> Try 3M timeframe
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-xs text-muted-foreground italic">No assets available.</p>
+          )}
+        </div>
       ) : (
         <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 transition-opacity ${isFiltering ? 'opacity-50' : ''}`}>
           {visible.map((p, i) => renderCard(p, i, watchlistPinned.includes(p)))}
