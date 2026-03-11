@@ -7,10 +7,10 @@ const corsHeaders = {
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
 const BATCH_SIZE = 40;
-const YAHOO_DELAY = 150; // ms between Yahoo calls
+const YAHOO_DELAY = 150;
 
 // ═══════════════════════════════════════════════════
-//  TECHNICAL ANALYSIS INDICATORS (ported from client)
+//  TECHNICAL ANALYSIS INDICATORS
 // ═══════════════════════════════════════════════════
 
 function sma(data: number[], period: number): number[] {
@@ -88,8 +88,216 @@ function stochastic(closes: number[], kPeriod = 14) {
   return kValues;
 }
 
+function calcATR(closes: number[], period = 14): number {
+  if (closes.length < period + 1) return 0;
+  let sum = 0;
+  for (let i = closes.length - period; i < closes.length; i++) {
+    sum += Math.abs(closes[i] - closes[i - 1]);
+  }
+  return sum / period;
+}
+
+function calcOBV(closes: number[], volumes: number[]): number[] {
+  const obv: number[] = [0];
+  for (let i = 1; i < closes.length; i++) {
+    if (closes[i] > closes[i - 1]) obv.push(obv[i - 1] + (volumes[i] || 0));
+    else if (closes[i] < closes[i - 1]) obv.push(obv[i - 1] - (volumes[i] || 0));
+    else obv.push(obv[i - 1]);
+  }
+  return obv;
+}
+
 // ═══════════════════════════════════════════════════
-//  SIGNAL SCORING (same logic as client signals.ts)
+//  MARKET STRUCTURE (BOS, CHoCH, Supply/Demand, Fib, Volume Profile)
+// ═══════════════════════════════════════════════════
+
+interface SwingPoint { index: number; price: number; type: 'high' | 'low'; }
+
+function detectSwingPoints(closes: number[], order = 3): SwingPoint[] {
+  const points: SwingPoint[] = [];
+  if (closes.length < order * 2 + 1) return points;
+  for (let i = order; i < closes.length - order; i++) {
+    let isHigh = true, isLow = true;
+    for (let j = 1; j <= order; j++) {
+      if (closes[i] <= closes[i - j] || closes[i] <= closes[i + j]) isHigh = false;
+      if (closes[i] >= closes[i - j] || closes[i] >= closes[i + j]) isLow = false;
+    }
+    if (isHigh) points.push({ index: i, price: closes[i], type: 'high' });
+    if (isLow) points.push({ index: i, price: closes[i], type: 'low' });
+  }
+  return points;
+}
+
+function detectStructureBreaks(closes: number[], swings: SwingPoint[]): { type: string; direction: string; score: number } | null {
+  if (swings.length < 3) return null;
+  const recentHighs = swings.filter(s => s.type === 'high').slice(-3);
+  const recentLows = swings.filter(s => s.type === 'low').slice(-3);
+  const isUptrend = recentHighs.length >= 2 && recentHighs[recentHighs.length - 1].price > recentHighs[recentHighs.length - 2].price;
+  const isDowntrend = recentLows.length >= 2 && recentLows[recentLows.length - 1].price < recentLows[recentLows.length - 2].price;
+  const currentPrice = closes[closes.length - 1];
+  const lastHigh = recentHighs[recentHighs.length - 1];
+  const lastLow = recentLows[recentLows.length - 1];
+
+  if (lastHigh && closes.length - lastHigh.index < 30 && currentPrice > lastHigh.price) {
+    if (isUptrend) return { type: 'bos', direction: 'bullish', score: 1 };
+    if (isDowntrend) return { type: 'choch', direction: 'bullish', score: 3 };
+  }
+  if (lastLow && closes.length - lastLow.index < 30 && currentPrice < lastLow.price) {
+    if (isDowntrend) return { type: 'bos', direction: 'bearish', score: -1 };
+    if (isUptrend) return { type: 'choch', direction: 'bearish', score: -3 };
+  }
+  return null;
+}
+
+function clusterLevels(levels: number[], threshold: number): number[][] {
+  if (levels.length === 0) return [];
+  const sorted = [...levels].sort((a, b) => a - b);
+  const clusters: number[][] = [[sorted[0]]];
+  for (let i = 1; i < sorted.length; i++) {
+    const last = clusters[clusters.length - 1];
+    const avg = last.reduce((a, b) => a + b, 0) / last.length;
+    if (Math.abs(sorted[i] - avg) <= threshold) last.push(sorted[i]);
+    else clusters.push([sorted[i]]);
+  }
+  return clusters.filter(c => c.length >= 2);
+}
+
+function scoreSupplyDemandZones(closes: number[], swings: SwingPoint[], atr: number): number {
+  if (swings.length < 2 || atr <= 0) return 0;
+  const currentPrice = closes[closes.length - 1];
+  const threshold = atr * 0.5;
+
+  // Supply zones from swing highs
+  const highs = swings.filter(s => s.type === 'high').map(s => s.price);
+  const highClusters = clusterLevels(highs, threshold);
+  for (const cluster of highClusters) {
+    const avg = cluster.reduce((a, b) => a + b, 0) / cluster.length;
+    const dist = Math.abs(currentPrice - avg);
+    if (dist < atr && currentPrice >= avg - atr * 0.2) {
+      return -Math.min(3, cluster.length);
+    }
+  }
+
+  // Demand zones from swing lows
+  const lows = swings.filter(s => s.type === 'low').map(s => s.price);
+  const lowClusters = clusterLevels(lows, threshold);
+  for (const cluster of lowClusters) {
+    const avg = cluster.reduce((a, b) => a + b, 0) / cluster.length;
+    const dist = Math.abs(currentPrice - avg);
+    if (dist < atr && currentPrice <= avg + atr * 0.2) {
+      return Math.min(3, cluster.length);
+    }
+  }
+  return 0;
+}
+
+function scoreFibLevels(closes: number[], atr: number): number {
+  if (closes.length < 20 || atr <= 0) return 0;
+  const segment = closes.slice(-Math.min(60, closes.length));
+  const high = Math.max(...segment);
+  const low = Math.min(...segment);
+  const diff = high - low;
+  if (diff <= 0) return 0;
+
+  const highIdx = segment.indexOf(high);
+  const lowIdx = segment.indexOf(low);
+  const isUpswing = lowIdx < highIdx;
+  const currentPrice = closes[closes.length - 1];
+
+  const keyRatios = [0.382, 0.5, 0.618];
+  let nearestDist = Infinity;
+  let nearestPrice = 0;
+  let nearestRatio = 0;
+
+  for (const r of keyRatios) {
+    const price = isUpswing ? high - diff * r : low + diff * r;
+    const dist = Math.abs(currentPrice - price);
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearestPrice = price;
+      nearestRatio = r;
+    }
+  }
+
+  if (nearestDist > atr * 1.5) return 0;
+  const factor = 1 - (nearestDist / (atr * 1.5));
+  const strength = nearestRatio === 0.618 ? 1.5 : nearestRatio === 0.5 ? 1.2 : 1.0;
+  const isBelow = currentPrice < nearestPrice;
+  return Math.max(-2, Math.min(2, Math.round((isBelow ? -1 : 1) * factor * strength)));
+}
+
+function scoreVolumeProfile(closes: number[], volumes: number[], lookback = 20): number {
+  if (!volumes || volumes.length < lookback || !volumes.some(v => v > 0)) return 0;
+  const rc = closes.slice(-lookback);
+  const rv = volumes.slice(-lookback);
+  let upVol = 0, downVol = 0, upCount = 0, downCount = 0;
+  for (let i = 1; i < rc.length; i++) {
+    if (rc[i] > rc[i - 1]) { upVol += rv[i]; upCount++; }
+    else if (rc[i] < rc[i - 1]) { downVol += rv[i]; downCount++; }
+  }
+  const avgUp = upCount > 0 ? upVol / upCount : 0;
+  const avgDown = downCount > 0 ? downVol / downCount : 0;
+  if (avgUp > 0 && avgDown > 0) {
+    const ratio = avgUp / avgDown;
+    if (ratio > 1.5) return 2;
+    if (ratio < 0.67) return -2;
+  }
+  // Volume trend
+  const avgVol = rv.reduce((a, b) => a + b, 0) / rv.length;
+  const recentAvg = rv.slice(-5).reduce((a, b) => a + b, 0) / 5;
+  const volTrend = avgVol > 0 ? (recentAvg - avgVol) / avgVol : 0;
+  if (volTrend > 0.3) return rc[rc.length - 1] > rc[0] ? 1 : -1;
+  if (volTrend < -0.3) return rc[rc.length - 1] > rc[0] ? -1 : 1;
+  return 0;
+}
+
+function detectOBVDivergence(closes: number[], obv: number[], lookback = 20): number {
+  if (closes.length < lookback || obv.length < lookback) return 0;
+  const rc = closes.slice(-lookback);
+  const ro = obv.slice(-lookback);
+  const half = Math.floor(lookback / 2);
+  const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+  const pFirst = avg(rc.slice(0, half)), pSecond = avg(rc.slice(half));
+  const oFirst = avg(ro.slice(0, half)), oSecond = avg(ro.slice(half));
+  const pTrend = pSecond > pFirst ? 1 : -1;
+  const oTrend = oSecond > oFirst ? 1 : -1;
+  if (pTrend > 0 && oTrend < 0) return -1;
+  if (pTrend < 0 && oTrend > 0) return 1;
+  return 0;
+}
+
+function detectRSIDivergence(closes: number[], rsiValues: number[]): number {
+  if (closes.length < 30 || rsiValues.length < 30) return 0;
+  const len = Math.min(closes.length, 30);
+  const c = closes.slice(-len);
+  const r = rsiValues.slice(-len).map(v => (isNaN(v) ? 50 : v));
+
+  const lows: { price: number; rsi: number }[] = [];
+  for (let i = 2; i < len - 2; i++) {
+    if (c[i] < c[i - 1] && c[i] < c[i - 2] && c[i] < c[i + 1] && c[i] < c[i + 2]) {
+      lows.push({ price: c[i], rsi: r[i] });
+    }
+  }
+  if (lows.length >= 2) {
+    const [prev, curr] = lows.slice(-2);
+    if (curr.price < prev.price && curr.rsi > prev.rsi) return 2; // bullish divergence
+  }
+
+  const highs: { price: number; rsi: number }[] = [];
+  for (let i = 2; i < len - 2; i++) {
+    if (c[i] > c[i - 1] && c[i] > c[i - 2] && c[i] > c[i + 1] && c[i] > c[i + 2]) {
+      highs.push({ price: c[i], rsi: r[i] });
+    }
+  }
+  if (highs.length >= 2) {
+    const [prev, curr] = highs.slice(-2);
+    if (curr.price > prev.price && curr.rsi < prev.rsi) return -2; // bearish divergence
+  }
+  return 0;
+}
+
+// ═══════════════════════════════════════════════════
+//  FULL 15-INDICATOR SIGNAL SCORING
 // ═══════════════════════════════════════════════════
 
 interface AnalysisResult {
@@ -108,7 +316,7 @@ interface AnalysisResult {
   stoch_k: number;
 }
 
-function analyseCloses(closes: number[]): AnalysisResult | null {
+function analyseCloses(closes: number[], volumes?: number[]): AnalysisResult | null {
   if (closes.length < 15) return null;
 
   const currentPrice = closes[closes.length - 1];
@@ -127,7 +335,7 @@ function analyseCloses(closes: number[]): AnalysisResult | null {
   const lastStochK = stochK.filter(v => !isNaN(v)).pop() || 50;
   const lastMacdHist = macdResult.histogram.filter(v => !isNaN(v));
 
-  // Trend strength detection
+  // Trend strength
   const sma20Rising = sma20Arr.length >= 5 && sma20Arr[sma20Arr.length - 1] > sma20Arr[sma20Arr.length - 5];
   const sma50Rising = sma50Arr.length >= 5 && sma50Arr[sma50Arr.length - 1] > sma50Arr[sma50Arr.length - 5];
   const strongUptrend = lastSma20 > lastSma50 && sma20Rising && sma50Rising;
@@ -142,7 +350,7 @@ function analyseCloses(closes: number[]): AnalysisResult | null {
   // 3. MA Crossover
   score += lastSma20 > lastSma50 ? 1 : -1;
 
-  // 4. RSI
+  // 4. RSI (with trend adjustment)
   let rsiC = 0;
   if (currentRsi < 25) rsiC = 3;
   else if (currentRsi < 35) rsiC = 1;
@@ -173,21 +381,56 @@ function analyseCloses(closes: number[]): AnalysisResult | null {
   if (lastStochK < 20) score += 1;
   else if (lastStochK > 80) score -= 1;
 
-  // 8. Trend strength bonus
+  // 8. OBV Divergence
+  const hasVolume = volumes && volumes.length > 0 && volumes.some(v => v > 0);
+  if (hasVolume) {
+    const obv = calcOBV(closes, volumes!);
+    score += detectOBVDivergence(closes, obv);
+  }
+
+  // 9. RSI/Price Divergence
+  score += detectRSIDivergence(closes, rsiValues);
+
+  // 10. Trend Strength bonus
   if (strongUptrend) score += 2;
   else if (strongDowntrend) score -= 2;
 
-  score = Math.max(-10, Math.min(10, score));
+  // ═══ NEW: Market Structure Indicators ═══
 
-  // Label
+  const atr = calcATR(closes);
+
+  // 11. Market Structure (BOS / CHoCH)
+  if (closes.length >= 20) {
+    const swings = detectSwingPoints(closes, 3);
+    const structBreak = detectStructureBreaks(closes, swings);
+    if (structBreak) score += structBreak.score;
+
+    // 12. Supply / Demand Zones
+    if (atr > 0) {
+      score += scoreSupplyDemandZones(closes, swings, atr);
+    }
+  }
+
+  // 13. Fibonacci Levels
+  score += scoreFibLevels(closes, atr);
+
+  // 14. Volume Profile
+  if (hasVolume) {
+    score += scoreVolumeProfile(closes, volumes!, 20);
+  }
+
+  // Clamp to ±15 (expanded range for 15 indicators)
+  score = Math.max(-15, Math.min(15, score));
+
+  // Labels (calibrated for expanded range)
   let label: string;
-  if (score >= 6) label = 'Strong Buy';
-  else if (score >= 3) label = 'Buy';
-  else if (score <= -6) label = 'Strong Sell';
-  else if (score <= -3) label = 'Sell';
+  if (score >= 8) label = 'Strong Buy';
+  else if (score >= 4) label = 'Buy';
+  else if (score <= -8) label = 'Strong Sell';
+  else if (score <= -4) label = 'Sell';
   else label = 'Hold';
 
-  const confidence = Math.min(95, 45 + Math.abs(score) * 5);
+  const confidence = Math.min(95, 40 + Math.abs(score) * 4);
 
   // Market phase
   const recent = closes.slice(-20);
@@ -205,13 +448,13 @@ function analyseCloses(closes: number[]): AnalysisResult | null {
   else if (normSlope > 0) phase = 'Recovery';
   else if (normSlope < -0.001) phase = 'Decline';
 
-  // Simple forecast: linear regression projection
+  // Forecast
   const forecastDays = 30;
   const endPrice = currentPrice + slope * forecastDays;
   const forecastReturn = ((endPrice - currentPrice) / currentPrice) * 100;
 
   // Target / stop loss
-  const atrEst = closes.slice(-14).reduce((s, c, i, a) => i === 0 ? 0 : s + Math.abs(c - a[i - 1]), 0) / 13;
+  const atrEst = atr > 0 ? atr : closes.slice(-14).reduce((s, c, i, a) => i === 0 ? 0 : s + Math.abs(c - a[i - 1]), 0) / 13;
   const isBullish = score >= 0;
   const target = isBullish ? currentPrice + atrEst * 3 : currentPrice - atrEst * 3;
   const stopLoss = isBullish ? currentPrice - atrEst * 2 : currentPrice + atrEst * 2;
@@ -237,7 +480,7 @@ function analyseCloses(closes: number[]): AnalysisResult | null {
 //  CROSS-TIMEFRAME DAMPENING
 // ═══════════════════════════════════════════════════
 
-const LABEL_SCORE: Record<string, number> = {
+const LABEL_SCORE_MAP: Record<string, number> = {
   'Strong Buy': 2, 'Buy': 1, 'Hold': 0, 'Sell': -1, 'Strong Sell': -2,
 };
 
@@ -251,13 +494,13 @@ function applyCrossTimeframeDampening(
 
   const isBullish = analysis.signal_score > 0;
   const isBearish = analysis.signal_score < 0;
-  if (!isBullish && !isBearish) return analysis; // Hold → no dampening
+  if (!isBullish && !isBearish) return analysis;
 
   let contradictions = 0;
   let lowConfCount = 0;
 
   for (const tf of longer) {
-    const tfDir = (LABEL_SCORE[tf.signal_label ?? ''] ?? 0);
+    const tfDir = (LABEL_SCORE_MAP[tf.signal_label ?? ''] ?? 0);
     if (isBullish && tfDir < 0) contradictions++;
     if (isBearish && tfDir > 0) contradictions++;
     if ((tf.confidence ?? 50) < 50) lowConfCount++;
@@ -274,20 +517,22 @@ function applyCrossTimeframeDampening(
 
   if (factor >= 1) return analysis;
 
-  const adjustedScore = Math.max(-10, Math.min(10, Math.round(analysis.signal_score * factor)));
+  const adjustedScore = Math.max(-15, Math.min(15, Math.round(analysis.signal_score * factor)));
 
   let label: string;
-  if (adjustedScore >= 6) label = 'Strong Buy';
-  else if (adjustedScore >= 3) label = 'Buy';
-  else if (adjustedScore <= -6) label = 'Strong Sell';
-  else if (adjustedScore <= -3) label = 'Sell';
+  if (adjustedScore >= 8) label = 'Strong Buy';
+  else if (adjustedScore >= 4) label = 'Buy';
+  else if (adjustedScore <= -8) label = 'Strong Sell';
+  else if (adjustedScore <= -4) label = 'Sell';
   else label = 'Hold';
 
-  const confidence = Math.min(95, 45 + Math.abs(adjustedScore) * 5);
+  const confidence = Math.min(95, 40 + Math.abs(adjustedScore) * 4);
 
   return { ...analysis, signal_score: adjustedScore, signal_label: label, confidence };
 }
 
+// ═══════════════════════════════════════════════════
+//  YAHOO FINANCE DATA FETCHING
 // ═══════════════════════════════════════════════════
 
 let yahooSession: { crumb: string; cookies: string } | null = null;
@@ -331,7 +576,9 @@ async function getYahooSession(): Promise<{ crumb: string; cookies: string }> {
   return yahooSession;
 }
 
-async function fetchYahooChart(symbol: string, range = '3mo', interval = '1d'): Promise<number[]> {
+interface ChartData { closes: number[]; volumes: number[]; }
+
+async function fetchYahooChart(symbol: string, range = '3mo', interval = '1d'): Promise<ChartData> {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}&includePrePost=false`;
   const res = await fetch(url, {
     headers: { 'User-Agent': UA },
@@ -341,7 +588,22 @@ async function fetchYahooChart(symbol: string, range = '3mo', interval = '1d'): 
   const data = await res.json();
   const result = data?.chart?.result?.[0];
   if (!result?.indicators?.quote?.[0]?.close) throw new Error(`No data for ${symbol}`);
-  return result.indicators.quote[0].close.filter((v: any) => v != null && !isNaN(v));
+  
+  const rawCloses: (number | null)[] = result.indicators.quote[0].close;
+  const rawVolumes: (number | null)[] = result.indicators.quote[0].volume || [];
+  
+  // Filter out nulls, keeping closes and volumes aligned
+  const closes: number[] = [];
+  const volumes: number[] = [];
+  for (let i = 0; i < rawCloses.length; i++) {
+    const c = rawCloses[i];
+    if (c != null && !isNaN(c)) {
+      closes.push(c);
+      volumes.push(rawVolumes[i] ?? 0);
+    }
+  }
+  
+  return { closes, volumes };
 }
 
 // ═══════════════════════════════════════════════════
@@ -502,7 +764,6 @@ Deno.serve(async (req) => {
   const db = createClient(supabaseUrl, serviceKey);
 
   const url = new URL(req.url);
-  // Support both query params and JSON body
   let bodyParams: Record<string, any> = {};
   try { bodyParams = await req.json(); } catch {}
   const assetType = url.searchParams.get('asset_type') || bodyParams.asset_type || 'stocks';
@@ -520,11 +781,9 @@ Deno.serve(async (req) => {
     let assets: { id: string; sym: string; name: string; price?: number; change?: number; divYield?: number }[] = [];
 
     if (assetType === 'crypto') {
-      // For crypto, fetch full list only on first batch
       const cryptoList = await fetchCryptoList(300);
       assets = cryptoList.map(c => ({ id: c.id, sym: c.sym, name: c.name, price: c.price, change: c.change, divYield: 0 }));
     } else {
-      // For stocks, fetch full list from screener
       const stockList = await fetchStockList(exchange);
       assets = stockList.map(s => ({ id: s.sym, sym: s.sym, name: s.name, divYield: s.divYield }));
     }
@@ -534,7 +793,6 @@ Deno.serve(async (req) => {
 
     const batch = assets.slice(offset, offset + batchSize);
 
-    // Determine Yahoo range param from timeframe
     const rangeMap: Record<number, string> = { 30: '1mo', 90: '3mo', 180: '6mo', 365: '1y' };
     const range = rangeMap[timeframeDays] || '3mo';
 
@@ -542,20 +800,20 @@ Deno.serve(async (req) => {
       results.processed++;
       try {
         const yahooTicker = assetType === 'crypto' ? geckoToYahoo(asset.id) : asset.sym;
-        const closes = await fetchYahooChart(yahooTicker, range);
+        const chartData = await fetchYahooChart(yahooTicker, range);
 
-        if (closes.length < 20) {
+        if (chartData.closes.length < 20) {
           results.skipped++;
           continue;
         }
 
-        let analysis = analyseCloses(closes);
+        let analysis = analyseCloses(chartData.closes, chartData.volumes);
         if (!analysis) {
           results.skipped++;
           continue;
         }
 
-        // Cross-timeframe dampening: fetch other cached timeframes for this asset
+        // Cross-timeframe dampening
         try {
           const { data: otherTfs } = await db
             .from('daily_analysis_cache')
@@ -567,8 +825,8 @@ Deno.serve(async (req) => {
           }
         } catch { /* proceed without dampening */ }
 
-        const currentPrice = closes[closes.length - 1];
-        const prevPrice = closes.length >= 2 ? closes[closes.length - 2] : currentPrice;
+        const currentPrice = chartData.closes[chartData.closes.length - 1];
+        const prevPrice = chartData.closes.length >= 2 ? chartData.closes[chartData.closes.length - 2] : currentPrice;
         const changePct = asset.change ?? ((currentPrice - prevPrice) / prevPrice) * 100;
 
         await db.from('daily_analysis_cache').upsert({
@@ -603,7 +861,6 @@ Deno.serve(async (req) => {
         if (results.failed <= 3) console.warn(`[daily-analysis] Failed ${asset.sym}:`, err.message);
       }
 
-      // Throttle
       await new Promise(r => setTimeout(r, YAHOO_DELAY));
     }
 
@@ -614,7 +871,6 @@ Deno.serve(async (req) => {
     if (nextOffset < totalAssets) {
       chainedNext = true;
       const nextUrl = `${supabaseUrl}/functions/v1/run-daily-analysis?asset_type=${assetType}&exchange=${exchange}&offset=${nextOffset}&batch_size=${batchSize}&timeframe=${timeframeDays}`;
-      // Fire and forget — don't await
       fetch(nextUrl, {
         method: 'POST',
         headers: {
