@@ -729,7 +729,7 @@ export default function Index() {
         assetType={assetType}
         overviewMode={overviewMode}
         onOverviewToggle={setOverviewMode}
-        onAssetChange={(t) => { setAssetType(t); setOverviewMode(false); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); setPickSort('default'); setTechnicalData(null); setAssetInfo(null); }}
+        onAssetChange={(t) => { setAssetType(t); setOverviewMode(false); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); setPickSort('default'); setTechnicalData(null); setAssetInfo(null); setRankTimeframe(t === 'crypto' ? '1M' : '6M'); }}
         showSections={!!showAnalysis}
       />
 
