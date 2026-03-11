@@ -934,7 +934,7 @@ export default function Index() {
 
         {/* ── ANALYSIS RESULTS — Card Grid Layout ── */}
         {showAnalysis && (
-          <div className="space-y-4">
+          <div key="analysis-view" className="space-y-4">
             {/* Signal + metadata bar */}
             <div id="section-signal" className="flex flex-col sm:flex-row sm:items-center gap-3 scroll-mt-36">
               <SignalPanel signal={technicalData.signal} price={assetInfo.price} name={assetInfo.name} symbol={assetInfo.symbol} />
@@ -1115,7 +1115,7 @@ export default function Index() {
 
         {/* ── OVERVIEW MODE (All tab) ── */}
         {overviewMode && !technicalData && !loading && !error && (
-          <div className="space-y-6">
+          <div key="overview-mode" className="space-y-6">
             <LiveTracker />
 
             <BestPickFinder onViewAsset={(id, type) => {
@@ -1141,7 +1141,7 @@ export default function Index() {
 
         {/* ── DASHBOARD — per-asset empty state ── */}
         {!overviewMode && !technicalData && !loading && !error && (
-          <div className="space-y-6">
+          <div key="asset-dashboard" className="space-y-6">
             <GuidedDiscovery assetType={assetType} onSelect={handleQuickPick} loading={loading} />
 
             {assetType === 'crypto' && (
