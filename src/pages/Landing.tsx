@@ -4,6 +4,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import LoginDialog from '@/components/auth/LoginDialog';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import { useState } from 'react';
+import { APP_VERSION } from '@/utils/version';
 import { TrendingUp, Shield, BarChart3, Zap, ArrowRight } from 'lucide-react';
 import SEO from '@/components/SEO';
 import logoStackedDark from '@/assets/logo-stacked.svg';
