@@ -702,6 +702,7 @@ export default function Admin() {
           <TabsContent value="analysis">
             <AdminAnalysisTab />
           </TabsContent>
+        </Tabs>
       </main>
 
       {/* Create User Dialog */}
