@@ -89,8 +89,24 @@ export default function AdminAnalysisTab() {
         </p>
       </div>
 
-      {/* Trigger buttons */}
-      <div className="flex flex-wrap gap-3">
+      {/* Timeframe selector + Trigger buttons */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1">
+          {[30, 90, 180, 365].map(tf => (
+            <button
+              key={tf}
+              onClick={() => setSelectedTimeframe(tf)}
+              className={`px-3 py-1.5 rounded text-xs font-mono font-medium transition-all ${
+                selectedTimeframe === tf
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {tf === 30 ? '1M' : tf === 90 ? '3M' : tf === 180 ? '6M' : '1Y'}
+            </button>
+          ))}
+        </div>
+
         <Button
           onClick={() => triggerAnalysis('stocks')}
           disabled={!!running}
@@ -99,10 +115,10 @@ export default function AdminAnalysisTab() {
           {running === 'stocks' ? (
             <>
               <span className="inline-block w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-              Running Stocks…
+              Running Stocks ({selectedTimeframe}d)…
             </>
           ) : (
-            <>📈 Run Stocks Analysis Now</>
+            <>📈 Run Stocks ({selectedTimeframe}d)</>
           )}
         </Button>
 
@@ -114,10 +130,10 @@ export default function AdminAnalysisTab() {
           {running === 'crypto' ? (
             <>
               <span className="inline-block w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-              Running Crypto…
+              Running Crypto ({selectedTimeframe}d)…
             </>
           ) : (
-            <>🪙 Run Crypto Analysis Now</>
+            <>🪙 Run Crypto ({selectedTimeframe}d)</>
           )}
         </Button>
 
