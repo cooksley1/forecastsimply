@@ -61,6 +61,13 @@ export default function RecommendationPanel({ recommendations, onSimulate, activ
         <p className="text-[11px] text-muted-foreground mt-1">
           These are algorithmic suggestions based on technical indicators. Each timeframe has different risk levels and strategies.
         </p>
+        <div className="flex items-center gap-1.5 mt-1.5">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[9px] font-medium text-primary">
+            <Info className="w-2.5 h-2.5" />
+            Derived from main signal
+          </span>
+          <span className="text-[9px] text-muted-foreground/60">— all timeframes use the same core analysis, adjusted only for risk &amp; horizon</span>
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {recommendations.map(rec => {
