@@ -1,4 +1,4 @@
-import { Play, Info } from 'lucide-react';
+import { Play, Info, TrendingUp, TrendingDown } from 'lucide-react';
 import type { TradeSetup } from '@/types/analysis';
 import { fmtPrice } from '@/utils/format';
 
@@ -16,15 +16,42 @@ const termExplain: Record<string, string> = {
   'R:R': 'Risk-to-Reward ratio. Higher is better — e.g., 3.0 means you could gain 3× what you risk.',
 };
 
+function getBiasSummary(setups: TradeSetup[]): { text: string; icon: React.ReactNode; color: string } | null {
+  const biased = setups.find(s => s.bias);
+  if (!biased) return null;
+  if (biased.type === 'long') {
+    return {
+      text: 'The analysis favours a LONG position — the trend suggests the price is more likely to go up.',
+      icon: <TrendingUp className="w-4 h-4" />,
+      color: 'bg-positive/10 border-positive/20 text-positive',
+    };
+  }
+  return {
+    text: 'The analysis favours a SHORT position — the trend suggests the price is more likely to go down.',
+    icon: <TrendingDown className="w-4 h-4" />,
+    color: 'bg-negative/10 border-negative/20 text-negative',
+  };
+}
+
 export default function TradeSetupPanel({ setups, onSimulateSetup, activeSetupSimulations }: Props) {
+  const biasSummary = getBiasSummary(setups);
+
   return (
     <div className="space-y-4">
       <div>
         <h3 className="text-foreground font-semibold text-sm">Trade Setups</h3>
         <p className="text-[11px] text-muted-foreground mt-1">
-          Two possible trades based on current support & resistance levels. The one with the <span className="text-primary font-semibold">BIAS</span> tag is favoured by the current trend. <strong>Long</strong> = bet the price goes up. <strong>Short</strong> = bet the price goes down.
+          Two possible trades based on current support & resistance levels. <strong>Long</strong> = bet the price goes up. <strong>Short</strong> = bet the price goes down.
         </p>
       </div>
+
+      {/* Plain-English bias summary */}
+      {biasSummary && (
+        <div className={`flex items-center gap-2 rounded-lg p-2.5 border ${biasSummary.color}`}>
+          {biasSummary.icon}
+          <p className="text-[11px] sm:text-xs font-medium leading-snug">{biasSummary.text}</p>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {setups.map(setup => {
           const isLong = setup.type === 'long';
