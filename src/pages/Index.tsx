@@ -1063,6 +1063,9 @@ export default function Index() {
               {/* Indicators */}
               <div id="section-indicators" className="scroll-mt-36"><MemoIndicatorsPanel indicators={technicalData.indicators} currentPrice={assetInfo.price} /></div>
 
+              {/* Glossary */}
+              <div className="lg:col-span-2 scroll-mt-36"><Glossary /></div>
+
               {/* Analysis Text — full width */}
               <div id="section-analysis" className="lg:col-span-2 scroll-mt-36">
                 <AnalysisTextPanel text={technicalData.analysisText} marketPhase={technicalData.marketPhase} />
