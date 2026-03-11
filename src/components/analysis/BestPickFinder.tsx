@@ -36,6 +36,10 @@ export default function BestPickFinder({ onViewAsset }: Props) {
   const [hasSearched, setHasSearched] = useState(false);
   const [riskProfile, setRiskProfile] = useState<RiskProfile>('moderate');
   const [marketCtx, setMarketCtx] = useState<MarketContext | null>(null);
+  const [overrideProfile, setOverrideProfile] = useState<RiskProfile | null>(null);
+  const activeProfile = overrideProfile ?? riskProfile;
+  const isOverridden = overrideProfile !== null;
+  const profileLabel = activeProfile.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
   // Load user's risk profile
   useEffect(() => {
