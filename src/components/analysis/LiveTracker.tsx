@@ -121,6 +121,20 @@ function PickCard({ pick, currentPrice, returnPct, isPositive, isNeutral, daysTr
   snapshots: any[];
 }) {
   const [showExplainer, setShowExplainer] = useState(false);
+  const [showReplay, setShowReplay] = useState(false);
+
+  const replayData = useMemo(() => {
+    if (snapshots.length < 2) return [];
+    return snapshots.map((s: any) => ({
+      date: new Date(s.snapshot_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      actual: s.price,
+      ensemble: s.forecast_ensemble_price,
+      linear: s.forecast_linear_price,
+      holt: s.forecast_holt_price,
+      ema: s.forecast_ema_price,
+      monteCarlo: s.forecast_monte_carlo_price,
+    }));
+  }, [snapshots]);
 
   return (
     <div className="p-3 sm:p-4 space-y-2">
