@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Crosshair, Loader2, Sparkles, LayoutGrid, Target as TargetIcon,
 } from 'lucide-react';
-import { BestPick, AssetClass, Timeframe, ASSET_OPTIONS, TIMEFRAME_OPTIONS } from './best-pick/types';
+import { BestPick, AssetClass, Timeframe, ASSET_OPTIONS, TIMEFRAME_OPTIONS, computeCompositeScore } from './best-pick/types';
 import PickDetailCard from './best-pick/PickDetailCard';
 import PickCompareCard from './best-pick/PickCompareCard';
 
