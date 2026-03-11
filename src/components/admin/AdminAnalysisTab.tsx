@@ -16,6 +16,9 @@ export default function AdminAnalysisTab() {
   const [selectedTimeframe, setSelectedTimeframe] = useState(90);
   const [stats, setStats] = useState<CacheStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [excludedSuffixes, setExcludedSuffixes] = useState<string[]>([]);
+  const [newSuffix, setNewSuffix] = useState('');
+  const [suffixSaving, setSuffixSaving] = useState(false);
 
   const fetchStats = async () => {
     setLoading(true);
