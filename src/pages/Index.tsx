@@ -897,8 +897,26 @@ export default function Index() {
         )}
 
         {error && (
-          <div className="border border-destructive/50 bg-destructive/5 rounded-xl p-4">
-            <p className="text-destructive text-sm font-mono">{error}</p>
+          <div className="border border-destructive/30 bg-card rounded-xl p-6 text-center space-y-3 max-w-lg mx-auto">
+            <div className="flex items-center justify-center gap-2 text-destructive">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span className="font-semibold text-sm">Data Unavailable</span>
+            </div>
+            <p className="text-muted-foreground text-sm leading-relaxed">{error}</p>
+            <div className="pt-2 flex flex-wrap justify-center gap-2">
+              <button
+                onClick={() => { setError(null); setOverviewMode(true); }}
+                className="px-4 py-1.5 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 text-xs font-medium transition-colors"
+              >
+                ← Back to Overview
+              </button>
+              <button
+                onClick={() => setError(null)}
+                className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium transition-colors"
+              >
+                Try Another Search
+              </button>
+            </div>
           </div>
         )}
 
