@@ -622,7 +622,8 @@ export default function Index() {
     });
 
     if (withSignals.some(p => p.signal) && !dividendOnly) {
-      withSignals.sort((a, b) => (b.signal?.score ?? -999) - (a.signal?.score ?? -999));
+      // Sort by composite score when available, fallback to raw signal score
+      withSignals.sort((a, b) => (b.signal?.compositeScore ?? b.signal?.score ?? -999) - (a.signal?.compositeScore ?? a.signal?.score ?? -999));
     }
 
     return withSignals;
