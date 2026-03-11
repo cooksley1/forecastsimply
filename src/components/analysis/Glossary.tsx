@@ -90,6 +90,29 @@ const TERMS: Term[] = [
     short: 'A combined rating from all indicators, from −100 to +100.',
     detail: 'The signal score weighs every indicator together to give one overall reading. A high positive score = Strong Buy. A high negative score = Strong Sell. Near zero = Hold. This is the number you should follow — individual indicator readings are just context.',
   },
+  {
+    term: 'Confidence Level',
+    short: 'How strongly the indicators agree — higher means more reliable.',
+    detail: 'Confidence tells you how much the data supports the signal.',
+    richDetail: (
+      <div className="space-y-2">
+        <p className="text-[11px] text-muted-foreground leading-relaxed">Confidence tells you how much the data supports the current signal. It's not a guarantee — it's a measure of agreement among indicators.</p>
+        <div className="grid grid-cols-1 gap-1.5">
+          {[
+            { level: '90%+', color: 'bg-positive/10 text-positive border-positive/20', desc: 'Very high agreement — most indicators point the same way. The signal is well-supported, though no prediction is certain.' },
+            { level: '75–89%', color: 'bg-primary/10 text-primary border-primary/20', desc: 'Good agreement — the majority of indicators align. A solid basis for decisions, but keep an eye on the market.' },
+            { level: '60–74%', color: 'bg-warning/10 text-warning border-warning/20', desc: 'Moderate agreement — indicators are mixed. The signal could go either way; consider waiting for stronger confirmation.' },
+            { level: 'Below 60%', color: 'bg-negative/10 text-negative border-negative/20', desc: 'Low agreement — indicators conflict. The signal is unreliable; avoid acting on it alone.' },
+          ].map(p => (
+            <div key={p.level} className={`flex items-start gap-2 rounded-md p-2 border ${p.color}`}>
+              <span className="text-[11px] font-semibold shrink-0 mt-0.5 w-14">{p.level}</span>
+              <p className="text-[10px] leading-relaxed opacity-80">{p.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
 ];
 
 export default function Glossary() {
