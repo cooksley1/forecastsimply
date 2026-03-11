@@ -599,6 +599,14 @@ export default function Index() {
     const tfDays = timeframeDaysForRank || RANK_TIMEFRAME_DAYS[rankTimeframe];
     const results: Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }> = {};
 
+    // If picks already have signals from cache (via getQuickPicks), short-circuit
+    const alreadySignalled = picks.filter(p => p.signal).length;
+    if (alreadySignalled > picks.length * 0.5) {
+      console.log(`[rank] Picks already have ${alreadySignalled}/${picks.length} signals from cache — skipping rank`);
+      setRanking(false);
+      return;
+    }
+
     // Try to use daily analysis cache first (instant results)
     const cacheSource = assetType === 'crypto' ? dailyCryptoAnalysis : assetType === 'stocks' ? dailyStockAnalysis : [];
     if (cacheSource.length > 0) {
