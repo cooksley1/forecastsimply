@@ -503,6 +503,11 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
           </div>
         )}
 
+        {/* API Keys Tab */}
+        {activeTab === 'apikeys' && (
+          <ApiKeySettings embedded />
+        )}
+
         {/* Alerts Tab */}
         {activeTab === 'alerts' && (
           <div className="space-y-3">
