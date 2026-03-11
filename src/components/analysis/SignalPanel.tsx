@@ -88,6 +88,11 @@ export default function SignalPanel({ signal, price, name, symbol }: Props) {
   const breakdown = signal.breakdown || [];
   const bullish = breakdown.filter(i => i.signal === 'bullish');
   const bearish = breakdown.filter(i => i.signal === 'bearish');
+  const neutral = breakdown.filter(i => i.signal === 'neutral');
+  const total = breakdown.length;
+  const agreePct = total > 0
+    ? Math.round(((signal.color === 'red' ? bearish.length : bullish.length) / total) * 100)
+    : 0;
 
   const colorMap = {
     green: 'text-positive border-fs-green/30 bg-fs-green/5',
