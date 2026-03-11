@@ -616,6 +616,78 @@ export type Database = {
         }
         Relationships: []
       }
+      watchlist_alert_settings: {
+        Row: {
+          created_at: string
+          deviation_threshold_pct: number
+          enabled: boolean
+          forecast_deviation: boolean
+          frequency: string
+          id: string
+          last_checked_at: string | null
+          signal_change: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deviation_threshold_pct?: number
+          enabled?: boolean
+          forecast_deviation?: boolean
+          frequency?: string
+          id?: string
+          last_checked_at?: string | null
+          signal_change?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deviation_threshold_pct?: number
+          enabled?: boolean
+          forecast_deviation?: boolean
+          frequency?: string
+          id?: string
+          last_checked_at?: string | null
+          signal_change?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      watchlist_alert_state: {
+        Row: {
+          asset_id: string
+          id: string
+          last_forecast_price: number | null
+          last_price: number | null
+          last_signal_label: string | null
+          last_signal_score: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          id?: string
+          last_forecast_price?: number | null
+          last_price?: number | null
+          last_signal_label?: string | null
+          last_signal_score?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          id?: string
+          last_forecast_price?: number | null
+          last_price?: number | null
+          last_signal_label?: string | null
+          last_signal_score?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       watchlist_groups: {
         Row: {
           color: string | null

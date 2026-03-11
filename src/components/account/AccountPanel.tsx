@@ -6,6 +6,7 @@ import { SUPPORTED_CURRENCIES } from '@/utils/currencyConversion';
 import type { WatchlistItem } from '@/types/assets';
 import PriceAlertsList from '@/components/alerts/PriceAlertsList';
 import PushNotificationToggle from '@/components/alerts/PushNotificationToggle';
+import WatchlistAlertSettings from '@/components/alerts/WatchlistAlertSettings';
 import ApiKeySettings from '@/components/settings/ApiKeySettings';
 
 interface Props {
@@ -510,9 +511,14 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
 
         {/* Alerts Tab */}
         {activeTab === 'alerts' && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <PushNotificationToggle />
-            <PriceAlertsList refreshKey={alertRefreshKey} />
+            <div className="border-t border-border pt-3">
+              <WatchlistAlertSettings />
+            </div>
+            <div className="border-t border-border pt-3">
+              <PriceAlertsList refreshKey={alertRefreshKey} />
+            </div>
           </div>
         )}
 
