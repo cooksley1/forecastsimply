@@ -1,6 +1,7 @@
-import { ArrowUpRight, Trophy, AlertTriangle } from 'lucide-react';
+import { ArrowUpRight, Trophy, AlertTriangle, Info } from 'lucide-react';
 import { fmtPrice, fmtPercent } from '@/utils/format';
 import { BestPick, AssetClass } from './types';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function getSignalColor(label: string) {
   if (label.includes('Buy')) return 'bg-positive/10 text-positive border-positive/20';

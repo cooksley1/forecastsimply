@@ -94,7 +94,26 @@ export default function PickDetailCard({ result, assetClass, onViewAsset, riskPr
         </h4>
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-primary/10 rounded-lg p-2.5 border border-primary/20 space-y-0.5 col-span-2">
-            <span className="text-[9px] text-primary/80 uppercase">Composite Score</span>
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] text-primary/80 uppercase">Composite Score</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-3 h-3 text-primary/50 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[260px] text-[10px] leading-relaxed">
+                    <p className="font-semibold mb-1">How the score is calculated</p>
+                    <p>Blends three normalised factors into a single 0–100 ranking:</p>
+                    <ul className="list-disc pl-3 mt-1 space-y-0.5">
+                      <li><strong>Signal Strength</strong> — 15-indicator technical engine (±15 → 0–100)</li>
+                      <li><strong>Forecast Return</strong> — projected upside capped at 50%</li>
+                      <li><strong>Confidence</strong> — model certainty (0–100)</li>
+                    </ul>
+                    <p className="mt-1 text-muted-foreground">Weights adjust per risk profile. Higher = stronger confirmed upside.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <p className="text-sm font-mono font-bold text-primary">{result.composite_score ?? '—'}/100</p>
             <p className="text-[8px] text-muted-foreground flex items-center gap-1">
               <Shield className="w-2.5 h-2.5" />
