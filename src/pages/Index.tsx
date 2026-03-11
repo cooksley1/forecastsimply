@@ -119,17 +119,16 @@ export default function Index() {
   // Crypto screener — top 500 coins
   const { coins: cryptoCoins, loading: cryptoScreenerLoading } = useCryptoScreener(assetType === 'crypto');
 
-  // Daily pre-computed analysis cache
-  const dailyAnalysisTimeframe = RANK_TIMEFRAME_DAYS[rankTimeframe] || 90;
+  // Daily pre-computed analysis cache — always fetch the 90-day cache (only timeframe currently computed)
   const { data: dailyStockAnalysis, loading: dailyStockLoading } = useDailyAnalysis({
     assetType: 'stocks',
     exchange: stockExchange,
-    timeframeDays: dailyAnalysisTimeframe,
+    timeframeDays: 90,
     enabled: assetType === 'stocks',
   });
   const { data: dailyCryptoAnalysis, loading: dailyCryptoLoading } = useDailyAnalysis({
     assetType: 'crypto',
-    timeframeDays: dailyAnalysisTimeframe,
+    timeframeDays: 90,
     enabled: assetType === 'crypto',
   });
   const currentAssetRef = useRef<{ id: string; type: AssetType } | null>(null);
@@ -528,8 +527,26 @@ export default function Index() {
   }, [analyseCrypto, analyseStock, analyseForex]);
 
   const getQuickPicks = useCallback(() => {
-    let items: { label: string; id: string; name?: string; divYield?: number; signal?: { label: string; score: number; confidence: number } }[] = [];
-    if (assetType === 'crypto') {
+    let items: { label: string; id: string; name?: string; divYield?: number; signal?: { label: string; score: number; confidence: number; projectedReturn?: number } }[] = [];
+
+    // When a non-default filter is active and we have cached analysis, use cache as the primary source
+    const cacheSource = assetType === 'stocks' ? dailyStockAnalysis : assetType === 'crypto' ? dailyCryptoAnalysis : [];
+    const useCache = pickSort !== 'default' && cacheSource.length > 0;
+
+    if (useCache) {
+      items = cacheSource.map(c => ({
+        label: c.symbol,
+        id: c.asset_id,
+        name: c.name,
+        divYield: c.dividend_yield ?? undefined,
+        signal: {
+          label: c.signal_label,
+          score: c.signal_score,
+          confidence: c.confidence,
+          projectedReturn: c.forecast_return_pct,
+        },
+      }));
+    } else if (assetType === 'crypto') {
       // Use crypto screener if available, otherwise fall back to hardcoded
       if (cryptoCoins.length > 0) {
         items = cryptoCoins.map(c => ({ label: c.sym, id: c.id, name: c.name }));
@@ -561,7 +578,9 @@ export default function Index() {
       items = FOREX_PICKS.map(p => ({ label: p.name, id: `${p.from}${p.to}` }));
     }
 
+    // Overlay ranked signals for items that don't already have signals from cache
     const withSignals = items.map(item => {
+      if (item.signal) return item;
       const r = rankedPicks[item.id];
       return r ? { ...item, signal: r } : item;
     });
@@ -571,13 +590,21 @@ export default function Index() {
     }
 
     return withSignals;
-  }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks, useStockScreener, useEtfScreener, screenerStocks, cryptoCoins]);
+  }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks, useStockScreener, useEtfScreener, screenerStocks, cryptoCoins, pickSort, dailyStockAnalysis, dailyCryptoAnalysis]);
 
   const handleRankPicks = useCallback(async (timeframeDaysForRank?: number) => {
     setRanking(true);
     const picks = getQuickPicks();
     const tfDays = timeframeDaysForRank || RANK_TIMEFRAME_DAYS[rankTimeframe];
     const results: Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }> = {};
+
+    // If picks already have signals from cache (via getQuickPicks), short-circuit
+    const alreadySignalled = picks.filter(p => p.signal).length;
+    if (alreadySignalled > picks.length * 0.5) {
+      console.log(`[rank] Picks already have ${alreadySignalled}/${picks.length} signals from cache — skipping rank`);
+      setRanking(false);
+      return;
+    }
 
     // Try to use daily analysis cache first (instant results)
     const cacheSource = assetType === 'crypto' ? dailyCryptoAnalysis : assetType === 'stocks' ? dailyStockAnalysis : [];
