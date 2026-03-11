@@ -308,32 +308,15 @@ export default function Scorecard() {
                     {/* Expanded detail */}
                     {isExpanded && (
                       <div className="border-t border-border p-4 space-y-4">
-                        {/* Price chart */}
+                        {/* Animated Forecast Replay */}
                         {chartData.length > 1 && (
-                          <div className="h-64">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <LineChart data={chartData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                                <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
-                                <YAxis domain={['auto', 'auto']} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
-                                <Tooltip
-                                  contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '11px' }}
-                                  labelStyle={{ color: 'hsl(var(--foreground))' }}
-                                />
-                                <Legend wrapperStyle={{ fontSize: '10px' }} />
-                                <ReferenceLine y={pick.entry_price} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" label={{ value: 'Entry', fill: 'hsl(var(--muted-foreground))', fontSize: 9 }} />
-                                {pick.target_price && (
-                                  <ReferenceLine y={pick.target_price} stroke="hsl(var(--positive))" strokeDasharray="4 4" label={{ value: 'Target', fill: 'hsl(var(--positive))', fontSize: 9 }} />
-                                )}
-                                <Line type="monotone" dataKey="actual" stroke="hsl(var(--foreground))" strokeWidth={2} dot={false} name="Actual" />
-                                <Line type="monotone" dataKey="ensemble" stroke={methodColors.ensemble} strokeWidth={1} strokeDasharray="4 2" dot={false} name="Ensemble" />
-                                <Line type="monotone" dataKey="linear" stroke={methodColors.linear} strokeWidth={1} strokeDasharray="4 2" dot={false} name="Linear" />
-                                <Line type="monotone" dataKey="holt" stroke={methodColors.holt} strokeWidth={1} strokeDasharray="4 2" dot={false} name="Holt" />
-                                <Line type="monotone" dataKey="ema" stroke={methodColors.ema} strokeWidth={1} strokeDasharray="4 2" dot={false} name="EMA Mom" />
-                                <Line type="monotone" dataKey="monteCarlo" stroke={methodColors.monte_carlo} strokeWidth={1} strokeDasharray="4 2" dot={false} name="Monte Carlo" />
-                              </LineChart>
-                            </ResponsiveContainer>
-                          </div>
+                          <ForecastReplayChart
+                            data={chartData}
+                            entryPrice={pick.entry_price}
+                            targetPrice={pick.target_price}
+                            stopLoss={pick.stop_loss}
+                            symbol={pick.symbol}
+                          />
                         )}
 
                         {/* Reasoning */}
