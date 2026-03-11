@@ -754,7 +754,7 @@ export default function Index() {
         assetType={assetType}
         overviewMode={overviewMode}
         onOverviewToggle={setOverviewMode}
-        onAssetChange={(t) => { setAssetType(t); setOverviewMode(false); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); setPickSort('default'); setTechnicalData(null); setAssetInfo(null); setRankTimeframe(t === 'crypto' ? '1M' : '6M'); }}
+        onAssetChange={(t) => { setAssetType(t); setOverviewMode(false); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); setPickSort('default'); setTechnicalData(null); setAssetInfo(null); const tf = t === 'crypto' ? '3M' : '6M'; setRankTimeframe(tf); setTimeframeDays(RANK_TIMEFRAME_DAYS[tf] || 90); }}
         showSections={!!showAnalysis}
       />
 
