@@ -12,22 +12,22 @@ const STEPS = [
   {
     icon: <Brain className="w-6 h-6" />,
     title: '2. Technical Analysis',
-    desc: '11 weighted indicators are computed: SMA(20), SMA(50), MA Crossover, RSI(14), MACD, Bollinger Bands, Stochastic %K, OBV Divergence, VWAP, RSI Divergence, and Trend Strength.',
+    desc: '15 weighted indicators are computed: SMA(20), SMA(50), MA Crossover, RSI(14), MACD, Bollinger Bands, Stochastic %K, OBV Divergence, VWAP, RSI Divergence, Trend Strength, Market Structure (BOS/CHoCH), Supply/Demand Zones, Fibonacci Levels, and Volume Profile.',
   },
   {
     icon: <TrendingUp className="w-6 h-6" />,
     title: '3. Signal Scoring',
-    desc: 'Each indicator contributes +1 to +3 (bullish) or −1 to −3 (bearish). The composite score maps to Strong Buy, Buy, Hold, Sell, or Strong Sell.',
+    desc: 'Each indicator contributes +1 to +3 (bullish) or −1 to −3 (bearish). The composite score (−15 to +15) maps to Strong Buy, Buy, Hold, Sell, or Strong Sell.',
   },
   {
     icon: <Target className="w-6 h-6" />,
-    title: '4. Forecast Generation',
-    desc: 'Our Ensemble model blends Linear Regression (52%), Holt\'s DES (29%), and EMA Momentum (19%) — weights optimised from extensive backtesting.',
+    title: '4. Cross-Timeframe Consistency',
+    desc: 'Short-term signals are checked against longer-timeframe data. If longer timeframes disagree, the signal is dampened (50–80%) to reduce false signals. A warning note is shown when this happens.',
   },
   {
     icon: <Shield className="w-6 h-6" />,
-    title: '5. Risk Management',
-    desc: 'Entry, target, and stop-loss levels are generated based on your risk profile. Momentum projections are capped at ±15% with dampening to ensure realism.',
+    title: '5. Forecast & Risk Management',
+    desc: 'Our Ensemble model blends Linear Regression (52%), Holt\'s DES (29%), and EMA Momentum (19%). Entry, target, and stop-loss levels are generated based on your risk profile.',
   },
   {
     icon: <Zap className="w-6 h-6" />,
@@ -93,6 +93,7 @@ export default function HowItWorks() {
         {/* Signal thresholds */}
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-foreground">Signal Thresholds</h2>
+          <p className="text-xs text-muted-foreground">Score range is −15 to +15, calibrated for 15 indicators. Cross-timeframe dampening may further adjust the score.</p>
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <table className="w-full text-xs">
               <thead>
@@ -103,11 +104,11 @@ export default function HowItWorks() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                <tr><td className="px-4 py-2 text-positive font-semibold">Strong Buy</td><td className="px-4 py-2 font-mono">≥ 6</td><td className="px-4 py-2 text-muted-foreground">Multiple strong bullish signals aligned</td></tr>
-                <tr><td className="px-4 py-2 text-positive">Buy</td><td className="px-4 py-2 font-mono">3 to 5</td><td className="px-4 py-2 text-muted-foreground">Net bullish indicators outweigh bearish</td></tr>
-                <tr><td className="px-4 py-2 text-warning">Hold</td><td className="px-4 py-2 font-mono">-2 to 2</td><td className="px-4 py-2 text-muted-foreground">Mixed signals — no clear direction</td></tr>
-                <tr><td className="px-4 py-2 text-destructive">Sell</td><td className="px-4 py-2 font-mono">-3 to -5</td><td className="px-4 py-2 text-muted-foreground">Net bearish indicators dominate</td></tr>
-                <tr><td className="px-4 py-2 text-destructive font-semibold">Strong Sell</td><td className="px-4 py-2 font-mono">≤ -6</td><td className="px-4 py-2 text-muted-foreground">Multiple strong bearish signals aligned</td></tr>
+                <tr><td className="px-4 py-2 text-positive font-semibold">Strong Buy</td><td className="px-4 py-2 font-mono">≥ 8</td><td className="px-4 py-2 text-muted-foreground">Multiple strong bullish signals aligned across indicators</td></tr>
+                <tr><td className="px-4 py-2 text-positive">Buy</td><td className="px-4 py-2 font-mono">4 to 7</td><td className="px-4 py-2 text-muted-foreground">Net bullish indicators outweigh bearish</td></tr>
+                <tr><td className="px-4 py-2 text-warning">Hold</td><td className="px-4 py-2 font-mono">-3 to 3</td><td className="px-4 py-2 text-muted-foreground">Mixed signals — no clear direction</td></tr>
+                <tr><td className="px-4 py-2 text-destructive">Sell</td><td className="px-4 py-2 font-mono">-4 to -7</td><td className="px-4 py-2 text-muted-foreground">Net bearish indicators dominate</td></tr>
+                <tr><td className="px-4 py-2 text-destructive font-semibold">Strong Sell</td><td className="px-4 py-2 font-mono">≤ -8</td><td className="px-4 py-2 text-muted-foreground">Multiple strong bearish signals aligned</td></tr>
               </tbody>
             </table>
           </div>

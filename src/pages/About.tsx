@@ -14,17 +14,17 @@ export default function About() {
 
         <section className="space-y-4 text-sm text-muted-foreground leading-relaxed">
           <p className="text-base text-foreground">
-            ForecastSimply is a free, open technical analysis platform that helps traders and investors make more informed decisions across crypto, stocks, ETFs, and forex markets.
+            ForecastSimply is a free, open technical analysis platform that helps traders and investors make more informed decisions across crypto, stocks, ETFs, and forex markets. It uses a 15-indicator scoring engine with cross-timeframe consistency to deliver reliable, transparent signals.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-card border border-border rounded-xl p-4 space-y-2">
-              <h3 className="text-foreground font-semibold">📊 Multi-Asset Analysis</h3>
-              <p className="text-xs">Analyse crypto, stocks, ETFs, and forex pairs with unified technical indicators and signals.</p>
+              <h3 className="text-foreground font-semibold">📊 15-Indicator Analysis</h3>
+              <p className="text-xs">Analyse crypto, stocks, ETFs, and forex pairs with 15 weighted indicators including market structure (BOS/CHoCH), supply/demand zones, Fibonacci levels, and volume profile.</p>
             </div>
             <div className="bg-card border border-border rounded-xl p-4 space-y-2">
               <h3 className="text-foreground font-semibold">🔮 Smart Forecasting</h3>
-              <p className="text-xs">Multiple forecasting models including Holt's, Linear Regression, ARIMA, and Monte Carlo simulations.</p>
+              <p className="text-xs">Multiple forecasting models including Ensemble (default), Holt's DES, Linear Regression, EMA Momentum, and Monte Carlo simulations. Cross-timeframe consistency dampens signals when longer timeframes disagree.</p>
             </div>
             <div className="bg-card border border-border rounded-xl p-4 space-y-2">
               <h3 className="text-foreground font-semibold">🎯 Trade Setups</h3>
