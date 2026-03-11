@@ -638,7 +638,7 @@ export default function Index() {
     }
 
     // Check daily refresh limit before falling back to live API calls
-    if (!canRankRefresh()) {
+    if (!canRankRefresh(isExempt)) {
       toast.error('Daily live refresh limit reached. Add your own API keys in Account → API Keys for unlimited refreshes.', { duration: 6000 });
       setRanking(false);
       return;
