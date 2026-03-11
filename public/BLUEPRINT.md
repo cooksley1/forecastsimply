@@ -1474,10 +1474,24 @@ See [Section 3.9](#39-coinGecko-to-yahoo-mapping) for the complete fetcher archi
 | `crypto-screener` | Screens crypto tickers | Public | GET |
 | `check-price-alerts` | Cron: checks triggered price alerts, sends push/email | Cron (no JWT) | POST |
 | `get-vapid-key` | Returns VAPID public key for push subscriptions | Public | GET |
+| `run-daily-analysis` | Cron: full 15-indicator analysis with cross-timeframe dampening, cached to daily_analysis_cache | Cron (no JWT) | POST |
+| `lock-monthly-picks` | Cron: locks top-ranked monthly pick per asset class | Cron (no JWT) | POST |
+| `snapshot-picks` | Cron: daily price and forecast snapshots for tracked picks | Cron (no JWT) | POST |
 | `curated-digest` | Generates AI-curated market digest content | Authenticated | POST |
 | `send-digest` | Sends approved digest emails to subscribers | Cron / Admin | POST |
 | `refresh-market-data` | Cron: warms market data cache | Cron (no JWT) | POST |
 | `admin-users` | User management (list, ban, unban, role, impersonate, delete) | Admin only | POST |
+
+### Daily Analysis Cron (`run-daily-analysis`)
+
+Runs the full 15-indicator engine server-side for each asset×timeframe combination and caches results in `daily_analysis_cache`. The pipeline:
+
+1. Fetch historical chart data via Yahoo Finance
+2. Compute all 15 indicators (matching client-side `signals.ts` logic)
+3. Apply cross-timeframe dampening by comparing against existing cached rows for longer timeframes
+4. Upsert results including: signal_score, signal_label, confidence, market_phase, rsi, sma20, sma50, macd_histogram, bb_position, stochastic_k, target_price, stop_loss, forecast_return_pct
+
+This ensures the Best Pick Finder and screener results use the same 15-indicator scoring as live client-side analysis.
 
 ### Database Tables
 
