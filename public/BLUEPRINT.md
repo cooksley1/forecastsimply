@@ -409,9 +409,9 @@ Produces a multi-section markdown string with these sections (exact format):
 
 ## 5. Signal Scoring System (`signals.ts`)
 
-### 11-Factor Composite Score (clamped to -10 to +10)
+### 15-Factor Composite Score (clamped to -15 to +15)
 
-Each factor contributes to the raw score. Strong trend detection modifies some factors.
+Each factor contributes to the raw score. Strong trend detection modifies some factors. Four new market-structure indicators (12–15) were added for short-term accuracy.
 
 **Trend strength detection** (computed first):
 ```typescript
@@ -421,50 +421,61 @@ const strongUptrend = sma20 > sma50 && sma20Rising && sma50Rising;
 const strongDowntrend = sma20 < sma50 && !sma20Rising && !sma50Rising;
 ```
 
-| # | Factor | Weight | Bullish (+) | Bearish (-) | Trend Override |
-|---|--------|--------|-------------|-------------|----------------|
-| 1 | SMA(20) | 15% | Price > SMA20 → +1 | Price < SMA20 → -1 | None |
-| 2 | SMA(50) | 12% | Price > SMA50 → +1 | Price < SMA50 → -1 | None |
-| 3 | MA Crossover | 12% | SMA20 > SMA50 (Golden) → +1 | SMA20 < SMA50 (Death) → -1 | None |
-| 4 | RSI(14) | 12% | <25 → +3, <35 → +1 | >75 → -3, >65 → -1 | Strong uptrend: bearish halved. Strong downtrend: bullish halved. |
-| 5 | MACD | 10% | Histogram rising → +1, Fresh bullish cross → +1 extra | Histogram falling → -1, Fresh bearish cross → -1 extra | Strong uptrend: bearish halved. Strong downtrend: bullish halved. |
-| 6 | Bollinger Bands | 8% | BB position < 0.15 → +1 | BB position > 0.85 → -1 | None |
-| 7 | Stochastic %K | 8% | K < 20 → +1 | K > 80 → -1 | None |
-| 8 | OBV Divergence | 5% | Price ↓ but OBV ↑ → +1 | Price ↑ but OBV ↓ → -1 | Requires volume data |
-| 9 | VWAP | 5% | Price > VWAP×1.005 → +1 | Price < VWAP×0.995 → -1 | Stocks/ETFs only |
+| # | Factor | Weight | Bullish (+) | Bearish (-) | Notes |
+|---|--------|--------|-------------|-------------|-------|
+| 1 | SMA(20) | 12% | Price > SMA20 → +1 | Price < SMA20 → -1 | — |
+| 2 | SMA(50) | 10% | Price > SMA50 → +1 | Price < SMA50 → -1 | — |
+| 3 | MA Crossover | 10% | SMA20 > SMA50 (Golden) → +1 | SMA20 < SMA50 (Death) → -1 | — |
+| 4 | RSI(14) | 10% | <25 → +3, <35 → +1 | >75 → -3, >65 → -1 | Trend override: halved if against strong trend |
+| 5 | MACD | 8% | Histogram rising → +1, Fresh bullish cross → +1 extra | Histogram falling → -1, Fresh bearish cross → -1 extra | Trend override: halved if against strong trend |
+| 6 | Bollinger Bands | 6% | BB position < 0.15 → +1 | BB position > 0.85 → -1 | — |
+| 7 | Stochastic %K | 6% | K < 20 → +1 | K > 80 → -1 | — |
+| 8 | OBV Divergence | 4% | Price ↓ but OBV ↑ → +1 | Price ↑ but OBV ↓ → -1 | Requires volume data |
+| 9 | VWAP | 4% | Price > VWAP×1.005 → +1 | Price < VWAP×0.995 → -1 | Stocks/ETFs only |
 | 10 | RSI Divergence | 5% | Bullish divergence → +2 | Bearish divergence → -2 | Requires 30+ data points |
-| 11 | Trend Strength | 5% | Strong uptrend → +2 | Strong downtrend → -2 | Only when trend detected |
+| 11 | Trend Strength | 4% | Strong uptrend → +2 | Strong downtrend → -2 | Only when trend detected |
+| 12 | Market Structure (BOS/CHoCH) | 8% | Bullish BOS → +1, Bullish CHoCH → +3 | Bearish BOS → -1, Bearish CHoCH → -3 | Swing-point analysis (order=3) |
+| 13 | Supply/Demand Zones | 6% | Near demand zone → +1 to +3 | Near supply zone → -1 to -3 | Clustered swing highs/lows within 0.5 ATR |
+| 14 | Fibonacci Levels | 5% | Price above key fib support → +1 to +2 | Price below key fib resistance → -1 to -2 | Key ratios: 0.382, 0.5, 0.618 |
+| 15 | Volume Profile | 6% | Up-day vol > 1.5× down-day vol → +2 | Down-day vol > 1.5× up-day vol → -2 | Also detects volume trend divergences |
 
-**OBV Divergence Detection** (`lookback = 20`):
-```
-Split OBV and closes into two halves (first 10, last 10)
-Compare average of each half
-If price trending up but OBV trending down → bearish (-1)
-If price trending down but OBV trending up → bullish (+1)
-```
+### Market Structure Details (`marketStructure.ts`)
 
-**RSI Divergence Detection** (last 30 data points):
-- Find swing lows (point lower than 2 neighbors on each side)
-- Bullish: Price made lower low but RSI made higher low
-- Find swing highs (point higher than 2 neighbors on each side)
-- Bearish: Price made higher high but RSI made lower high
+**BOS (Break of Structure)**: Price breaks the most recent swing high/low in the SAME trend direction → continuation.
+**CHoCH (Change of Character)**: Price breaks a swing point AGAINST the prevailing trend → potential reversal. Scored ±3 (stronger than BOS).
 
-### Signal Label Mapping
+**Supply/Demand Zones**: Swing highs/lows are clustered within 0.5× ATR. Zones with 2+ touches are considered meaningful. Strength scales with touch count (max 3).
+
+**Fibonacci Scoring**: Computes retracement levels from last 60 data points. Key levels (38.2%, 50%, 61.8%) scored by proximity × level strength (0.618 = 1.5× weight).
+
+**Volume Profile**: Splits recent 20-day volume into up-day and down-day averages. Ratio > 1.5 = accumulation (+2), < 0.67 = distribution (-2). Also detects volume trend divergences.
+
+### Signal Label Mapping (calibrated for 15-indicator range)
 
 | Score Range | Label | Color |
 |-------------|-------|-------|
-| ≥ 6 | Strong Buy | green |
-| 3 to 5 | Buy | green |
-| -2 to 2 | Hold | amber |
-| -5 to -3 | Sell | red |
-| ≤ -6 | Strong Sell | red |
-
-**Note**: Sell threshold is -3 (not -2) because backtesting showed sell signals at -2 were wrong 60% of the time.
+| ≥ 8 | Strong Buy | green |
+| 4 to 7 | Buy | green |
+| -3 to 3 | Hold | amber |
+| -7 to -4 | Sell | red |
+| ≤ -8 | Strong Sell | red |
 
 ### Confidence Calculation
 ```
-confidence = min(95, 45 + |score| × 5)
+confidence = min(95, 40 + |score| × 4)
 ```
+
+### Cross-Timeframe Consistency (`crossTimeframe.ts`)
+
+After the signal is computed, an optional cross-timeframe check compares the current timeframe's signal against cached longer-timeframe data from `daily_analysis_cache`. If contradictions exist:
+
+| Condition | Dampening |
+|-----------|-----------|
+| ≥50% of longer timeframes show opposite bias | Score × 0.5 |
+| <50% show opposite bias | Score × 0.75 |
+| ≥50% show low confidence (no contradictions) | Score × 0.8 |
+
+A `crossTimeframeNote` warning is appended to the signal when dampening is applied. A "Cross-Timeframe" entry is added to the signal breakdown.
 
 ### Signal Breakdown
 Each factor produces a `SignalBreakdown` object:
