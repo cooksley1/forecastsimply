@@ -623,7 +623,11 @@ export default function Index() {
 
     if (withSignals.some(p => p.signal) && !dividendOnly) {
       // Sort by composite score when available, fallback to raw signal score
-      withSignals.sort((a, b) => (b.signal?.compositeScore ?? b.signal?.score ?? -999) - (a.signal?.compositeScore ?? a.signal?.score ?? -999));
+      withSignals.sort((a, b) => {
+        const bScore = (b.signal as any)?.compositeScore ?? b.signal?.score ?? -999;
+        const aScore = (a.signal as any)?.compositeScore ?? a.signal?.score ?? -999;
+        return bScore - aScore;
+      });
     }
 
     return withSignals;
