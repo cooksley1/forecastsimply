@@ -36,6 +36,10 @@ export default function BestPickFinder({ onViewAsset }: Props) {
   const [hasSearched, setHasSearched] = useState(false);
   const [riskProfile, setRiskProfile] = useState<RiskProfile>('moderate');
   const [marketCtx, setMarketCtx] = useState<MarketContext | null>(null);
+  const [overrideProfile, setOverrideProfile] = useState<RiskProfile | null>(null);
+  const activeProfile = overrideProfile ?? riskProfile;
+  const isOverridden = overrideProfile !== null;
+  const profileLabel = activeProfile.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
   // Load user's risk profile
   useEffect(() => {
@@ -103,7 +107,7 @@ export default function BestPickFinder({ onViewAsset }: Props) {
       // ── 3. Compute composite score with risk-profile weights ──
       const scored: BestPick[] = data.map(row => ({
         ...row,
-        composite_score: computeCompositeScore(row as any, riskProfile),
+        composite_score: computeCompositeScore(row as any, activeProfile),
       })) as BestPick[];
 
       scored.sort((a, b) => (b.composite_score ?? 0) - (a.composite_score ?? 0));
@@ -117,12 +121,11 @@ export default function BestPickFinder({ onViewAsset }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [assetClass, timeframe, viewMode, riskProfile]);
+  }, [assetClass, timeframe, viewMode, activeProfile]);
 
   const tf = TIMEFRAME_OPTIONS.find(t => t.id === timeframe)!;
   const resetState = () => { setResults([]); setHasSearched(false); setMarketCtx(null); };
 
-  const profileLabel = riskProfile.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase());
 
   return (
     <div className="border border-primary/20 rounded-xl bg-card overflow-hidden">
@@ -165,11 +168,31 @@ export default function BestPickFinder({ onViewAsset }: Props) {
             ? 'One click to find the highest-potential asset for your chosen class and timeframe.'
             : 'Compare the top 3 picks side-by-side to find the best opportunity.'}
         </p>
-        {/* Risk profile badge */}
-        <p className="text-[9px] text-muted-foreground/70 mt-1">
-          Scoring weights: <span className="text-foreground/80 font-medium">{profileLabel}</span> profile
-          {user ? '' : ' (default — sign in to personalise)'}
-        </p>
+        {/* Risk profile selector */}
+        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+          <span className="text-[9px] text-muted-foreground/70">Weights:</span>
+          {(['conservative', 'moderate-conservative', 'moderate', 'moderate-aggressive', 'aggressive'] as RiskProfile[]).map(p => {
+            const label = p === 'moderate-conservative' ? 'Mod-Con' : p === 'moderate-aggressive' ? 'Mod-Agg' : p.charAt(0).toUpperCase() + p.slice(1);
+            const isActive = activeProfile === p;
+            return (
+              <button
+                key={p}
+                onClick={() => { setOverrideProfile(p === riskProfile ? null : p); resetState(); }}
+                className={`px-1.5 py-0.5 rounded text-[9px] font-medium transition-all ${
+                  isActive
+                    ? 'bg-primary/15 text-primary border border-primary/30'
+                    : 'bg-muted/40 text-muted-foreground/70 border border-transparent hover:text-foreground hover:border-border'
+                }`}
+                title={`${p.replace(/-/g, ' ')} profile`}
+              >
+                {label}
+              </button>
+            );
+          })}
+          {isOverridden && (
+            <span className="text-[8px] text-muted-foreground/50 italic ml-1">temporary override</span>
+          )}
+        </div>
       </div>
 
       <div className="p-4 space-y-4">
@@ -276,7 +299,7 @@ export default function BestPickFinder({ onViewAsset }: Props) {
 
         {/* Single result */}
         {viewMode === 'single' && results.length === 1 && (
-          <PickDetailCard result={results[0]} assetClass={assetClass} onViewAsset={onViewAsset} riskProfile={riskProfile} />
+          <PickDetailCard result={results[0]} assetClass={assetClass} onViewAsset={onViewAsset} riskProfile={activeProfile} />
         )}
 
         {/* Compare results */}
