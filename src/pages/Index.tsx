@@ -300,6 +300,11 @@ export default function Index() {
 
 
   const analyseCrypto = useCallback(async (coinId: string) => {
+    const unsupported = getUnsupportedCoin(coinId);
+    if (unsupported) {
+      setError(`⚠️ ${unsupported.name} is not supported. ${unsupported.reason}`);
+      return;
+    }
     setLoading(true);
     setError(null);
     setOverviewMode(false);
