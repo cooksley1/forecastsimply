@@ -549,11 +549,23 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const analysis = analyseCloses(closes);
+        let analysis = analyseCloses(closes);
         if (!analysis) {
           results.skipped++;
           continue;
         }
+
+        // Cross-timeframe dampening: fetch other cached timeframes for this asset
+        try {
+          const { data: otherTfs } = await db
+            .from('daily_analysis_cache')
+            .select('timeframe_days, signal_score, signal_label, confidence')
+            .eq('asset_id', asset.id)
+            .neq('timeframe_days', timeframeDays);
+          if (otherTfs && otherTfs.length > 0) {
+            analysis = applyCrossTimeframeDampening(analysis, timeframeDays, otherTfs);
+          }
+        } catch { /* proceed without dampening */ }
 
         const currentPrice = closes[closes.length - 1];
         const prevPrice = closes.length >= 2 ? closes[closes.length - 2] : currentPrice;
