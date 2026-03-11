@@ -100,11 +100,23 @@ export default function TradeSetupPanel({ setups, onSimulateSetup, activeSetupSi
                     <p className="text-[9px] text-muted-foreground/60 mt-0.5 hidden group-hover:block">{termExplain[row.label]}</p>
                   </div>
                 ))}
-                <div className="flex justify-between pt-2 border-t border-border">
-                  <span className="text-muted-foreground text-xs">R:R</span>
-                  <span className="text-primary font-bold">{setup.riskReward.toFixed(2)}</span>
+                <div className="pt-2 border-t border-border space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground text-xs">R:R</span>
+                    <span className="text-primary font-bold">{setup.riskReward.toFixed(2)}</span>
+                  </div>
+                  <div className={`rounded-md p-2 text-[10px] leading-relaxed ${
+                    setup.riskReward >= 2 ? 'bg-positive/8 border border-positive/15 text-positive' :
+                    setup.riskReward >= 1 ? 'bg-warning/8 border border-warning/15 text-warning' :
+                    'bg-negative/8 border border-negative/15 text-negative'
+                  }`}>
+                    {setup.riskReward >= 2
+                      ? `✅ Great ratio — you stand to gain ${setup.riskReward.toFixed(1)}× what you risk. Anything above 2.0 is considered good.`
+                      : setup.riskReward >= 1
+                      ? `⚠️ Okay ratio — you gain ${setup.riskReward.toFixed(1)}× your risk. Ideally look for 2.0 or higher.`
+                      : `❌ Poor ratio — you risk more than you could gain. Generally not worth taking.`}
+                  </div>
                 </div>
-                <p className="text-[9px] text-muted-foreground/60">{termExplain['R:R']}</p>
               </div>
 
               {/* Simulate button */}
