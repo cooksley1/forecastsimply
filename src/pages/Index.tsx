@@ -863,7 +863,7 @@ export default function Index() {
                 onSortChange={setPickSort}
                 maxVisible={15}
                 rankTimeframe={rankTimeframe}
-                onRankTimeframeChange={(tf) => { setRankTimeframe(tf); setRankedPicks({}); }}
+                onRankTimeframeChange={(tf) => { setRankTimeframe(tf); setRankedPicks({}); setTimeframeDays(RANK_TIMEFRAME_DAYS[tf] || 90); }}
                 watchlistIds={new Set(watchlist.filter(w => w.assetType === assetType).slice(0, 5).map(w => w.id))}
               />
               {/* Freshness notice when using cached data */}
