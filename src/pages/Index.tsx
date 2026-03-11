@@ -424,6 +424,8 @@ export default function Index() {
       const info: AssetInfo = { id: pairId, symbol: `${from}/${to}`, name: `${from}/${to}`, assetType: 'forex', price: lastPrice, change24h, currency: to };
 
       const ta = processTA(closes, timestamps, volumes, forecastPercent, 'forex', forecastMethods, riskLevel);
+      const adjustedSignal = await applyCrossTimeframeAdjustment(ta.signal, pairId, timeframeDays);
+      ta.signal = adjustedSignal;
       currentAssetRef.current = { id: pairId, type: 'forex' };
       setAssetInfo(info);
       setTechnicalData(ta);
