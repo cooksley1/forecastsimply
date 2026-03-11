@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import AdminAnalyticsTab from '@/components/admin/AdminAnalyticsTab';
 import AdminSubscribersTab from '@/components/admin/AdminSubscribersTab';
 import AdminMessagesTab from '@/components/admin/AdminMessagesTab';
+import AdminAnalysisTab from '@/components/admin/AdminAnalysisTab';
 
 // ── Types ──
 interface LoginRecord {
@@ -563,6 +564,7 @@ export default function Admin() {
             <TabsTrigger value="users">👥 Users</TabsTrigger>
             <TabsTrigger value="subscribers">📧 Subscribers</TabsTrigger>
             <TabsTrigger value="digests">📰 Digests</TabsTrigger>
+            <TabsTrigger value="analysis">🔬 Analysis</TabsTrigger>
           </TabsList>
 
           {/* ── Analytics Tab ── */}
@@ -695,6 +697,11 @@ export default function Admin() {
           {/* ── Digests Tab ── */}
           <TabsContent value="digests">
             <DigestManagement />
+          </TabsContent>
+
+          {/* ── Analysis Tab ── */}
+          <TabsContent value="analysis">
+            <AdminAnalysisTab />
           </TabsContent>
         </Tabs>
       </main>
