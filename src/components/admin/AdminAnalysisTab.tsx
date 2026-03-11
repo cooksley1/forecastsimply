@@ -146,7 +146,67 @@ export default function AdminAnalysisTab() {
         </Button>
       </div>
 
-      {/* Cache stats */}
+      {/* Timeframe coverage matrix */}
+      {!loading && (
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold text-foreground">Cache Coverage</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(['stocks', 'crypto'] as const).map(type => {
+              const TIMEFRAMES = [
+                { days: 30, label: '1M' },
+                { days: 90, label: '3M' },
+                { days: 180, label: '6M' },
+                { days: 365, label: '1Y' },
+              ];
+              return (
+                <div key={type} className="border border-border rounded-xl bg-card p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span>{type === 'stocks' ? '📈' : '🪙'}</span>
+                    <span className="text-sm font-semibold text-foreground capitalize">{type}</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {TIMEFRAMES.map(tf => {
+                      const match = stats.find(s => s.asset_type === type && s.timeframe_days === tf.days);
+                      const populated = match && match.count > 0;
+                      const diffH = match ? (Date.now() - new Date(match.newest).getTime()) / 36e5 : 0;
+                      const stale = populated && diffH > 36;
+                      return (
+                        <div
+                          key={tf.days}
+                          className={`flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-center transition-colors ${
+                            populated
+                              ? stale
+                                ? 'bg-warning/10 border-warning/30'
+                                : 'bg-positive/10 border-positive/30'
+                              : 'bg-muted/30 border-border'
+                          }`}
+                        >
+                          <span className="text-xs font-mono font-bold text-foreground">{tf.label}</span>
+                          {populated ? (
+                            <>
+                              <span className={`text-[10px] font-semibold ${stale ? 'text-warning' : 'text-positive'}`}>
+                                {stale ? '⚠ Stale' : '✓ Ready'}
+                              </span>
+                              <span className="text-[9px] text-muted-foreground font-mono">{match!.count.toLocaleString()}</span>
+                              <span className="text-[8px] text-muted-foreground">
+                                {diffH < 1 ? `${Math.round(diffH * 60)}m` : diffH < 24 ? `${Math.round(diffH)}h` : `${Math.round(diffH / 24)}d`} ago
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground/60 font-medium">Pending</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Cache stats detail */}
       {loading ? (
         <div className="text-muted-foreground text-sm animate-pulse py-4">Loading cache stats…</div>
       ) : stats.length === 0 ? (
@@ -180,7 +240,6 @@ export default function AdminAnalysisTab() {
           ))}
         </div>
       )}
-
       {/* Info */}
       <div className="bg-muted/40 border border-border/60 rounded-lg px-4 py-3 space-y-1">
         <p className="text-[11px] font-semibold text-foreground">How it works</p>
