@@ -42,7 +42,7 @@ import { getCoinData, searchCoins } from '@/services/api/coingecko';
 import { getDIACryptoPrice, geckoIdToDIASymbol } from '@/services/api/dia';
 import { getStockChart } from '@/services/api/yahoo';
 import { fetchCryptoHistory, fetchEquityHistory, fetchForexHistory } from '@/services/fetcher';
-import { getUnsupportedCoin } from '@/utils/unsupportedCoins';
+import { getUnsupportedCoin, loadUnsupportedCoins } from '@/utils/unsupportedCoins';
 import { processTA } from '@/analysis/processTA';
 import type { ForecastMethodId } from '@/analysis/forecast';
 import {
@@ -236,6 +236,8 @@ export default function Index() {
     });
   }, [assetInfo]);
 
+  // Load unsupported coins list on mount
+  useEffect(() => { loadUnsupportedCoins(); }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {

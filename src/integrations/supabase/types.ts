@@ -535,6 +535,30 @@ export type Database = {
         }
         Relationships: []
       }
+      unsupported_coins: {
+        Row: {
+          coin_id: string
+          created_at: string
+          id: string
+          name: string
+          reason: string
+        }
+        Insert: {
+          coin_id: string
+          created_at?: string
+          id?: string
+          name: string
+          reason: string
+        }
+        Update: {
+          coin_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           country: string | null

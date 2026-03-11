@@ -1,33 +1,43 @@
+import { supabase } from '@/integrations/supabase/client';
+
+interface UnsupportedCoin {
+  coin_id: string;
+  name: string;
+  reason: string;
+}
+
+let cachedList: UnsupportedCoin[] | null = null;
+let cacheTime = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 /**
- * Coins that are known to be unavailable across all free data sources.
- * Maps CoinGecko-style IDs (lowercase, hyphenated) to display info.
+ * Fetch unsupported coins from the database (cached for 5 min).
  */
-export const UNSUPPORTED_COINS: Record<string, { name: string; reason: string }> = {
-  'pi-network': {
-    name: 'Pi Network (PI)',
-    reason: 'Pi Network is not listed on any of our supported free data sources (CoinGecko, CoinPaprika, Yahoo Finance).',
-  },
-  'world-liberty-financial': {
-    name: 'World Liberty Financial (WLFI)',
-    reason: 'World Liberty Financial is not available on supported free data APIs.',
-  },
-  'pax-gold': {
-    name: 'PAX Gold (PAXG)',
-    reason: 'PAX Gold historical data is unavailable on our free data sources. Try searching for "paxos-standard" or "tether-gold" instead.',
-  },
-};
+export async function loadUnsupportedCoins(): Promise<UnsupportedCoin[]> {
+  if (cachedList && Date.now() - cacheTime < CACHE_TTL) return cachedList;
+  const { data } = await supabase.from('unsupported_coins').select('coin_id, name, reason');
+  cachedList = (data as UnsupportedCoin[]) || [];
+  cacheTime = Date.now();
+  return cachedList;
+}
+
+/** Bust the cache after admin changes. */
+export function bustUnsupportedCache() {
+  cachedList = null;
+  cacheTime = 0;
+}
 
 /**
  * Check if a coin ID or search query matches an unsupported coin.
- * Returns the entry if unsupported, or null if fine.
+ * Must be called after loadUnsupportedCoins().
  */
 export function getUnsupportedCoin(query: string): { name: string; reason: string } | null {
+  if (!cachedList) return null;
   const normalised = query.toLowerCase().replace(/\s+/g, '-');
-  // Direct match
-  if (UNSUPPORTED_COINS[normalised]) return UNSUPPORTED_COINS[normalised];
-  // Partial match (e.g. user types "pi network")
-  for (const [id, info] of Object.entries(UNSUPPORTED_COINS)) {
-    if (normalised.includes(id) || id.includes(normalised)) return info;
+  for (const coin of cachedList) {
+    if (normalised === coin.coin_id || normalised.includes(coin.coin_id) || coin.coin_id.includes(normalised)) {
+      return { name: coin.name, reason: coin.reason };
+    }
   }
   return null;
 }

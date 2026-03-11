@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { bustUnsupportedCache } from '@/utils/unsupportedCoins';
 
 interface CacheStats {
   asset_type: string;
@@ -9,6 +10,13 @@ interface CacheStats {
   timeframe_days: number;
   count: number;
   newest: string;
+}
+
+interface UnsupportedCoinRow {
+  id: string;
+  coin_id: string;
+  name: string;
+  reason: string;
 }
 
 export default function AdminAnalysisTab() {
@@ -19,6 +27,13 @@ export default function AdminAnalysisTab() {
   const [excludedSuffixes, setExcludedSuffixes] = useState<string[]>([]);
   const [newSuffix, setNewSuffix] = useState('');
   const [suffixSaving, setSuffixSaving] = useState(false);
+
+  // Unsupported coins state
+  const [unsupportedCoins, setUnsupportedCoins] = useState<UnsupportedCoinRow[]>([]);
+  const [newCoinId, setNewCoinId] = useState('');
+  const [newCoinName, setNewCoinName] = useState('');
+  const [newCoinReason, setNewCoinReason] = useState('');
+  const [coinSaving, setCoinSaving] = useState(false);
 
   const fetchStats = async () => {
     setLoading(true);
@@ -44,8 +59,14 @@ export default function AdminAnalysisTab() {
     setLoading(false);
   };
 
+  const fetchUnsupportedCoins = async () => {
+    const { data } = await supabase.from('unsupported_coins').select('id, coin_id, name, reason').order('coin_id');
+    setUnsupportedCoins((data as UnsupportedCoinRow[]) || []);
+  };
+
   useEffect(() => {
     fetchStats();
+    fetchUnsupportedCoins();
     // Load excluded suffixes
     supabase.from('app_config').select('value').eq('key', 'excluded_email_suffixes').maybeSingle()
       .then(({ data }) => {
@@ -54,6 +75,29 @@ export default function AdminAnalysisTab() {
         }
       });
   }, []);
+
+  const addUnsupportedCoin = async () => {
+    const coinId = newCoinId.trim().toLowerCase().replace(/\s+/g, '-');
+    const name = newCoinName.trim();
+    const reason = newCoinReason.trim() || `${name} is not available on supported free data APIs.`;
+    if (!coinId || !name) { toast.error('Coin ID and name are required'); return; }
+    setCoinSaving(true);
+    const { error } = await supabase.from('unsupported_coins').insert({ coin_id: coinId, name, reason } as any);
+    setCoinSaving(false);
+    if (error) { toast.error(error.message.includes('duplicate') ? 'Already in list' : error.message); return; }
+    bustUnsupportedCache();
+    setNewCoinId(''); setNewCoinName(''); setNewCoinReason('');
+    fetchUnsupportedCoins();
+    toast.success(`Added ${name} to unsupported list`);
+  };
+
+  const removeUnsupportedCoin = async (id: string, name: string) => {
+    const { error } = await supabase.from('unsupported_coins').delete().eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    bustUnsupportedCache();
+    fetchUnsupportedCoins();
+    toast.success(`Removed ${name} from unsupported list`);
+  };
 
   const saveSuffixes = async (updated: string[]) => {
     setSuffixSaving(true);
@@ -318,6 +362,70 @@ export default function AdminAnalysisTab() {
         <p className="text-[9px] text-muted-foreground">
           e.g. <code className="font-mono text-primary/70">@myteam.com</code> — any user with this email suffix gets unlimited live refreshes.
         </p>
+      </div>
+
+      {/* Unsupported Coins */}
+      <div className="border border-border rounded-xl bg-card p-4 space-y-3">
+        <div>
+          <h3 className="text-xs font-semibold text-foreground">🚫 Unsupported Coins</h3>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            Coins listed here will show a warning immediately instead of attempting (and failing) API calls. Uses CoinGecko-style IDs.
+          </p>
+        </div>
+
+        {/* Current list */}
+        {unsupportedCoins.length > 0 && (
+          <div className="space-y-1.5 max-h-48 overflow-y-auto">
+            {unsupportedCoins.map(coin => (
+              <div key={coin.id} className="flex items-start gap-2 px-2 py-1.5 rounded-lg bg-muted/50 border border-border/50">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <code className="text-[10px] font-mono text-primary">{coin.coin_id}</code>
+                    <span className="text-[10px] text-muted-foreground">— {coin.name}</span>
+                  </div>
+                  <p className="text-[9px] text-muted-foreground/70 truncate">{coin.reason}</p>
+                </div>
+                <button
+                  onClick={() => removeUnsupportedCoin(coin.id, coin.name)}
+                  className="text-muted-foreground hover:text-destructive transition-colors text-xs shrink-0 mt-0.5"
+                >✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add new coin */}
+        <div className="space-y-2 border-t border-border/50 pt-3">
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="text"
+              value={newCoinId}
+              onChange={e => setNewCoinId(e.target.value)}
+              placeholder="coin-id (e.g. pi-network)"
+              className="bg-background border border-border rounded-lg px-3 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
+            />
+            <input
+              type="text"
+              value={newCoinName}
+              onChange={e => setNewCoinName(e.target.value)}
+              placeholder="Display name (e.g. Pi Network)"
+              className="bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
+            />
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newCoinReason}
+              onChange={e => setNewCoinReason(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addUnsupportedCoin()}
+              placeholder="Reason (optional — auto-generated if blank)"
+              className="flex-1 bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
+            />
+            <Button size="sm" onClick={addUnsupportedCoin} disabled={coinSaving || !newCoinId.trim() || !newCoinName.trim()}>
+              {coinSaving ? '...' : 'Add'}
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Info */}
