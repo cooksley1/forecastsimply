@@ -561,18 +561,27 @@ export default function Index() {
     const useCache = pickSort !== 'default' && cacheSource.length > 0;
 
     if (useCache) {
-      items = cacheSource.map(c => ({
-        label: c.symbol,
-        id: c.asset_id,
-        name: c.name,
-        divYield: c.dividend_yield ?? undefined,
-        signal: {
-          label: c.signal_label,
-          score: c.signal_score,
-          confidence: c.confidence,
-          projectedReturn: c.forecast_return_pct,
-        },
-      }));
+      items = cacheSource.map(c => {
+        // Compute composite score for consistent ranking
+        const normSignal = Math.max(0, Math.min(100, ((c.signal_score + 15) / 30) * 100));
+        const normReturn = Math.max(0, Math.min(100, ((c.forecast_return_pct ?? 0) / 50) * 100));
+        const normConf = Math.max(0, Math.min(100, c.confidence));
+        const compositeScore = Math.round(normSignal * 0.4 + normReturn * 0.35 + normConf * 0.25);
+
+        return {
+          label: c.symbol,
+          id: c.asset_id,
+          name: c.name,
+          divYield: c.dividend_yield ?? undefined,
+          signal: {
+            label: c.signal_label,
+            score: c.signal_score,
+            confidence: c.confidence,
+            projectedReturn: c.forecast_return_pct,
+            compositeScore,
+          },
+        };
+      });
     } else if (assetType === 'crypto') {
       // Use crypto screener if available, otherwise fall back to hardcoded
       if (cryptoCoins.length > 0) {
