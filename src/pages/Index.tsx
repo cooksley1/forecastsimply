@@ -236,6 +236,8 @@ export default function Index() {
     });
   }, [assetInfo]);
 
+  // Load unsupported coins list on mount
+  useEffect(() => { loadUnsupportedCoins(); }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
