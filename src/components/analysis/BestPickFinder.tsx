@@ -1,19 +1,32 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  Crosshair, Loader2, Sparkles, LayoutGrid, Target as TargetIcon,
+  Crosshair, Loader2, Sparkles, LayoutGrid, Target as TargetIcon, AlertTriangle,
 } from 'lucide-react';
-import { BestPick, AssetClass, Timeframe, ASSET_OPTIONS, TIMEFRAME_OPTIONS, computeCompositeScore } from './best-pick/types';
+import {
+  BestPick, AssetClass, Timeframe, ASSET_OPTIONS, TIMEFRAME_OPTIONS,
+  computeCompositeScore, applyQualityFilters, MARKET_BENCHMARKS,
+  type RiskProfile,
+} from './best-pick/types';
 import PickDetailCard from './best-pick/PickDetailCard';
 import PickCompareCard from './best-pick/PickCompareCard';
+import { useAuth } from '@/contexts/AuthContext';
 
 type ViewMode = 'single' | 'compare';
+
+interface MarketContext {
+  label: string;
+  signalScore: number;
+  signalLabel: string;
+  isBearish: boolean;
+}
 
 interface Props {
   onViewAsset?: (assetId: string, assetType: AssetClass) => void;
 }
 
 export default function BestPickFinder({ onViewAsset }: Props) {
+  const { user } = useAuth();
   const [assetClass, setAssetClass] = useState<AssetClass>('crypto');
   const [timeframe, setTimeframe] = useState<Timeframe>('3M');
   const [viewMode, setViewMode] = useState<ViewMode>('single');
@@ -21,18 +34,56 @@ export default function BestPickFinder({ onViewAsset }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [riskProfile, setRiskProfile] = useState<RiskProfile>('moderate');
+  const [marketCtx, setMarketCtx] = useState<MarketContext | null>(null);
+
+  // Load user's risk profile
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('user_preferences')
+      .select('risk_profile')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.risk_profile) {
+          setRiskProfile(data.risk_profile as RiskProfile);
+        }
+      });
+  }, [user]);
 
   const findBest = useCallback(async () => {
     setLoading(true);
     setError(null);
     setResults([]);
+    setMarketCtx(null);
     setHasSearched(true);
 
     const days = TIMEFRAME_OPTIONS.find(t => t.id === timeframe)!.days;
     const limit = viewMode === 'compare' ? 3 : 1;
 
     try {
-      // Fetch a wider pool, then rank by composite score client-side
+      // ── 1. Fetch market benchmark for context ──
+      const benchmark = MARKET_BENCHMARKS[assetClass];
+      if (benchmark) {
+        const { data: bmData } = await supabase
+          .from('daily_analysis_cache')
+          .select('signal_score, signal_label')
+          .eq('asset_id', benchmark.assetId)
+          .eq('timeframe_days', days)
+          .maybeSingle();
+
+        if (bmData) {
+          setMarketCtx({
+            label: benchmark.label,
+            signalScore: bmData.signal_score ?? 0,
+            signalLabel: bmData.signal_label ?? 'Hold',
+            isBearish: (bmData.signal_score ?? 0) < 0,
+          });
+        }
+      }
+
+      // ── 2. Fetch candidate pool ──
       const { data, error: dbError } = await supabase
         .from('daily_analysis_cache')
         .select('*')
@@ -40,7 +91,7 @@ export default function BestPickFinder({ onViewAsset }: Props) {
         .eq('timeframe_days', days)
         .gte('signal_score', 1)
         .order('signal_score', { ascending: false })
-        .limit(20);
+        .limit(30);
 
       if (dbError) throw dbError;
 
@@ -49,24 +100,29 @@ export default function BestPickFinder({ onViewAsset }: Props) {
         return;
       }
 
-      // Compute composite score and sort
-      const scored = data.map(row => ({
+      // ── 3. Compute composite score with risk-profile weights ──
+      const scored: BestPick[] = data.map(row => ({
         ...row,
-        composite_score: computeCompositeScore(row as any),
-      }));
+        composite_score: computeCompositeScore(row as any, riskProfile),
+      })) as BestPick[];
+
       scored.sort((a, b) => (b.composite_score ?? 0) - (a.composite_score ?? 0));
 
-      setResults(scored.slice(0, limit) as BestPick[]);
+      // ── 4. Apply quality filters (R:R ≥ 1.5, stop-loss ≤ 10%) ──
+      const filtered = applyQualityFilters(scored);
+
+      setResults(filtered.slice(0, limit));
     } catch (e: any) {
       setError(e.message || 'Failed to find the best pick');
     } finally {
       setLoading(false);
     }
-  }, [assetClass, timeframe, viewMode]);
+  }, [assetClass, timeframe, viewMode, riskProfile]);
 
   const tf = TIMEFRAME_OPTIONS.find(t => t.id === timeframe)!;
+  const resetState = () => { setResults([]); setHasSearched(false); setMarketCtx(null); };
 
-  const resetState = () => { setResults([]); setHasSearched(false); };
+  const profileLabel = riskProfile.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase());
 
   return (
     <div className="border border-primary/20 rounded-xl bg-card overflow-hidden">
@@ -77,7 +133,6 @@ export default function BestPickFinder({ onViewAsset }: Props) {
             <Crosshair className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">Best Pick Finder</h3>
           </div>
-          {/* Mode toggle */}
           <div className="flex rounded-lg border border-border overflow-hidden">
             <button
               onClick={() => { setViewMode('single'); resetState(); }}
@@ -109,6 +164,11 @@ export default function BestPickFinder({ onViewAsset }: Props) {
           {viewMode === 'single'
             ? 'One click to find the highest-potential asset for your chosen class and timeframe.'
             : 'Compare the top 3 picks side-by-side to find the best opportunity.'}
+        </p>
+        {/* Risk profile badge */}
+        <p className="text-[9px] text-muted-foreground/70 mt-1">
+          Scoring weights: <span className="text-foreground/80 font-medium">{profileLabel}</span> profile
+          {user ? '' : ' (default — sign in to personalise)'}
         </p>
       </div>
 
@@ -176,6 +236,32 @@ export default function BestPickFinder({ onViewAsset }: Props) {
           )}
         </button>
 
+        {/* Market context warning */}
+        {marketCtx && marketCtx.isBearish && (
+          <div className="flex items-start gap-2 bg-warning/10 border border-warning/20 rounded-lg p-3 animate-fade-in">
+            <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+            <div>
+              <p className="text-[11px] font-semibold text-warning">
+                Broad market headwind detected
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {marketCtx.label} is showing a <span className="font-medium text-warning">{marketCtx.signalLabel}</span> signal
+                (score {marketCtx.signalScore}/15). Individual picks may face downward pressure regardless of their own score.
+                Consider reduced position size or waiting for a trend reversal.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Market context positive note */}
+        {marketCtx && !marketCtx.isBearish && hasSearched && results.length > 0 && (
+          <div className="flex items-center gap-2 bg-positive/5 border border-positive/15 rounded-lg px-3 py-2 animate-fade-in">
+            <span className="text-[10px] text-positive">
+              ✅ {marketCtx.label} trend is supportive ({marketCtx.signalLabel}, score {marketCtx.signalScore}/15)
+            </span>
+          </div>
+        )}
+
         {/* Error */}
         {error && (
           <div className="bg-muted/30 border border-border rounded-lg p-3 text-center space-y-1">
@@ -190,7 +276,7 @@ export default function BestPickFinder({ onViewAsset }: Props) {
 
         {/* Single result */}
         {viewMode === 'single' && results.length === 1 && (
-          <PickDetailCard result={results[0]} assetClass={assetClass} onViewAsset={onViewAsset} />
+          <PickDetailCard result={results[0]} assetClass={assetClass} onViewAsset={onViewAsset} riskProfile={riskProfile} />
         )}
 
         {/* Compare results */}

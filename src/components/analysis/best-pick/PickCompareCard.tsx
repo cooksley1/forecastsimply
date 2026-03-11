@@ -1,4 +1,4 @@
-import { ArrowUpRight, Trophy } from 'lucide-react';
+import { ArrowUpRight, Trophy, AlertTriangle } from 'lucide-react';
 import { fmtPrice, fmtPercent } from '@/utils/format';
 import { BestPick, AssetClass } from './types';
 
@@ -27,6 +27,7 @@ export default function PickCompareCard({ pick, rank, assetClass, onViewAsset }:
   const potentialGain = targetPrice && pick.price ? ((targetPrice - pick.price) / pick.price) * 100 : 0;
   const potentialLoss = stopLoss && pick.price ? ((pick.price - stopLoss) / pick.price) * 100 : 0;
   const riskReward = potentialLoss > 0 ? potentialGain / potentialLoss : 0;
+  const hasWarnings = (pick.filter_warnings?.length ?? 0) > 0;
 
   const isTop = rank === 1;
 
@@ -36,6 +37,18 @@ export default function PickCompareCard({ pick, rank, assetClass, onViewAsset }:
         ? 'border-primary/30 bg-primary/5 ring-1 ring-primary/10'
         : 'border-border/60 bg-muted/20'
     }`}>
+      {/* Filter warnings */}
+      {hasWarnings && (
+        <div className="flex items-start gap-1.5 bg-warning/10 border border-warning/20 rounded-md p-1.5">
+          <AlertTriangle className="w-3 h-3 text-warning shrink-0 mt-0.5" />
+          <div>
+            {pick.filter_warnings!.map((w, i) => (
+              <p key={i} className="text-[8px] text-warning">{w}</p>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Rank + Symbol header */}
       <div className="flex items-start justify-between gap-2">
         <div className="space-y-0.5 min-w-0">

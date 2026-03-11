@@ -1,9 +1,17 @@
 import {
-  Target, Zap, BarChart3, Clock, ArrowUpRight, ChevronRight,
+  Target, Zap, BarChart3, Clock, ArrowUpRight, ChevronRight, AlertTriangle, Shield,
 } from 'lucide-react';
 import { fmtPrice, fmtPercent } from '@/utils/format';
-import { BestPick, AssetClass } from './types';
+import { BestPick, AssetClass, type RiskProfile } from './types';
 import ShareRow from './ShareRow';
+
+const WEIGHT_LABELS: Record<RiskProfile, string> = {
+  conservative:           'Signal 50% · Return 20% · Confidence 30%',
+  'moderate-conservative': 'Signal 45% · Return 25% · Confidence 30%',
+  moderate:               'Signal 40% · Return 35% · Confidence 25%',
+  'moderate-aggressive':   'Signal 30% · Return 45% · Confidence 25%',
+  aggressive:             'Signal 25% · Return 50% · Confidence 25%',
+};
 
 function derivedValues(pick: BestPick) {
   const entryPrice = pick.price;
@@ -31,15 +39,30 @@ interface Props {
   result: BestPick;
   assetClass: AssetClass;
   onViewAsset?: (assetId: string, assetType: AssetClass) => void;
+  riskProfile?: RiskProfile;
 }
 
-export default function PickDetailCard({ result, assetClass, onViewAsset }: Props) {
+export default function PickDetailCard({ result, assetClass, onViewAsset, riskProfile = 'moderate' }: Props) {
   const { entryPrice, targetPrice, stopLoss, potentialGain, potentialLoss, riskReward } = derivedValues(result);
   const signalColor = getSignalColor(result.signal_label);
   const confidenceColor = getConfidenceColor(result.confidence);
+  const hasWarnings = (result.filter_warnings?.length ?? 0) > 0;
 
   return (
     <div className="animate-fade-in space-y-4">
+      {/* Filter warnings */}
+      {hasWarnings && (
+        <div className="flex items-start gap-2 bg-warning/10 border border-warning/20 rounded-lg p-2.5">
+          <AlertTriangle className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
+          <div>
+            <p className="text-[10px] font-semibold text-warning">Quality flags</p>
+            {result.filter_warnings!.map((w, i) => (
+              <p key={i} className="text-[9px] text-muted-foreground">• {w}</p>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Top banner */}
       <div className="flex items-start justify-between gap-3 bg-muted/30 rounded-xl p-4 border border-border/60">
         <div className="space-y-1 min-w-0">
@@ -72,7 +95,10 @@ export default function PickDetailCard({ result, assetClass, onViewAsset }: Prop
           <div className="bg-primary/10 rounded-lg p-2.5 border border-primary/20 space-y-0.5 col-span-2">
             <span className="text-[9px] text-primary/80 uppercase">Composite Score</span>
             <p className="text-sm font-mono font-bold text-primary">{result.composite_score ?? '—'}/100</p>
-            <p className="text-[8px] text-muted-foreground">Blends signal strength (40%) + forecast return (35%) + confidence (25%)</p>
+            <p className="text-[8px] text-muted-foreground flex items-center gap-1">
+              <Shield className="w-2.5 h-2.5" />
+              {WEIGHT_LABELS[riskProfile]}
+            </p>
           </div>
           <div className="bg-muted/20 rounded-lg p-2.5 border border-border/40 space-y-0.5">
             <span className="text-[9px] text-muted-foreground uppercase">Signal Score</span>
