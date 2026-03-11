@@ -299,7 +299,7 @@ export default function BestPickFinder({ onViewAsset }: Props) {
 
         {/* Single result */}
         {viewMode === 'single' && results.length === 1 && (
-          <PickDetailCard result={results[0]} assetClass={assetClass} onViewAsset={onViewAsset} riskProfile={riskProfile} />
+          <PickDetailCard result={results[0]} assetClass={assetClass} onViewAsset={onViewAsset} riskProfile={activeProfile} />
         )}
 
         {/* Compare results */}
