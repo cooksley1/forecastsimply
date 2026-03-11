@@ -350,6 +350,9 @@ export default function BestPickFinder({ onViewAsset }: Props) {
               </button>
             )}
 
+            {/* Share */}
+            <ShareRow result={result} />
+
             {/* Disclaimer */}
             <p className="text-[8px] text-muted-foreground/60 leading-relaxed text-center">
               This is a data-driven suggestion based on technical analysis, not financial advice.
