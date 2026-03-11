@@ -1,7 +1,8 @@
 import { useActivePicks, useAllSnapshots } from '@/hooks/useTrackedPicks';
-import { TrendingUp, TrendingDown, Minus, Trophy, ArrowRight, Activity, Info } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Trophy, ArrowRight, Activity, Info, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import ForecastReplayChart from '@/components/analysis/ForecastReplayChart';
 
 const ASSET_ICONS: Record<string, string> = { crypto: '₿', stocks: '📈', etfs: '📊' };
 
@@ -120,6 +121,20 @@ function PickCard({ pick, currentPrice, returnPct, isPositive, isNeutral, daysTr
   snapshots: any[];
 }) {
   const [showExplainer, setShowExplainer] = useState(false);
+  const [showReplay, setShowReplay] = useState(false);
+
+  const replayData = useMemo(() => {
+    if (snapshots.length < 2) return [];
+    return snapshots.map((s: any) => ({
+      date: new Date(s.snapshot_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      actual: s.price,
+      ensemble: s.forecast_ensemble_price,
+      linear: s.forecast_linear_price,
+      holt: s.forecast_holt_price,
+      ema: s.forecast_ema_price,
+      monteCarlo: s.forecast_monte_carlo_price,
+    }));
+  }, [snapshots]);
 
   return (
     <div className="p-3 sm:p-4 space-y-2">
@@ -206,9 +221,35 @@ function PickCard({ pick, currentPrice, returnPct, isPositive, isNeutral, daysTr
       )}
 
       {/* Footer */}
-      <p className="text-[9px] text-muted-foreground">
-        {daysTracked} day{daysTracked !== 1 ? 's' : ''} tracked · Confidence: {pick.confidence}%
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-[9px] text-muted-foreground">
+          {daysTracked} day{daysTracked !== 1 ? 's' : ''} tracked · Confidence: {pick.confidence}%
+        </p>
+        {replayData.length > 1 && (
+          <button
+            onClick={() => setShowReplay(r => !r)}
+            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-medium transition-colors ${
+              showReplay ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-primary'
+            }`}
+          >
+            <Play className="w-3 h-3" />
+            Replay
+          </button>
+        )}
+      </div>
+
+      {/* Forecast Replay Chart */}
+      {showReplay && replayData.length > 1 && (
+        <div className="pt-1">
+          <ForecastReplayChart
+            data={replayData}
+            entryPrice={pick.entry_price}
+            targetPrice={pick.target_price}
+            stopLoss={pick.stop_loss}
+            symbol={pick.symbol}
+          />
+        </div>
+      )}
 
       {/* Explainer box */}
       {showExplainer && (
