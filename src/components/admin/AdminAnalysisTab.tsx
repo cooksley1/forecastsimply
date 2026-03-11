@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 interface CacheStats {
   asset_type: string;
   exchange: string | null;
+  timeframe_days: number;
   count: number;
   newest: string;
 }
