@@ -221,9 +221,35 @@ function PickCard({ pick, currentPrice, returnPct, isPositive, isNeutral, daysTr
       )}
 
       {/* Footer */}
-      <p className="text-[9px] text-muted-foreground">
-        {daysTracked} day{daysTracked !== 1 ? 's' : ''} tracked · Confidence: {pick.confidence}%
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-[9px] text-muted-foreground">
+          {daysTracked} day{daysTracked !== 1 ? 's' : ''} tracked · Confidence: {pick.confidence}%
+        </p>
+        {replayData.length > 1 && (
+          <button
+            onClick={() => setShowReplay(r => !r)}
+            className={`flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-medium transition-colors ${
+              showReplay ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-primary'
+            }`}
+          >
+            <Play className="w-3 h-3" />
+            Replay
+          </button>
+        )}
+      </div>
+
+      {/* Forecast Replay Chart */}
+      {showReplay && replayData.length > 1 && (
+        <div className="pt-1">
+          <ForecastReplayChart
+            data={replayData}
+            entryPrice={pick.entry_price}
+            targetPrice={pick.target_price}
+            stopLoss={pick.stop_loss}
+            symbol={pick.symbol}
+          />
+        </div>
+      )}
 
       {/* Explainer box */}
       {showExplainer && (
