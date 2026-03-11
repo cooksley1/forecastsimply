@@ -1141,7 +1141,7 @@ export default function Index() {
 
         {/* ── DASHBOARD — per-asset empty state ── */}
         {!overviewMode && !technicalData && !loading && !error && (
-          <div className="space-y-6">
+          <div key="asset-dashboard" className="space-y-6">
             <GuidedDiscovery assetType={assetType} onSelect={handleQuickPick} loading={loading} />
 
             {assetType === 'crypto' && (
