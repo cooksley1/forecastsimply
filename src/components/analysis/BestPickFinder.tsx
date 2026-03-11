@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Crosshair, TrendingUp, Shield, Target, Zap, ChevronRight,
-  BarChart3, Clock, ArrowUpRight, Loader2, Sparkles,
+  BarChart3, Clock, ArrowUpRight, Loader2, Sparkles, Share2,
 } from 'lucide-react';
 import { fmtPrice, fmtPercent } from '@/utils/format';
 
