@@ -157,7 +157,7 @@ export default function AdminAnalysisTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {stats.map(s => (
             <div
-              key={`${s.asset_type}-${s.exchange}`}
+              key={`${s.asset_type}-${s.exchange}-${s.timeframe_days}`}
               className="border border-border rounded-xl bg-card p-4 space-y-2"
             >
               <div className="flex items-center justify-between">
@@ -167,6 +167,9 @@ export default function AdminAnalysisTab() {
                   {s.exchange && (
                     <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono">{s.exchange}</span>
                   )}
+                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono">
+                    {s.timeframe_days === 30 ? '1M' : s.timeframe_days === 90 ? '3M' : s.timeframe_days === 180 ? '6M' : '1Y'}
+                  </span>
                 </div>
                 <span className="text-xs font-mono text-primary font-bold">{s.count.toLocaleString()} assets</span>
               </div>
