@@ -126,10 +126,6 @@ export default function BestPickFinder({ onViewAsset }: Props) {
   const tf = TIMEFRAME_OPTIONS.find(t => t.id === timeframe)!;
   const resetState = () => { setResults([]); setHasSearched(false); setMarketCtx(null); };
 
-  const [overrideProfile, setOverrideProfile] = useState<RiskProfile | null>(null);
-  const activeProfile = overrideProfile ?? riskProfile;
-  const profileLabel = activeProfile.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  const isOverridden = overrideProfile !== null;
 
   return (
     <div className="border border-primary/20 rounded-xl bg-card overflow-hidden">
