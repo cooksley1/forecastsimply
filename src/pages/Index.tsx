@@ -95,7 +95,7 @@ export default function Index() {
   const [ranking, setRanking] = useState(false);
   const [rankedPicks, setRankedPicks] = useState<Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }>>({});
   const [pickSort, setPickSort] = useState<SortCriteria>('default');
-  const [rankTimeframe, setRankTimeframe] = useState<RankTimeframe>('3M');
+  const [rankTimeframe, setRankTimeframe] = useState<RankTimeframe>('6M');
   const [secondaryCurrency, setSecCurrency] = useState<string | null>(getSecondaryCurrency());
   const [secondaryPrice, setSecondaryPrice] = useState<number | null>(null);
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
@@ -729,7 +729,7 @@ export default function Index() {
         assetType={assetType}
         overviewMode={overviewMode}
         onOverviewToggle={setOverviewMode}
-        onAssetChange={(t) => { setAssetType(t); setOverviewMode(false); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); setPickSort('default'); setTechnicalData(null); setAssetInfo(null); }}
+        onAssetChange={(t) => { setAssetType(t); setOverviewMode(false); setError(null); currentAssetRef.current = null; setDataSource(''); setRankedPicks({}); setPickSort('default'); setTechnicalData(null); setAssetInfo(null); setRankTimeframe(t === 'crypto' ? '1M' : '6M'); }}
         showSections={!!showAnalysis}
       />
 
