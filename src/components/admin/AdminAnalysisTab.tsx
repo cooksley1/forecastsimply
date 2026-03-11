@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { bustUnsupportedCache } from '@/utils/unsupportedCoins';
 
 interface CacheStats {
   asset_type: string;
@@ -9,6 +10,13 @@ interface CacheStats {
   timeframe_days: number;
   count: number;
   newest: string;
+}
+
+interface UnsupportedCoinRow {
+  id: string;
+  coin_id: string;
+  name: string;
+  reason: string;
 }
 
 export default function AdminAnalysisTab() {
@@ -19,6 +27,13 @@ export default function AdminAnalysisTab() {
   const [excludedSuffixes, setExcludedSuffixes] = useState<string[]>([]);
   const [newSuffix, setNewSuffix] = useState('');
   const [suffixSaving, setSuffixSaving] = useState(false);
+
+  // Unsupported coins state
+  const [unsupportedCoins, setUnsupportedCoins] = useState<UnsupportedCoinRow[]>([]);
+  const [newCoinId, setNewCoinId] = useState('');
+  const [newCoinName, setNewCoinName] = useState('');
+  const [newCoinReason, setNewCoinReason] = useState('');
+  const [coinSaving, setCoinSaving] = useState(false);
 
   const fetchStats = async () => {
     setLoading(true);
