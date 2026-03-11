@@ -76,8 +76,8 @@ export default function UpdatePrompt() {
         onClick={() => window.location.reload()}
         className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all text-sm font-medium"
       >
-        <RefreshCw className="w-4 h-4 animate-spin" />
-        New version available — tap to refresh
+        <RefreshCw className="w-4 h-4" />
+        Update available — tap here to reload
       </button>
     </div>
   );
