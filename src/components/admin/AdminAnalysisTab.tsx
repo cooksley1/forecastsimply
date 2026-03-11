@@ -6,12 +6,14 @@ import { toast } from 'sonner';
 interface CacheStats {
   asset_type: string;
   exchange: string | null;
+  timeframe_days: number;
   count: number;
   newest: string;
 }
 
 export default function AdminAnalysisTab() {
   const [running, setRunning] = useState<string | null>(null);
+  const [selectedTimeframe, setSelectedTimeframe] = useState(90);
   const [stats, setStats] = useState<CacheStats[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,19 +21,22 @@ export default function AdminAnalysisTab() {
     setLoading(true);
     const { data } = await supabase
       .from('daily_analysis_cache')
-      .select('asset_type, exchange, analyzed_at');
+      .select('asset_type, exchange, timeframe_days, analyzed_at');
 
     if (data && data.length > 0) {
       const groups: Record<string, CacheStats> = {};
       for (const row of data) {
-        const key = `${row.asset_type}|${row.exchange || 'global'}`;
+        const key = `${row.asset_type}|${row.exchange || 'global'}|${row.timeframe_days}`;
         if (!groups[key]) {
-          groups[key] = { asset_type: row.asset_type, exchange: row.exchange, count: 0, newest: row.analyzed_at };
+          groups[key] = { asset_type: row.asset_type, exchange: row.exchange, timeframe_days: row.timeframe_days, count: 0, newest: row.analyzed_at };
         }
         groups[key].count++;
         if (row.analyzed_at > groups[key].newest) groups[key].newest = row.analyzed_at;
       }
-      setStats(Object.values(groups));
+      setStats(Object.values(groups).sort((a, b) => {
+        if (a.asset_type !== b.asset_type) return a.asset_type.localeCompare(b.asset_type);
+        return a.timeframe_days - b.timeframe_days;
+      }));
     }
     setLoading(false);
   };
@@ -53,7 +58,7 @@ export default function AdminAnalysisTab() {
             Authorization: `Bearer ${session.access_token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ asset_type: assetType, offset: 0 }),
+          body: JSON.stringify({ asset_type: assetType, offset: 0, timeframe: selectedTimeframe }),
         }
       );
       const result = await res.json();
@@ -88,8 +93,24 @@ export default function AdminAnalysisTab() {
         </p>
       </div>
 
-      {/* Trigger buttons */}
-      <div className="flex flex-wrap gap-3">
+      {/* Timeframe selector + Trigger buttons */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1">
+          {[30, 90, 180, 365].map(tf => (
+            <button
+              key={tf}
+              onClick={() => setSelectedTimeframe(tf)}
+              className={`px-3 py-1.5 rounded text-xs font-mono font-medium transition-all ${
+                selectedTimeframe === tf
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {tf === 30 ? '1M' : tf === 90 ? '3M' : tf === 180 ? '6M' : '1Y'}
+            </button>
+          ))}
+        </div>
+
         <Button
           onClick={() => triggerAnalysis('stocks')}
           disabled={!!running}
@@ -98,10 +119,10 @@ export default function AdminAnalysisTab() {
           {running === 'stocks' ? (
             <>
               <span className="inline-block w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-              Running Stocks…
+              Running Stocks ({selectedTimeframe}d)…
             </>
           ) : (
-            <>📈 Run Stocks Analysis Now</>
+            <>📈 Run Stocks ({selectedTimeframe}d)</>
           )}
         </Button>
 
@@ -113,10 +134,10 @@ export default function AdminAnalysisTab() {
           {running === 'crypto' ? (
             <>
               <span className="inline-block w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-              Running Crypto…
+              Running Crypto ({selectedTimeframe}d)…
             </>
           ) : (
-            <>🪙 Run Crypto Analysis Now</>
+            <>🪙 Run Crypto ({selectedTimeframe}d)</>
           )}
         </Button>
 
@@ -136,7 +157,7 @@ export default function AdminAnalysisTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {stats.map(s => (
             <div
-              key={`${s.asset_type}-${s.exchange}`}
+              key={`${s.asset_type}-${s.exchange}-${s.timeframe_days}`}
               className="border border-border rounded-xl bg-card p-4 space-y-2"
             >
               <div className="flex items-center justify-between">
@@ -146,6 +167,9 @@ export default function AdminAnalysisTab() {
                   {s.exchange && (
                     <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono">{s.exchange}</span>
                   )}
+                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono">
+                    {s.timeframe_days === 30 ? '1M' : s.timeframe_days === 90 ? '3M' : s.timeframe_days === 180 ? '6M' : '1Y'}
+                  </span>
                 </div>
                 <span className="text-xs font-mono text-primary font-bold">{s.count.toLocaleString()} assets</span>
               </div>
