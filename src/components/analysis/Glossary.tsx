@@ -132,8 +132,12 @@ export default function Glossary() {
                 </button>
                 {isExpanded && (
                   <div className="px-3 pb-2.5 space-y-1.5">
-                    <p className="text-[11px] text-primary/90 font-medium">{t.short}</p>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">{t.detail}</p>
+                    {t.richDetail ? t.richDetail : (
+                      <>
+                        <p className="text-[11px] text-primary/90 font-medium">{t.short}</p>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">{t.detail}</p>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
