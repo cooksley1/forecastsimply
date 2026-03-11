@@ -1,9 +1,10 @@
 import {
-  Target, Zap, BarChart3, Clock, ArrowUpRight, ChevronRight, AlertTriangle, Shield,
+  Target, Zap, BarChart3, Clock, ArrowUpRight, ChevronRight, AlertTriangle, Shield, Info,
 } from 'lucide-react';
 import { fmtPrice, fmtPercent } from '@/utils/format';
 import { BestPick, AssetClass, type RiskProfile } from './types';
 import ShareRow from './ShareRow';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const WEIGHT_LABELS: Record<RiskProfile, string> = {
   conservative:           'Signal 50% · Return 20% · Confidence 30%',
