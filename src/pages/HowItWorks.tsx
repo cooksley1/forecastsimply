@@ -12,22 +12,22 @@ const STEPS = [
   {
     icon: <Brain className="w-6 h-6" />,
     title: '2. Technical Analysis',
-    desc: '11 weighted indicators are computed: SMA(20), SMA(50), MA Crossover, RSI(14), MACD, Bollinger Bands, Stochastic %K, OBV Divergence, VWAP, RSI Divergence, and Trend Strength.',
+    desc: '15 weighted indicators are computed: SMA(20), SMA(50), MA Crossover, RSI(14), MACD, Bollinger Bands, Stochastic %K, OBV Divergence, VWAP, RSI Divergence, Trend Strength, Market Structure (BOS/CHoCH), Supply/Demand Zones, Fibonacci Levels, and Volume Profile.',
   },
   {
     icon: <TrendingUp className="w-6 h-6" />,
     title: '3. Signal Scoring',
-    desc: 'Each indicator contributes +1 to +3 (bullish) or −1 to −3 (bearish). The composite score maps to Strong Buy, Buy, Hold, Sell, or Strong Sell.',
+    desc: 'Each indicator contributes +1 to +3 (bullish) or −1 to −3 (bearish). The composite score (−15 to +15) maps to Strong Buy, Buy, Hold, Sell, or Strong Sell.',
   },
   {
     icon: <Target className="w-6 h-6" />,
-    title: '4. Forecast Generation',
-    desc: 'Our Ensemble model blends Linear Regression (52%), Holt\'s DES (29%), and EMA Momentum (19%) — weights optimised from extensive backtesting.',
+    title: '4. Cross-Timeframe Consistency',
+    desc: 'Short-term signals are checked against longer-timeframe data. If longer timeframes disagree, the signal is dampened (50–80%) to reduce false signals. A warning note is shown when this happens.',
   },
   {
     icon: <Shield className="w-6 h-6" />,
-    title: '5. Risk Management',
-    desc: 'Entry, target, and stop-loss levels are generated based on your risk profile. Momentum projections are capped at ±15% with dampening to ensure realism.',
+    title: '5. Forecast & Risk Management',
+    desc: 'Our Ensemble model blends Linear Regression (52%), Holt\'s DES (29%), and EMA Momentum (19%). Entry, target, and stop-loss levels are generated based on your risk profile.',
   },
   {
     icon: <Zap className="w-6 h-6" />,
