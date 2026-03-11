@@ -5,7 +5,7 @@ interface PickItem {
   id: string;
   name?: string;
   divYield?: number;
-  signal?: { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string };
+  signal?: { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string; compositeScore?: number };
 }
 
 export type SortCriteria = 'default' | 'best-buys' | 'sells' | 'yield' | 'growth';
