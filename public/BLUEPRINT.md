@@ -1,4 +1,4 @@
-# ForecastSimply v8.0 — Complete Technical Blueprint
+# ForecastSimply v9.0 — Complete Technical Blueprint
 
 > **Purpose**: This document contains every detail needed to rebuild the ForecastSimply application from scratch — pixel-perfect, data-accurate, and functionally identical. It covers architecture, data flow, algorithms (with exact constants), UI structure, backend services, design system (with exact HSL values), and configuration.
 
