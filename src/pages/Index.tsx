@@ -392,6 +392,8 @@ export default function Index() {
       }
 
       const ta = processTA(closes, timestamps, volumes, forecastPercent, type, forecastMethods, riskLevel);
+      const adjustedSignal = await applyCrossTimeframeAdjustment(ta.signal, symbol, timeframeDays);
+      ta.signal = adjustedSignal;
       currentAssetRef.current = { id: symbol, type };
       setAssetInfo(info);
       setTechnicalData(ta);
