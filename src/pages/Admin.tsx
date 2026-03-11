@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import AdminAnalyticsTab from '@/components/admin/AdminAnalyticsTab';
 import AdminSubscribersTab from '@/components/admin/AdminSubscribersTab';
 import AdminMessagesTab from '@/components/admin/AdminMessagesTab';
+import AdminAnalysisTab from '@/components/admin/AdminAnalysisTab';
 
 // ── Types ──
 interface LoginRecord {
