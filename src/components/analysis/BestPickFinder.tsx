@@ -103,7 +103,7 @@ export default function BestPickFinder({ onViewAsset }: Props) {
       // ── 3. Compute composite score with risk-profile weights ──
       const scored: BestPick[] = data.map(row => ({
         ...row,
-        composite_score: computeCompositeScore(row as any, riskProfile),
+        composite_score: computeCompositeScore(row as any, activeProfile),
       })) as BestPick[];
 
       scored.sort((a, b) => (b.composite_score ?? 0) - (a.composite_score ?? 0));
