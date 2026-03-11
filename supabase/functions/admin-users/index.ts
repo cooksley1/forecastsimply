@@ -75,15 +75,25 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    // Check admin role
-    const { data: roleData } = await adminClient
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', caller.id)
-      .eq('role', 'admin')
-      .maybeSingle();
+    const isAdminUser = async (userId: string): Promise<boolean> => {
+      const { data, error } = await adminClient
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle();
+      if (error) throw error;
+      return !!data;
+    };
 
-    if (!roleData) throw new Error('Forbidden: admin role required');
+    const assertNotAdminTarget = async (userId: string, action: string) => {
+      if (await isAdminUser(userId)) {
+        throw new Error(`Cannot ${action} an admin user.`);
+      }
+    };
+
+    // Check admin role for caller
+    if (!(await isAdminUser(caller.id))) throw new Error('Forbidden: admin role required');
 
     const url = new URL(req.url);
     const action = url.searchParams.get('action');
