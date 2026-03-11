@@ -50,6 +50,31 @@ const TERMS: Term[] = [
     detail: 'Volume Weighted Average Price shows the average price weighted by how much was traded at each level. If the current price is above VWAP, buyers are dominant. Below VWAP, sellers have the edge.',
   },
   {
+    term: 'BOS (Break of Structure)',
+    short: 'Price breaks a key level in the direction of the current trend — confirming continuation.',
+    detail: 'A BOS happens when price breaks above the most recent swing high in an uptrend, or below the most recent swing low in a downtrend. It signals the trend is likely to continue. Contributes ±1 to the signal score.',
+  },
+  {
+    term: 'CHoCH (Change of Character)',
+    short: 'Price breaks a key level against the trend — potential reversal signal.',
+    detail: 'A CHoCH occurs when price breaks a swing point in the opposite direction of the prevailing trend. For example, breaking above a swing high during a downtrend. This is a stronger signal than BOS (±3 vs ±1) because it suggests a trend reversal.',
+  },
+  {
+    term: 'Supply/Demand Zones',
+    short: 'Price levels where buyers or sellers have historically stepped in strongly.',
+    detail: 'Demand zones are areas where price bounced up multiple times (clustered swing lows). Supply zones are areas where price reversed down (clustered swing highs). Zones with more "touches" are stronger. Being near a demand zone is bullish; near supply is bearish.',
+  },
+  {
+    term: 'Fibonacci Levels',
+    short: 'Key retracement levels (38.2%, 50%, 61.8%) where price often reacts.',
+    detail: 'Based on the Fibonacci sequence, these levels mark where price tends to find support or resistance during a pullback. The 61.8% level ("golden ratio") is the strongest. Price above a key fib level = support; below = resistance.',
+  },
+  {
+    term: 'Volume Profile',
+    short: 'Compares buying volume vs selling volume to detect accumulation or distribution.',
+    detail: 'Splits recent trading days into up-days and down-days. If average up-day volume is 1.5× higher than down-day volume, smart money is accumulating (bullish). The opposite suggests distribution (bearish). Also detects volume trend divergences.',
+  },
+  {
     term: 'Support & Resistance',
     short: 'Key price levels where the market tends to react.',
     detail: 'Support is a price "floor" — where buyers historically step in to stop falls. Resistance is a "ceiling" — where sellers appear to cap rises. A break above resistance is bullish; a break below support is bearish.',
@@ -58,6 +83,11 @@ const TERMS: Term[] = [
     term: 'R:R (Risk-to-Reward Ratio)',
     short: 'How much you stand to gain vs. how much you could lose.',
     detail: 'An R:R of 2.0 means your potential profit is twice your potential loss. Generally, 2.0 or higher is considered good. Below 1.0 means you\'re risking more than you could gain — usually not worth it.',
+  },
+  {
+    term: 'Cross-Timeframe Consistency',
+    short: 'Checks if longer timeframes agree with the short-term signal.',
+    detail: 'When you view a 30-day signal, the system checks 90, 180, and 365-day cached signals. If longer timeframes show opposite bias, the short-term signal is dampened by 20–50%. A warning note appears when this happens. This reduces false signals caused by short-term noise.',
   },
   {
     term: 'Market Phase',
@@ -87,8 +117,8 @@ const TERMS: Term[] = [
   },
   {
     term: 'Signal Score',
-    short: 'A combined rating from all indicators, from −100 to +100.',
-    detail: 'The signal score weighs every indicator together to give one overall reading. A high positive score = Strong Buy. A high negative score = Strong Sell. Near zero = Hold. This is the number you should follow — individual indicator readings are just context.',
+    short: 'A combined rating from all 15 indicators, from −15 to +15.',
+    detail: 'The signal score weighs every indicator together to give one overall reading. ≥8 = Strong Buy, 4–7 = Buy, −3 to 3 = Hold, −4 to −7 = Sell, ≤−8 = Strong Sell. Cross-timeframe dampening may further adjust the score when longer timeframes disagree.',
   },
   {
     term: 'Confidence Level',
@@ -96,7 +126,7 @@ const TERMS: Term[] = [
     detail: 'Confidence tells you how much the data supports the signal.',
     richDetail: (
       <div className="space-y-2">
-        <p className="text-[11px] text-muted-foreground leading-relaxed">Confidence tells you how much the data supports the current signal. It's not a guarantee — it's a measure of agreement among indicators.</p>
+        <p className="text-[11px] text-muted-foreground leading-relaxed">Confidence tells you how much the data supports the current signal. It's not a guarantee — it's a measure of agreement among the 15 indicators.</p>
         <div className="grid grid-cols-1 gap-1.5">
           {[
             { level: '90%+', color: 'bg-positive/10 text-positive border-positive/20', desc: 'Very high agreement — most indicators point the same way. The signal is well-supported, though no prediction is certain.' },

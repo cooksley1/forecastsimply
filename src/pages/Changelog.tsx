@@ -12,6 +12,17 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.7', date: 'March 2026', title: '15-Indicator Engine & Cross-Timeframe', type: 'released',
+    items: [
+      '15-indicator signal scoring: added Market Structure (BOS/CHoCH), Supply/Demand Zones, Fibonacci Levels, and Volume Profile',
+      'Cross-timeframe signal consistency — short-term signals dampened when longer timeframes disagree',
+      'Expanded score range (±15) with recalibrated thresholds (Strong Buy ≥8, Buy ≥4, Sell ≤-4, Strong Sell ≤-8)',
+      'Daily analysis cron upgraded to full 15-indicator engine with cross-timeframe dampening',
+      'Best Pick Finder and screeners now use same 15-indicator scoring as live analysis',
+      'New Glossary entries: BOS, CHoCH, Supply/Demand Zones, Fibonacci Levels, Volume Profile, Cross-Timeframe',
+    ],
+  },
+  {
     version: '1.6', date: 'March 2026', title: 'AI Case Studies & Blog', type: 'released',
     items: [
       'AI-powered case study generation for completed picks using Gemini 2.5 Flash',
@@ -62,7 +73,7 @@ const CHANGELOG: ChangelogEntry[] = [
     ],
   },
   {
-    version: '1.7', date: 'Q2 2026', title: 'AI Blog Generation', type: 'upcoming',
+    version: '1.8', date: 'Q2 2026', title: 'AI Blog Generation', type: 'upcoming',
     items: [
       'Auto-generated weekly market roundups from tracked data',
       'Country-specific content (ASX highlights for AU users, etc.)',
@@ -71,7 +82,7 @@ const CHANGELOG: ChangelogEntry[] = [
     ],
   },
   {
-    version: '1.8', date: 'Q2 2026', title: 'Portfolio Builder v2', type: 'upcoming',
+    version: '1.9', date: 'Q2 2026', title: 'Portfolio Builder v2', type: 'upcoming',
     items: [
       'Multi-asset portfolio simulation with rebalancing',
       'Correlation matrix and diversification scoring',

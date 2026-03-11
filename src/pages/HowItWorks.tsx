@@ -93,6 +93,7 @@ export default function HowItWorks() {
         {/* Signal thresholds */}
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-foreground">Signal Thresholds</h2>
+          <p className="text-xs text-muted-foreground">Score range is −15 to +15, calibrated for 15 indicators. Cross-timeframe dampening may further adjust the score.</p>
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <table className="w-full text-xs">
               <thead>
@@ -103,11 +104,11 @@ export default function HowItWorks() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                <tr><td className="px-4 py-2 text-positive font-semibold">Strong Buy</td><td className="px-4 py-2 font-mono">≥ 6</td><td className="px-4 py-2 text-muted-foreground">Multiple strong bullish signals aligned</td></tr>
-                <tr><td className="px-4 py-2 text-positive">Buy</td><td className="px-4 py-2 font-mono">3 to 5</td><td className="px-4 py-2 text-muted-foreground">Net bullish indicators outweigh bearish</td></tr>
-                <tr><td className="px-4 py-2 text-warning">Hold</td><td className="px-4 py-2 font-mono">-2 to 2</td><td className="px-4 py-2 text-muted-foreground">Mixed signals — no clear direction</td></tr>
-                <tr><td className="px-4 py-2 text-destructive">Sell</td><td className="px-4 py-2 font-mono">-3 to -5</td><td className="px-4 py-2 text-muted-foreground">Net bearish indicators dominate</td></tr>
-                <tr><td className="px-4 py-2 text-destructive font-semibold">Strong Sell</td><td className="px-4 py-2 font-mono">≤ -6</td><td className="px-4 py-2 text-muted-foreground">Multiple strong bearish signals aligned</td></tr>
+                <tr><td className="px-4 py-2 text-positive font-semibold">Strong Buy</td><td className="px-4 py-2 font-mono">≥ 8</td><td className="px-4 py-2 text-muted-foreground">Multiple strong bullish signals aligned across indicators</td></tr>
+                <tr><td className="px-4 py-2 text-positive">Buy</td><td className="px-4 py-2 font-mono">4 to 7</td><td className="px-4 py-2 text-muted-foreground">Net bullish indicators outweigh bearish</td></tr>
+                <tr><td className="px-4 py-2 text-warning">Hold</td><td className="px-4 py-2 font-mono">-3 to 3</td><td className="px-4 py-2 text-muted-foreground">Mixed signals — no clear direction</td></tr>
+                <tr><td className="px-4 py-2 text-destructive">Sell</td><td className="px-4 py-2 font-mono">-4 to -7</td><td className="px-4 py-2 text-muted-foreground">Net bearish indicators dominate</td></tr>
+                <tr><td className="px-4 py-2 text-destructive font-semibold">Strong Sell</td><td className="px-4 py-2 font-mono">≤ -8</td><td className="px-4 py-2 text-muted-foreground">Multiple strong bearish signals aligned</td></tr>
               </tbody>
             </table>
           </div>

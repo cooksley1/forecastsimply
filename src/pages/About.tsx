@@ -24,7 +24,7 @@ export default function About() {
             </div>
             <div className="bg-card border border-border rounded-xl p-4 space-y-2">
               <h3 className="text-foreground font-semibold">🔮 Smart Forecasting</h3>
-              <p className="text-xs">Multiple forecasting models including Holt's, Linear Regression, ARIMA, and Monte Carlo simulations.</p>
+              <p className="text-xs">Multiple forecasting models including Ensemble (default), Holt's DES, Linear Regression, EMA Momentum, and Monte Carlo simulations. Cross-timeframe consistency dampens signals when longer timeframes disagree.</p>
             </div>
             <div className="bg-card border border-border rounded-xl p-4 space-y-2">
               <h3 className="text-foreground font-semibold">🎯 Trade Setups</h3>

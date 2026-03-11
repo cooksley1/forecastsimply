@@ -229,7 +229,7 @@ export default function SignalPanel({ signal, price, name, symbol }: Props) {
                 <IndicatorRow key={ind.name} ind={ind} />
               ))}
               <p className="text-[10px] text-muted-foreground italic pt-1">
-                Click any indicator to see why it matters and how it contributed to the signal. Weights are calibrated from backtesting 13 assets across 234 tests.
+                Click any indicator to see why it matters and how it contributed to the signal. 15 indicators scored from backtesting 13 assets across 234 tests. Cross-timeframe consistency may adjust scores.
               </p>
             </div>
           )}
