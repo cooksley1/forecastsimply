@@ -4,6 +4,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import LoginDialog from '@/components/auth/LoginDialog';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import { useState } from 'react';
+import { APP_VERSION } from '@/utils/version';
 import { TrendingUp, Shield, BarChart3, Zap, ArrowRight } from 'lucide-react';
 import SEO from '@/components/SEO';
 import logoStackedDark from '@/assets/logo-stacked.svg';
@@ -123,7 +124,7 @@ export default function Landing() {
             <Link to="/disclaimer" className="text-[10px] sm:text-xs text-muted-foreground hover:text-foreground transition-colors">Disclaimer</Link>
           </div>
           <p className="text-center text-[10px] text-muted-foreground italic">Not financial advice. Always do your own research.</p>
-          <p className="text-center text-[9px] text-muted-foreground/40 font-mono">v{__APP_VERSION__}</p>
+          <p className="text-center text-[9px] text-muted-foreground/40 font-mono">v{APP_VERSION}</p>
         </div>
       </footer>
 

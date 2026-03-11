@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { LineChart, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { canRankRefresh, recordRankRefresh } from '@/utils/refreshLimit';
+import { APP_VERSION } from '@/utils/version';
 import { useRefreshExempt } from '@/hooks/useRefreshExempt';
 import PriceAlertDialog from '@/components/alerts/PriceAlertDialog';
 import type { SortCriteria, RankTimeframe } from '@/components/search/QuickPicks';
@@ -1202,7 +1203,7 @@ export default function Index() {
           <div className="text-center space-y-1">
             <p className="text-[10px] text-muted-foreground font-mono tracking-wider uppercase">Analyse · Forecast · Decide</p>
             <p className="text-[10px] text-muted-foreground italic">Not financial advice. Always do your own research.</p>
-            <p className="text-[9px] text-muted-foreground/40 font-mono">v{__APP_VERSION__}</p>
+            <p className="text-[9px] text-muted-foreground/40 font-mono">v{APP_VERSION}</p>
           </div>
         </div>
       </footer>
