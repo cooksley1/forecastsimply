@@ -633,6 +633,14 @@ export default function Index() {
       }
     }
 
+    // Check daily refresh limit before falling back to live API calls
+    if (!canRankRefresh()) {
+      toast.error('Daily live refresh limit reached. Add your own API keys in Account → API Keys for unlimited refreshes.', { duration: 6000 });
+      setRanking(false);
+      return;
+    }
+    recordRankRefresh();
+
     // Fallback: compute on-the-fly (for uncached assets or when cache is empty)
     const fetchOne = async (pick: { id: string }) => {
       if (results[pick.id]) return; // already from cache
