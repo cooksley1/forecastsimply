@@ -177,6 +177,8 @@ Deno.serve(async (req) => {
 
       if (action === 'delete') {
         const user_id = validateUUID(body.user_id, 'user_id');
+        await assertNotAdminTarget(user_id, 'delete');
+
         const { error } = await adminClient.auth.admin.deleteUser(user_id);
         if (error) throw error;
         return new Response(JSON.stringify({ success: true }), {
@@ -188,15 +190,9 @@ Deno.serve(async (req) => {
         const user_id = validateUUID(body.user_id, 'user_id');
         const duration = validateDuration(body.duration);
 
-        // Prevent banning admin users
+        // Never allow banning admin users
         if (duration > 0) {
-          const { data: targetRole } = await adminClient
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', user_id)
-            .eq('role', 'admin')
-            .maybeSingle();
-          if (targetRole) throw new Error('Cannot ban an admin user. Remove admin role first.');
+          await assertNotAdminTarget(user_id, 'ban');
         }
 
         const ban_duration = duration === 0 ? 'none' : `${duration}h`;
