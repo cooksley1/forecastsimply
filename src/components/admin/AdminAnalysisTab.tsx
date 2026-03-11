@@ -12,6 +12,7 @@ interface CacheStats {
 
 export default function AdminAnalysisTab() {
   const [running, setRunning] = useState<string | null>(null);
+  const [selectedTimeframe, setSelectedTimeframe] = useState(90);
   const [stats, setStats] = useState<CacheStats[]>([]);
   const [loading, setLoading] = useState(true);
 
