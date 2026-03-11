@@ -124,17 +124,16 @@ export default function Index() {
   // Crypto screener — top 500 coins
   const { coins: cryptoCoins, loading: cryptoScreenerLoading } = useCryptoScreener(assetType === 'crypto');
 
-  // Daily pre-computed analysis cache — fetch for the selected timeframe
-  const dailyAnalysisTimeframe = RANK_TIMEFRAME_DAYS[rankTimeframe] || 90;
+  // Daily pre-computed analysis cache — always use the user's selected timeframe for consistency
   const { data: dailyStockAnalysis, loading: dailyStockLoading } = useDailyAnalysis({
     assetType: 'stocks',
     exchange: stockExchange,
-    timeframeDays: dailyAnalysisTimeframe,
+    timeframeDays: timeframeDays,
     enabled: assetType === 'stocks',
   });
   const { data: dailyCryptoAnalysis, loading: dailyCryptoLoading } = useDailyAnalysis({
     assetType: 'crypto',
-    timeframeDays: dailyAnalysisTimeframe,
+    timeframeDays: timeframeDays,
     enabled: assetType === 'crypto',
   });
   const currentAssetRef = useRef<{ id: string; type: AssetType } | null>(null);
