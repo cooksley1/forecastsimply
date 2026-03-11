@@ -117,7 +117,7 @@ export default function BestPickFinder({ onViewAsset }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [assetClass, timeframe, viewMode, riskProfile]);
+  }, [assetClass, timeframe, viewMode, activeProfile]);
 
   const tf = TIMEFRAME_OPTIONS.find(t => t.id === timeframe)!;
   const resetState = () => { setResults([]); setHasSearched(false); setMarketCtx(null); };
