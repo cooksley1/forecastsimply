@@ -213,6 +213,11 @@ Deno.serve(async (req) => {
       if (action === 'set_role') {
         const user_id = validateUUID(body.user_id, 'user_id');
         const role = validateRole(body.role);
+
+        if (role !== 'admin') {
+          await assertNotAdminTarget(user_id, 'remove role from');
+        }
+
         const { error: delErr } = await adminClient.from('user_roles').delete().eq('user_id', user_id);
         if (delErr) throw delErr;
         const { error: insErr } = await adminClient.from('user_roles').insert({ user_id, role });
