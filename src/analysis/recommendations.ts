@@ -97,9 +97,7 @@ function scoreToLabel(score: number): { label: string; color: SignalColor } {
   return { label: 'Strong Sell', color: 'red' };
 }
 
-// ════════════════════════════════════════════════════════════════
-// 4. MARKET REGIME (from aggregate forecast)
-// ════════════════════════════════════════════════════════════════
+// (Regime classification kept for reasoning text only)
 
 type Regime = 'bullish' | 'neutral' | 'bearish';
 
@@ -109,31 +107,29 @@ function classifyRegime(forecastReturnPct: number): Regime {
   return 'neutral';
 }
 
-const ALLOWED_BY_REGIME: Record<Regime, string[]> = {
-  bullish: ['Strong Buy', 'Buy', 'Hold'],
-  neutral: ['Hold'],
-  bearish: ['Sell', 'Strong Sell'],
-};
-
 // ════════════════════════════════════════════════════════════════
-// 5. STRATEGY ALIGNMENT  (constrain label to regime)
+// 5. SOFT FORECAST NUDGE  (±1 level max from main signal)
 // ════════════════════════════════════════════════════════════════
 
 const SIGNAL_ORDER = ['Strong Sell', 'Sell', 'Hold', 'Buy', 'Strong Buy'];
 
-function alignToRegime(label: string, regime: Regime): { label: string; color: SignalColor } {
-  const allowed = ALLOWED_BY_REGIME[regime];
-  if (allowed.includes(label)) return scoreToLabel(signalToScore(label));
+/**
+ * Nudge the main signal label by at most ±1 level based on forecast direction.
+ * This keeps recommendations consistent with the main signal panel while
+ * allowing slight adjustment for strong forecast disagreement.
+ */
+function softForecastNudge(label: string, forecastReturnPct: number): { label: string; color: SignalColor } {
+  const idx = SIGNAL_ORDER.indexOf(label);
+  if (idx === -1) return scoreToLabel(signalToScore(label));
 
-  // Find nearest allowed signal
-  const currentIdx = SIGNAL_ORDER.indexOf(label);
-  let bestLabel = allowed[0];
-  let bestDist = Infinity;
-  for (const a of allowed) {
-    const dist = Math.abs(SIGNAL_ORDER.indexOf(a) - currentIdx);
-    if (dist < bestDist) { bestDist = dist; bestLabel = a; }
-  }
-  return scoreToLabel(signalToScore(bestLabel));
+  let nudge = 0;
+  // Only nudge if forecast strongly disagrees (>10% projected move against signal)
+  if (forecastReturnPct > 10 && idx < 3) nudge = 1;       // forecast bullish, signal bearish/neutral → nudge up
+  else if (forecastReturnPct < -10 && idx > 1) nudge = -1; // forecast bearish, signal bullish/neutral → nudge down
+
+  const newIdx = Math.max(0, Math.min(SIGNAL_ORDER.length - 1, idx + nudge));
+  const newLabel = SIGNAL_ORDER[newIdx];
+  return scoreToLabel(signalToScore(newLabel));
 }
 
 function signalToScore(label: string): number {
@@ -453,63 +449,59 @@ export function generateRecommendations(
 ): Recommendation[] {
   const recs: Recommendation[] = [];
 
-  // Compute aggregate forecast return
-  const forecastReturnPct = computeForecastReturn(currentPrice, forecastTarget, forecasts);
-  const regime = classifyRegime(forecastReturnPct);
+   // Compute aggregate forecast return
+   const forecastReturnPct = computeForecastReturn(currentPrice, forecastTarget, forecasts);
+   const regime = classifyRegime(forecastReturnPct);
 
-  // Extract indicator signals (use provided indicators or build minimal set)
-  const indSignals: IndicatorSignals = indicators
-    ? extractSignals(indicators, currentPrice)
-    : { rsi: 0, macd: 0, emaCross: 0, volume: 0, volatility: 0 };
+   // Extract indicator signals (still used for confidence + reasoning)
+   const indSignals: IndicatorSignals = indicators
+     ? extractSignals(indicators, currentPrice)
+     : { rsi: 0, macd: 0, emaCross: 0, volume: 0, volatility: 0 };
 
-  // Generate per-timeframe recommendations
-  for (const horizon of ['short', 'mid', 'long'] as const) {
-    // Step 1: Weighted trend score
-    const trendScore = computeTrendScore(indSignals, horizon);
+   // ── USE MAIN SIGNAL ENGINE AS SOURCE OF TRUTH ──
+   // signal.label comes from computeSignal() in signals.ts (10-indicator composite)
+   const baseLabel = signal.label; // 'Strong Buy' | 'Buy' | 'Hold' | 'Sell' | 'Strong Sell'
 
-    // Step 2: Map score to label
-    let { label, color } = scoreToLabel(trendScore);
+   // Generate per-timeframe recommendations
+   for (const horizon of ['short', 'mid', 'long'] as const) {
+     // Step 1: Start from the MAIN signal (same for all horizons)
+     // Step 2: Apply soft forecast nudge (±1 level max)
+     let { label, color } = softForecastNudge(baseLabel, forecastReturnPct);
 
-    // Step 3: Apply override rules (forecast contradiction)
-    label = applyOverrides(label, forecastReturnPct);
+     // Step 3: Derive color from final label
+     color = ['Strong Buy', 'Buy'].includes(label)
+       ? 'green'
+       : label === 'Hold' ? 'amber' : 'red';
 
-    // Step 4: Align to market regime
-    ({ label, color } = alignToRegime(label, regime));
+     // Step 4: Asset-specific label
+     const displayLabel = getAssetLabel(label, assetType);
 
-    // Step 5: Re-apply overrides after alignment
-    label = applyOverrides(label, forecastReturnPct);
-    color = ['Strong Buy', 'Buy', 'Hold'].includes(label)
-      ? (label === 'Hold' ? 'amber' : 'green')
-      : 'red';
+     // Step 5: Compute entry / target / stop-loss with validation
+     const { entry, target, stopLoss } = computeLevels(
+       currentPrice, label, horizon, riskLevel, forecastReturnPct,
+     );
 
-    // Step 6: Asset-specific label
-    const displayLabel = getAssetLabel(label, assetType);
+     // Step 6: Confidence (use main signal's confidence as base, blend with indicator alignment)
+     const algoConfidence = computeConfidence(indSignals, signal.score, forecastReturnPct);
+     const confidence = Math.round(0.6 * signal.confidence + 0.4 * algoConfidence);
 
-    // Step 7: Compute entry / target / stop-loss with validation
-    const { entry, target, stopLoss } = computeLevels(
-      currentPrice, label, horizon, riskLevel, forecastReturnPct,
-    );
+     // Step 7: Reasoning
+     const reasoning = buildReasoning(
+       horizon, indSignals, signal.score, forecastReturnPct,
+       regime, label, riskLevel, currentRsi,
+     );
 
-    // Step 8: Confidence
-    const confidence = computeConfidence(indSignals, trendScore, forecastReturnPct);
-
-    // Step 9: Reasoning
-    const reasoning = buildReasoning(
-      horizon, indSignals, trendScore, forecastReturnPct,
-      regime, label, riskLevel, currentRsi,
-    );
-
-    recs.push(validateAndFixRec({
-      horizon,
-      label: displayLabel,
-      action: label,
-      confidence,
-      color,
-      entry,
-      target,
-      stopLoss,
-      reasoning,
-    }));
+     recs.push(validateAndFixRec({
+       horizon,
+       label: displayLabel,
+       action: label,
+       confidence: Math.max(20, Math.min(95, confidence)),
+       color,
+       entry,
+       target,
+       stopLoss,
+       reasoning,
+     }));
   }
 
   // DCA for ETFs
