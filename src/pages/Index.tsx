@@ -804,30 +804,32 @@ export default function Index() {
                   </div>
                   {assetType === 'stocks' && (
                     <div className="flex items-center gap-2 flex-wrap">
-                      {stockExchange === 'ASX' && (
-                        <>
-                          <button
-                            onClick={() => { setAsxSubgroup('asx200'); setRankedPicks({}); setPickSort('default'); }}
-                            className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                              asxSubgroup === 'asx200'
-                                ? 'bg-primary/15 text-primary border border-primary/30'
-                                : 'bg-secondary/50 border border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
-                            }`}
-                          >
-                            S&P/ASX 200
-                          </button>
-                          <button
-                            onClick={() => { setAsxSubgroup('all'); setRankedPicks({}); setPickSort('default'); }}
-                            className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                              asxSubgroup === 'all'
-                                ? 'bg-primary/15 text-primary border border-primary/30'
-                                : 'bg-secondary/50 border border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
-                            }`}
-                          >
-                            All ASX ({screenerStocks.length > 200 ? `${screenerStocks.length}+` : '2200+'})
-                          </button>
-                        </>
-                      )}
+                      <div className="contents">
+                        {stockExchange === 'ASX' ? (
+                          <>
+                            <button
+                              onClick={() => { setAsxSubgroup('asx200'); setRankedPicks({}); setPickSort('default'); }}
+                              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                                asxSubgroup === 'asx200'
+                                  ? 'bg-primary/15 text-primary border border-primary/30'
+                                  : 'bg-secondary/50 border border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
+                              }`}
+                            >
+                              S&P/ASX 200
+                            </button>
+                            <button
+                              onClick={() => { setAsxSubgroup('all'); setRankedPicks({}); setPickSort('default'); }}
+                              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                                asxSubgroup === 'all'
+                                  ? 'bg-primary/15 text-primary border border-primary/30'
+                                  : 'bg-secondary/50 border border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
+                              }`}
+                            >
+                              All ASX ({screenerStocks.length > 200 ? `${screenerStocks.length}+` : '2200+'})
+                            </button>
+                          </>
+                        ) : null}
+                      </div>
                       <button
                         onClick={() => setDividendOnly(d => !d)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
