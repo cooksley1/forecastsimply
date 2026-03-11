@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { LineChart, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { canRankRefresh, recordRankRefresh } from '@/utils/refreshLimit';
+import { useRefreshExempt } from '@/hooks/useRefreshExempt';
 import PriceAlertDialog from '@/components/alerts/PriceAlertDialog';
 import type { SortCriteria, RankTimeframe } from '@/components/search/QuickPicks';
 import { RANK_TIMEFRAME_DAYS } from '@/components/search/QuickPicks';
@@ -73,6 +74,7 @@ const MemoBreakoutFinder = memo(BreakoutFinder);
 
 export default function Index() {
   const { user } = useAuth();
+  const { isExempt } = useRefreshExempt();
   const [assetType, setAssetType] = useState<AssetType>('crypto');
   const [overviewMode, setOverviewMode] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -636,7 +638,7 @@ export default function Index() {
     }
 
     // Check daily refresh limit before falling back to live API calls
-    if (!canRankRefresh()) {
+    if (!canRankRefresh(isExempt)) {
       toast.error('Daily live refresh limit reached. Add your own API keys in Account → API Keys for unlimited refreshes.', { duration: 6000 });
       setRanking(false);
       return;
@@ -704,7 +706,7 @@ export default function Index() {
 
     setRankedPicks(results);
     setRanking(false);
-  }, [getQuickPicks, assetType, rankTimeframe, dailyStockAnalysis, dailyCryptoAnalysis]);
+  }, [getQuickPicks, assetType, rankTimeframe, dailyStockAnalysis, dailyCryptoAnalysis, isExempt]);
 
   const handleCurrencyChange = useCallback((code: string) => {
     const newVal = code === 'none' ? null : code;

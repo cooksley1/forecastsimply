@@ -40,8 +40,9 @@ export function getRankUsageToday(): number {
 /** Max allowed per day (without own keys) */
 export const DAILY_RANK_LIMIT = 1;
 
-/** Can the user do a live rank refresh? */
-export function canRankRefresh(): boolean {
+/** Can the user do a live rank refresh? Accepts optional exempt flag. */
+export function canRankRefresh(isExempt = false): boolean {
+  if (isExempt) return true;
   if (hasOwnApiKeys()) return true;
   return getRecord().count < DAILY_RANK_LIMIT;
 }
@@ -54,7 +55,7 @@ export function recordRankRefresh(): void {
 }
 
 /** Get remaining refreshes */
-export function getRemainingRefreshes(): number {
-  if (hasOwnApiKeys()) return Infinity;
+export function getRemainingRefreshes(isExempt = false): number {
+  if (isExempt || hasOwnApiKeys()) return Infinity;
   return Math.max(0, DAILY_RANK_LIMIT - getRecord().count);
 }

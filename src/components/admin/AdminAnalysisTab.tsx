@@ -16,6 +16,9 @@ export default function AdminAnalysisTab() {
   const [selectedTimeframe, setSelectedTimeframe] = useState(90);
   const [stats, setStats] = useState<CacheStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [excludedSuffixes, setExcludedSuffixes] = useState<string[]>([]);
+  const [newSuffix, setNewSuffix] = useState('');
+  const [suffixSaving, setSuffixSaving] = useState(false);
 
   const fetchStats = async () => {
     setLoading(true);
@@ -41,7 +44,43 @@ export default function AdminAnalysisTab() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchStats(); }, []);
+  useEffect(() => {
+    fetchStats();
+    // Load excluded suffixes
+    supabase.from('app_config').select('value').eq('key', 'excluded_email_suffixes').maybeSingle()
+      .then(({ data }) => {
+        if (data?.value && Array.isArray(data.value)) {
+          setExcludedSuffixes((data.value as any[]).map(String));
+        }
+      });
+  }, []);
+
+  const saveSuffixes = async (updated: string[]) => {
+    setSuffixSaving(true);
+    const { error } = await supabase.from('app_config' as any)
+      .update({ value: updated, updated_at: new Date().toISOString() } as any)
+      .eq('key', 'excluded_email_suffixes');
+    setSuffixSaving(false);
+    if (error) {
+      toast.error('Failed to save: ' + error.message);
+    } else {
+      setExcludedSuffixes(updated);
+      toast.success('Excluded suffixes updated');
+    }
+  };
+
+  const addSuffix = () => {
+    const s = newSuffix.trim().toLowerCase();
+    if (!s) return;
+    const formatted = s.startsWith('@') ? s : `@${s}`;
+    if (excludedSuffixes.includes(formatted)) { toast.error('Already added'); return; }
+    saveSuffixes([...excludedSuffixes, formatted]);
+    setNewSuffix('');
+  };
+
+  const removeSuffix = (s: string) => {
+    saveSuffixes(excludedSuffixes.filter(x => x !== s));
+  };
 
   const triggerAnalysis = async (assetType: 'stocks' | 'crypto') => {
     setRunning(assetType);
@@ -240,6 +279,47 @@ export default function AdminAnalysisTab() {
           ))}
         </div>
       )}
+      {/* Refresh Limit Exemptions */}
+      <div className="border border-border rounded-xl bg-card p-4 space-y-3">
+        <div>
+          <h3 className="text-xs font-semibold text-foreground">🔓 Refresh Limit Exemptions</h3>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            Admins are always exempt. Add email suffixes below to exempt other users from the daily live refresh limit.
+          </p>
+        </div>
+
+        {/* Current suffixes */}
+        {excludedSuffixes.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {excludedSuffixes.map(s => (
+              <span key={s} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-mono text-primary">
+                {s}
+                <button onClick={() => removeSuffix(s)} className="hover:text-destructive transition-colors" disabled={suffixSaving}>✕</button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Add new */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newSuffix}
+            onChange={e => setNewSuffix(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addSuffix()}
+            placeholder="@company.com"
+            className="flex-1 bg-background border border-border rounded-lg px-3 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
+          />
+          <Button size="sm" onClick={addSuffix} disabled={suffixSaving || !newSuffix.trim()}>
+            {suffixSaving ? '...' : 'Add'}
+          </Button>
+        </div>
+
+        <p className="text-[9px] text-muted-foreground">
+          e.g. <code className="font-mono text-primary/70">@myteam.com</code> — any user with this email suffix gets unlimited live refreshes.
+        </p>
+      </div>
+
       {/* Info */}
       <div className="bg-muted/40 border border-border/60 rounded-lg px-4 py-3 space-y-1">
         <p className="text-[11px] font-semibold text-foreground">How it works</p>
