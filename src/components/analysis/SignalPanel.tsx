@@ -150,6 +150,15 @@ export default function SignalPanel({ signal, price, name, symbol }: Props) {
           </div>
         </div>
 
+        {/* Cross-timeframe warning */}
+        {(signal as any).crossTimeframeNote && (
+          <div className="mt-3 pt-3 border-t border-border/50">
+            <p className="text-[11px] sm:text-xs text-warning leading-relaxed font-medium">
+              {(signal as any).crossTimeframeNote}
+            </p>
+          </div>
+        )}
+
         {/* Summary with indicator counts */}
         <div className="mt-3 pt-3 border-t border-border/50">
           <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">

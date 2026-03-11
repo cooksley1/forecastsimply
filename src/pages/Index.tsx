@@ -46,6 +46,7 @@ import { getStockChart } from '@/services/api/yahoo';
 import { fetchCryptoHistory, fetchEquityHistory, fetchForexHistory } from '@/services/fetcher';
 import { getUnsupportedCoin, loadUnsupportedCoins } from '@/utils/unsupportedCoins';
 import { processTA } from '@/analysis/processTA';
+import { applyCrossTimeframeAdjustment } from '@/analysis/crossTimeframe';
 import type { ForecastMethodId } from '@/analysis/forecast';
 import {
   CRYPTO_PICKS, STOCK_PICKS_BY_EXCHANGE, ETF_PICKS_BY_EXCHANGE, FOREX_PICKS,
@@ -351,6 +352,8 @@ export default function Index() {
       };
 
       const ta = processTA(result.priceData.closes, result.priceData.timestamps, result.priceData.volumes, forecastPercent, 'crypto', forecastMethods, riskLevel);
+      const adjustedSignal = await applyCrossTimeframeAdjustment(ta.signal, coinId, timeframeDays);
+      ta.signal = adjustedSignal;
       currentAssetRef.current = { id: coinId, type: 'crypto' };
       setAssetInfo(info);
       setTechnicalData(ta);
@@ -389,6 +392,8 @@ export default function Index() {
       }
 
       const ta = processTA(closes, timestamps, volumes, forecastPercent, type, forecastMethods, riskLevel);
+      const adjustedSignal = await applyCrossTimeframeAdjustment(ta.signal, symbol, timeframeDays);
+      ta.signal = adjustedSignal;
       currentAssetRef.current = { id: symbol, type };
       setAssetInfo(info);
       setTechnicalData(ta);
@@ -419,6 +424,8 @@ export default function Index() {
       const info: AssetInfo = { id: pairId, symbol: `${from}/${to}`, name: `${from}/${to}`, assetType: 'forex', price: lastPrice, change24h, currency: to };
 
       const ta = processTA(closes, timestamps, volumes, forecastPercent, 'forex', forecastMethods, riskLevel);
+      const adjustedSignal = await applyCrossTimeframeAdjustment(ta.signal, pairId, timeframeDays);
+      ta.signal = adjustedSignal;
       currentAssetRef.current = { id: pairId, type: 'forex' };
       setAssetInfo(info);
       setTechnicalData(ta);
