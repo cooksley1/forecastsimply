@@ -26,10 +26,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Always set up auth state listener
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sess) => {
+    const applySession = (sess: Session | null) => {
       setSession(sess);
       setUser(sess?.user ?? null);
-      setLoading(false);
+    };
+
+    const decodeBase64Url = (value: string) => {
+      const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+      const pad = normalized.length % 4;
+      const padded = pad ? normalized + '='.repeat(4 - pad) : normalized;
+      return atob(padded);
+    };
+
+    const extractTokensFromLovableToken = (token: string): { access_token: string; refresh_token: string } | null => {
+      try {
+        // case 1: token is base64url(JSON)
+        const maybeJson = JSON.parse(decodeBase64Url(token));
+        if (maybeJson?.access_token && maybeJson?.refresh_token) {
+          return { access_token: maybeJson.access_token, refresh_token: maybeJson.refresh_token };
+        }
+      } catch {
+        // ignore
+      }
+
+      try {
+        // case 2: token is JWT with tokens in payload
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(decodeBase64Url(parts[1]));
+          if (payload?.access_token && payload?.refresh_token) {
+            return { access_token: payload.access_token, refresh_token: payload.refresh_token };
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      return null;
+    };
+
+    const cleanAuthParamsFromUrl = () => {
+      const url = new URL(window.location.href);
+      [
+        '__lovable_token', 'access_token', 'refresh_token', 'expires_at', 'expires_in',
+        'token_type', 'provider_token', 'provider_refresh_token', 'code', 'state',
+      ].forEach((k) => url.searchParams.delete(k));
+
+      if (/access_token|refresh_token|error=|type=/.test(url.hash)) {
+        url.hash = '';
+      }
+
+      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}` || '/');
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sess) => {
+      applySession(sess);
+      if (event !== 'INITIAL_SESSION') setLoading(false);
 
       // Clear all caches when user signs in so they get fresh data
       if (event === 'SIGNED_IN') {
@@ -49,48 +101,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // Process __lovable_token from OAuth redirect
-    const params = new URLSearchParams(window.location.search);
-    const lovableToken = params.get('__lovable_token');
+    const initAuth = async () => {
+      try {
+        const url = new URL(window.location.href);
+        const hashParams = new URLSearchParams(url.hash.startsWith('#') ? url.hash.slice(1) : url.hash);
+        const queryParams = url.searchParams;
 
-    if (lovableToken) {
-      // Clean the URL immediately
-      window.history.replaceState({}, '', window.location.pathname || '/');
+        const access_token = hashParams.get('access_token') || queryParams.get('access_token');
+        const refresh_token = hashParams.get('refresh_token') || queryParams.get('refresh_token');
+        const lovableToken = queryParams.get('__lovable_token');
 
-      (async () => {
-        try {
-          const decoded = JSON.parse(atob(lovableToken));
-          if (decoded.access_token && decoded.refresh_token) {
-            await supabase.auth.setSession({
-              access_token: decoded.access_token,
-              refresh_token: decoded.refresh_token,
-            });
-            return; // onAuthStateChange will handle the rest
+        // 1) OAuth token fragments (mobile Safari/Chrome redirect flows)
+        if (access_token && refresh_token) {
+          await supabase.auth.setSession({ access_token, refresh_token });
+          cleanAuthParamsFromUrl();
+        }
+
+        // 2) Lovable OAuth token envelope
+        if (!access_token && !refresh_token && lovableToken) {
+          const tokenPair = extractTokensFromLovableToken(lovableToken);
+          if (tokenPair) {
+            await supabase.auth.setSession(tokenPair);
           }
-        } catch (err) {
-          console.warn('[Auth] Could not process lovable token, falling back to session check');
+          cleanAuthParamsFromUrl();
         }
-        // Always fall back to getting the existing session
-        try {
-          const { data: { session: sess } } = await supabase.auth.getSession();
-          setSession(sess);
-          setUser(sess?.user ?? null);
-        } catch (err) {
-          console.error('[Auth] Failed to get session:', err);
+
+        // 3) Final session restore (with brief retry for mobile redirect timing)
+        let sess: Session | null = null;
+        for (let i = 0; i < 3; i++) {
+          const { data } = await supabase.auth.getSession();
+          sess = data.session;
+          if (sess) break;
+          await new Promise((r) => setTimeout(r, 250));
         }
+
+        applySession(sess);
+      } catch (err) {
+        console.error('[Auth] Failed to initialize session:', err);
+      } finally {
         setLoading(false);
-      })();
-    } else {
-      // Normal init — get existing session
-      supabase.auth.getSession().then(({ data: { session: sess } }) => {
-        setSession(sess);
-        setUser(sess?.user ?? null);
-        setLoading(false);
-      }).catch((err) => {
-        console.error('[Auth] Failed to get session:', err);
-        setLoading(false);
-      });
-    }
+      }
+    };
+
+    initAuth();
 
     return () => subscription.unsubscribe();
   }, []);
