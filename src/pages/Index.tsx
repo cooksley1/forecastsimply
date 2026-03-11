@@ -783,7 +783,7 @@ export default function Index() {
           />
 
           {/* Asset-specific filters — only when NOT in overview and NOT viewing analysis */}
-          {!overviewMode && !showAnalysis && (
+          {!overviewMode && !showAnalysis && !loading && (
             <div className="space-y-2">
               {assetType === 'forex' && <ForexPairSelector onAnalyse={(pairId) => analyseForex(pairId)} loading={loading} />}
               {(assetType === 'stocks' || assetType === 'etfs') && (
