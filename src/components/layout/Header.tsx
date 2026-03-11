@@ -86,7 +86,9 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
                 <Settings className="w-4 h-4" />
               </button>
 
-              {user ? (
+              {authLoading ? (
+                <div className="w-16 h-8 rounded-lg bg-muted animate-pulse" />
+              ) : user ? (
                 <button
                   onClick={() => setAccountOpen(true)}
                   className="flex items-center gap-1 px-1.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium border border-primary/30 text-primary hover:bg-primary/5 transition-all"
