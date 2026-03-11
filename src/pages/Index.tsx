@@ -95,7 +95,7 @@ export default function Index() {
   const [ranking, setRanking] = useState(false);
   const [rankedPicks, setRankedPicks] = useState<Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }>>({});
   const [pickSort, setPickSort] = useState<SortCriteria>('default');
-  const [rankTimeframe, setRankTimeframe] = useState<RankTimeframe>('3M');
+  const [rankTimeframe, setRankTimeframe] = useState<RankTimeframe>('6M');
   const [secondaryCurrency, setSecCurrency] = useState<string | null>(getSecondaryCurrency());
   const [secondaryPrice, setSecondaryPrice] = useState<number | null>(null);
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
