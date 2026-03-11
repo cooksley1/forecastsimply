@@ -1111,6 +1111,14 @@ export default function Index() {
           <div className="space-y-6">
             <LiveTracker />
 
+            <BestPickFinder onViewAsset={(id, type) => {
+              setOverviewMode(false);
+              setAssetType(type);
+              if (type === 'crypto') analyseCrypto(id);
+              else if (type === 'stocks') analyseStock(id, 'stocks');
+              else if (type === 'etfs') analyseStock(id, 'etfs');
+            }} />
+
             <TopPicksDashboard onSelect={(id, type) => {
               setOverviewMode(false);
               setAssetType(type);
