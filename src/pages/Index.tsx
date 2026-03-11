@@ -475,6 +475,11 @@ export default function Index() {
   const handleSearch = useCallback(async (query: string) => {
     isNewSearchRef.current = true;
     if (assetType === 'crypto') {
+      const unsupported = getUnsupportedCoin(query);
+      if (unsupported) {
+        setError(`⚠️ ${unsupported.name} is not supported. ${unsupported.reason}`);
+        return;
+      }
       setLoading(true);
       try {
         const results = await searchCoins(query);
