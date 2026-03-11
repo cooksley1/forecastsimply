@@ -5,29 +5,50 @@ export default function UpdatePrompt() {
   const [showUpdate, setShowUpdate] = useState(false);
 
   useEffect(() => {
-    // Listen for service worker updates
+    // Force any waiting service worker to activate immediately
+    const activateWaiting = (reg: ServiceWorkerRegistration) => {
+      if (reg.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+    };
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         setShowUpdate(true);
       });
 
-      // Also check for waiting service workers on load
       navigator.serviceWorker.getRegistration().then(reg => {
         if (reg?.waiting) {
+          activateWaiting(reg);
           setShowUpdate(true);
         }
+        // Force update check on every page load / visibility change
+        reg?.update().catch(() => {});
         reg?.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           newWorker?.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              activateWaiting(reg);
               setShowUpdate(true);
             }
           });
         });
       });
+
+      // Re-check for updates when PWA comes back to foreground
+      const onVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          navigator.serviceWorker.getRegistration().then(reg => {
+            reg?.update().catch(() => {});
+          });
+        }
+      };
+      document.addEventListener('visibilitychange', onVisibilityChange);
+
+      return () => document.removeEventListener('visibilitychange', onVisibilityChange);
     }
 
-    // Periodic version check (every 5 minutes) for non-PWA users
+    // Periodic version check (every 2 minutes) for all users
     const checkVersion = async () => {
       try {
         const res = await fetch('/?_v=' + Date.now(), { method: 'HEAD', cache: 'no-store' });
@@ -42,7 +63,7 @@ export default function UpdatePrompt() {
       } catch { /* ignore */ }
     };
 
-    const interval = setInterval(checkVersion, 5 * 60 * 1000);
+    const interval = setInterval(checkVersion, 2 * 60 * 1000);
     checkVersion();
     return () => clearInterval(interval);
   }, []);
