@@ -249,6 +249,12 @@ export default function IndicatorsPanel({ indicators, currentPrice }: Props) {
             <strong className="text-foreground"> Tap any indicator</strong> to see what it means and what action it suggests.
           </p>
         </div>
+        <div className="flex items-start gap-1.5 mt-1.5 bg-primary/5 rounded-md p-2 border border-primary/15">
+          <Info className="w-3 h-3 text-primary mt-0.5 shrink-0" />
+          <p className="text-[10px] text-primary/80 leading-relaxed">
+            <strong>Note:</strong> Each indicator shows its own individual reading. These may differ from the overall signal above, which weighs all indicators together. The overall signal is what you should follow — individual readings are for context only.
+          </p>
+        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {rows.map(row => (
