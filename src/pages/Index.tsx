@@ -38,6 +38,7 @@ import BreakoutFinder from '@/components/analysis/BreakoutFinder';
 import ConditionScreener from '@/components/analysis/ConditionScreener';
 import StrategyBacktester from '@/components/analysis/StrategyBacktester';
 import IndicatorBuilder from '@/components/analysis/IndicatorBuilder';
+import Glossary from '@/components/analysis/Glossary';
 import { getCoinData, searchCoins } from '@/services/api/coingecko';
 import { getDIACryptoPrice, geckoIdToDIASymbol } from '@/services/api/dia';
 import { getStockChart } from '@/services/api/yahoo';
