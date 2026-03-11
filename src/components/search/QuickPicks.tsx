@@ -5,7 +5,7 @@ interface PickItem {
   id: string;
   name?: string;
   divYield?: number;
-  signal?: { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string };
+  signal?: { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string; compositeScore?: number };
 }
 
 export type SortCriteria = 'default' | 'best-buys' | 'sells' | 'yield' | 'growth';
@@ -126,13 +126,13 @@ export default function QuickPicks({
     sorted.sort((a, b) => (b.divYield ?? 0) - (a.divYield ?? 0));
   } else if (sortBy === 'best-buys') {
     sorted = sorted.filter(p => p.signal?.label === 'Strong Buy' || p.signal?.label === 'Buy');
-    sorted.sort((a, b) => (b.signal?.score ?? 0) - (a.signal?.score ?? 0));
+    sorted.sort((a, b) => (b.signal?.compositeScore ?? b.signal?.score ?? 0) - (a.signal?.compositeScore ?? a.signal?.score ?? 0));
   } else if (sortBy === 'sells') {
     sorted = sorted.filter(p => p.signal?.label === 'Sell' || p.signal?.label === 'Strong Sell' || p.signal?.label === 'Hold');
-    sorted.sort((a, b) => (a.signal?.score ?? 999) - (b.signal?.score ?? 999));
+    sorted.sort((a, b) => (a.signal?.compositeScore ?? a.signal?.score ?? 999) - (b.signal?.compositeScore ?? b.signal?.score ?? 999));
   } else if (sortBy === 'growth') {
     sorted = sorted.filter(p => (p.divYield ?? 0) < 1);
-    sorted.sort((a, b) => (b.signal?.score ?? 0) - (a.signal?.score ?? 0));
+    sorted.sort((a, b) => (b.signal?.compositeScore ?? b.signal?.score ?? 0) - (a.signal?.compositeScore ?? a.signal?.score ?? 0));
   }
 
   // Pin watchlist items at top (max 5)

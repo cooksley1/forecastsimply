@@ -1,6 +1,7 @@
-import { ArrowUpRight, Trophy, AlertTriangle } from 'lucide-react';
+import { ArrowUpRight, Trophy, AlertTriangle, Info } from 'lucide-react';
 import { fmtPrice, fmtPercent } from '@/utils/format';
 import { BestPick, AssetClass } from './types';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function getSignalColor(label: string) {
   if (label.includes('Buy')) return 'bg-positive/10 text-positive border-positive/20';
@@ -76,7 +77,19 @@ export default function PickCompareCard({ pick, rank, assetClass, onViewAsset }:
       {/* Key metrics grid */}
       <div className="grid grid-cols-2 gap-1.5">
         <div className="bg-primary/10 rounded-md p-1.5 border border-primary/20 text-center col-span-2">
-          <span className="text-[8px] text-primary/80 block">Composite Score</span>
+          <div className="flex items-center justify-center gap-1">
+            <span className="text-[8px] text-primary/80">Composite Score</span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="w-2.5 h-2.5 text-primary/50 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[240px] text-[10px]">
+                  Blends Signal Strength, Forecast Return, and Confidence — weighted by your risk profile. Higher = better.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <span className="text-[11px] font-mono font-bold text-primary">{pick.composite_score ?? '—'}/100</span>
         </div>
         <div className="bg-background/50 rounded-md p-1.5 border border-border/30 text-center">
