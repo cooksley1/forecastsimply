@@ -59,8 +59,14 @@ export default function AdminAnalysisTab() {
     setLoading(false);
   };
 
+  const fetchUnsupportedCoins = async () => {
+    const { data } = await supabase.from('unsupported_coins').select('id, coin_id, name, reason').order('coin_id');
+    setUnsupportedCoins((data as UnsupportedCoinRow[]) || []);
+  };
+
   useEffect(() => {
     fetchStats();
+    fetchUnsupportedCoins();
     // Load excluded suffixes
     supabase.from('app_config').select('value').eq('key', 'excluded_email_suffixes').maybeSingle()
       .then(({ data }) => {
@@ -69,6 +75,29 @@ export default function AdminAnalysisTab() {
         }
       });
   }, []);
+
+  const addUnsupportedCoin = async () => {
+    const coinId = newCoinId.trim().toLowerCase().replace(/\s+/g, '-');
+    const name = newCoinName.trim();
+    const reason = newCoinReason.trim() || `${name} is not available on supported free data APIs.`;
+    if (!coinId || !name) { toast.error('Coin ID and name are required'); return; }
+    setCoinSaving(true);
+    const { error } = await supabase.from('unsupported_coins').insert({ coin_id: coinId, name, reason } as any);
+    setCoinSaving(false);
+    if (error) { toast.error(error.message.includes('duplicate') ? 'Already in list' : error.message); return; }
+    bustUnsupportedCache();
+    setNewCoinId(''); setNewCoinName(''); setNewCoinReason('');
+    fetchUnsupportedCoins();
+    toast.success(`Added ${name} to unsupported list`);
+  };
+
+  const removeUnsupportedCoin = async (id: string, name: string) => {
+    const { error } = await supabase.from('unsupported_coins').delete().eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    bustUnsupportedCache();
+    fetchUnsupportedCoins();
+    toast.success(`Removed ${name} from unsupported list`);
+  };
 
   const saveSuffixes = async (updated: string[]) => {
     setSuffixSaving(true);
