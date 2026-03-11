@@ -170,8 +170,13 @@ export default function BestPickFinder({ onViewAsset }: Props) {
 
         {/* Error */}
         {error && (
-          <div className="bg-muted/30 border border-border rounded-lg p-3 text-center">
+          <div className="bg-muted/30 border border-border rounded-lg p-3 text-center space-y-1">
             <p className="text-xs text-muted-foreground">{error}</p>
+            {error.includes('No strong picks') && (
+              <p className="text-[10px] text-muted-foreground/60">
+                Analysis data may still be generating. Check back in a few hours.
+              </p>
+            )}
           </div>
         )}
 
