@@ -116,24 +116,28 @@ const ALLOWED_BY_REGIME: Record<Regime, string[]> = {
 };
 
 // ════════════════════════════════════════════════════════════════
-// 5. STRATEGY ALIGNMENT  (constrain label to regime)
+// 5. SOFT FORECAST NUDGE  (±1 level max from main signal)
 // ════════════════════════════════════════════════════════════════
 
 const SIGNAL_ORDER = ['Strong Sell', 'Sell', 'Hold', 'Buy', 'Strong Buy'];
 
-function alignToRegime(label: string, regime: Regime): { label: string; color: SignalColor } {
-  const allowed = ALLOWED_BY_REGIME[regime];
-  if (allowed.includes(label)) return scoreToLabel(signalToScore(label));
+/**
+ * Nudge the main signal label by at most ±1 level based on forecast direction.
+ * This keeps recommendations consistent with the main signal panel while
+ * allowing slight adjustment for strong forecast disagreement.
+ */
+function softForecastNudge(label: string, forecastReturnPct: number): { label: string; color: SignalColor } {
+  const idx = SIGNAL_ORDER.indexOf(label);
+  if (idx === -1) return scoreToLabel(signalToScore(label));
 
-  // Find nearest allowed signal
-  const currentIdx = SIGNAL_ORDER.indexOf(label);
-  let bestLabel = allowed[0];
-  let bestDist = Infinity;
-  for (const a of allowed) {
-    const dist = Math.abs(SIGNAL_ORDER.indexOf(a) - currentIdx);
-    if (dist < bestDist) { bestDist = dist; bestLabel = a; }
-  }
-  return scoreToLabel(signalToScore(bestLabel));
+  let nudge = 0;
+  // Only nudge if forecast strongly disagrees (>10% projected move against signal)
+  if (forecastReturnPct > 10 && idx < 3) nudge = 1;       // forecast bullish, signal bearish/neutral → nudge up
+  else if (forecastReturnPct < -10 && idx > 1) nudge = -1; // forecast bearish, signal bullish/neutral → nudge down
+
+  const newIdx = Math.max(0, Math.min(SIGNAL_ORDER.length - 1, idx + nudge));
+  const newLabel = SIGNAL_ORDER[newIdx];
+  return scoreToLabel(signalToScore(newLabel));
 }
 
 function signalToScore(label: string): number {
