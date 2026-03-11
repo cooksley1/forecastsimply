@@ -97,9 +97,7 @@ function scoreToLabel(score: number): { label: string; color: SignalColor } {
   return { label: 'Strong Sell', color: 'red' };
 }
 
-// ════════════════════════════════════════════════════════════════
-// 4. MARKET REGIME (from aggregate forecast)
-// ════════════════════════════════════════════════════════════════
+// (Regime classification kept for reasoning text only)
 
 type Regime = 'bullish' | 'neutral' | 'bearish';
 
@@ -108,12 +106,6 @@ function classifyRegime(forecastReturnPct: number): Regime {
   if (forecastReturnPct < -15) return 'bearish';
   return 'neutral';
 }
-
-const ALLOWED_BY_REGIME: Record<Regime, string[]> = {
-  bullish: ['Strong Buy', 'Buy', 'Hold'],
-  neutral: ['Hold'],
-  bearish: ['Sell', 'Strong Sell'],
-};
 
 // ════════════════════════════════════════════════════════════════
 // 5. SOFT FORECAST NUDGE  (±1 level max from main signal)
