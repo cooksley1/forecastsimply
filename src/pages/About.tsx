@@ -19,8 +19,8 @@ export default function About() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-card border border-border rounded-xl p-4 space-y-2">
-              <h3 className="text-foreground font-semibold">📊 Multi-Asset Analysis</h3>
-              <p className="text-xs">Analyse crypto, stocks, ETFs, and forex pairs with unified technical indicators and signals.</p>
+              <h3 className="text-foreground font-semibold">📊 15-Indicator Analysis</h3>
+              <p className="text-xs">Analyse crypto, stocks, ETFs, and forex pairs with 15 weighted indicators including market structure (BOS/CHoCH), supply/demand zones, Fibonacci levels, and volume profile.</p>
             </div>
             <div className="bg-card border border-border rounded-xl p-4 space-y-2">
               <h3 className="text-foreground font-semibold">🔮 Smart Forecasting</h3>
