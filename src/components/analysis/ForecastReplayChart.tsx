@@ -194,12 +194,21 @@ export default function ForecastReplayChart({ data, entryPrice, targetPrice, sto
         </ResponsiveContainer>
       </div>
 
-      {/* Progress bar */}
-      <div className="h-1 bg-muted rounded-full overflow-hidden">
-        <div
-          className="h-full bg-primary rounded-full transition-all duration-200"
-          style={{ width: `${progress}%` }}
+      {/* Scrubber slider */}
+      <div className="flex items-center gap-2">
+        <span className="text-[9px] text-muted-foreground font-mono w-6 text-right shrink-0">1</span>
+        <input
+          type="range"
+          min={1}
+          max={total}
+          value={visibleCount}
+          onChange={(e) => {
+            stop();
+            setVisibleCount(Number(e.target.value));
+          }}
+          className="flex-1 h-1.5 appearance-none bg-muted rounded-full cursor-pointer accent-primary [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:border-0"
         />
+        <span className="text-[9px] text-muted-foreground font-mono w-6 shrink-0">{total}</span>
       </div>
 
       {/* Controls */}
