@@ -1774,4 +1774,4 @@ DailyVol = √(Σ(return - mean)² / n) × 100  (percentage)
 
 ---
 
-*End of Blueprint — ForecastSimply v8.0*
+*End of Blueprint — ForecastSimply v9.0*
