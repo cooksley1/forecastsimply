@@ -887,20 +887,27 @@ export default function Index() {
           )}
         </div>
 
-        {/* Smart Feed — only show in per-asset mode */}
-        {!overviewMode && (
-          <SmartFeed
-            watchlist={watchlist}
-            assetType={assetType}
-            exchange={assetType === 'stocks' ? stockExchange : assetType === 'etfs' ? etfExchange : undefined}
-            onSelectAsset={(id, type) => {
-              if (type === 'crypto') analyseCrypto(id);
-              else if (type === 'stocks') analyseStock(id, 'stocks');
-              else if (type === 'etfs') analyseStock(id, 'etfs');
-              else if (type === 'forex') analyseForex(id);
-            }}
-          />
-        )}
+        {/* Wrap all mutually exclusive view sections in a single keyed container
+            to prevent React insertBefore crashes during view transitions */}
+        {(() => {
+          const viewMode = showAnalysis ? 'analysis' : overviewMode ? 'overview' : loading ? 'loading' : error ? 'error' : 'dashboard';
+          return (
+            <div key={viewMode}>
+              {/* Smart Feed — only show in per-asset mode */}
+              {!overviewMode && (
+                <SmartFeed
+                  watchlist={watchlist}
+                  assetType={assetType}
+                  exchange={assetType === 'stocks' ? stockExchange : assetType === 'etfs' ? etfExchange : undefined}
+                  onSelectAsset={(id, type) => {
+                    if (type === 'crypto') analyseCrypto(id);
+                    else if (type === 'stocks') analyseStock(id, 'stocks');
+                    else if (type === 'etfs') analyseStock(id, 'etfs');
+                    else if (type === 'forex') analyseForex(id);
+                  }}
+                />
+              )}
+
 
         {loading && (
           <div className="text-center py-12">
@@ -934,7 +941,7 @@ export default function Index() {
 
         {/* ── ANALYSIS RESULTS — Card Grid Layout ── */}
         {showAnalysis && (
-          <div key="analysis-view" className="space-y-4">
+          <div className="space-y-4">
             {/* Signal + metadata bar */}
             <div id="section-signal" className="flex flex-col sm:flex-row sm:items-center gap-3 scroll-mt-36">
               <SignalPanel signal={technicalData.signal} price={assetInfo.price} name={assetInfo.name} symbol={assetInfo.symbol} />
@@ -1167,7 +1174,10 @@ export default function Index() {
             <StrategyBacktester assetId={null} assetType={assetType} assetName={null} technicalData={null} />
             <PortfolioBuilder riskProfile={riskProfile} riskLevel={riskLevel} onRiskLevelChange={setRiskLevel} />
           </div>
-        )}
+            )}
+            </div>
+          );
+        })()}
       </main>
 
       <footer className="border-t border-border mt-8 py-6 px-3">
