@@ -234,7 +234,60 @@ function analyseCloses(closes: number[]): AnalysisResult | null {
 }
 
 // ═══════════════════════════════════════════════════
-//  YAHOO FINANCE DATA FETCHING (with auth)
+//  CROSS-TIMEFRAME DAMPENING
+// ═══════════════════════════════════════════════════
+
+const LABEL_SCORE: Record<string, number> = {
+  'Strong Buy': 2, 'Buy': 1, 'Hold': 0, 'Sell': -1, 'Strong Sell': -2,
+};
+
+function applyCrossTimeframeDampening(
+  analysis: AnalysisResult,
+  currentTfDays: number,
+  longerTfRows: { timeframe_days: number; signal_score: number | null; signal_label: string | null; confidence: number | null }[],
+): AnalysisResult {
+  const longer = longerTfRows.filter(r => r.timeframe_days > currentTfDays && r.signal_score !== null);
+  if (longer.length === 0) return analysis;
+
+  const isBullish = analysis.signal_score > 0;
+  const isBearish = analysis.signal_score < 0;
+  if (!isBullish && !isBearish) return analysis; // Hold → no dampening
+
+  let contradictions = 0;
+  let lowConfCount = 0;
+
+  for (const tf of longer) {
+    const tfDir = (LABEL_SCORE[tf.signal_label ?? ''] ?? 0);
+    if (isBullish && tfDir < 0) contradictions++;
+    if (isBearish && tfDir > 0) contradictions++;
+    if ((tf.confidence ?? 50) < 50) lowConfCount++;
+  }
+
+  let factor = 1;
+  if (contradictions > 0) {
+    const ratio = contradictions / longer.length;
+    factor *= ratio >= 0.5 ? 0.5 : 0.75;
+  }
+  if (lowConfCount > 0 && contradictions === 0) {
+    if (lowConfCount / longer.length >= 0.5) factor *= 0.8;
+  }
+
+  if (factor >= 1) return analysis;
+
+  const adjustedScore = Math.max(-10, Math.min(10, Math.round(analysis.signal_score * factor)));
+
+  let label: string;
+  if (adjustedScore >= 6) label = 'Strong Buy';
+  else if (adjustedScore >= 3) label = 'Buy';
+  else if (adjustedScore <= -6) label = 'Strong Sell';
+  else if (adjustedScore <= -3) label = 'Sell';
+  else label = 'Hold';
+
+  const confidence = Math.min(95, 45 + Math.abs(adjustedScore) * 5);
+
+  return { ...analysis, signal_score: adjustedScore, signal_label: label, confidence };
+}
+
 // ═══════════════════════════════════════════════════
 
 let yahooSession: { crumb: string; cookies: string } | null = null;
@@ -496,11 +549,23 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const analysis = analyseCloses(closes);
+        let analysis = analyseCloses(closes);
         if (!analysis) {
           results.skipped++;
           continue;
         }
+
+        // Cross-timeframe dampening: fetch other cached timeframes for this asset
+        try {
+          const { data: otherTfs } = await db
+            .from('daily_analysis_cache')
+            .select('timeframe_days, signal_score, signal_label, confidence')
+            .eq('asset_id', asset.id)
+            .neq('timeframe_days', timeframeDays);
+          if (otherTfs && otherTfs.length > 0) {
+            analysis = applyCrossTimeframeDampening(analysis, timeframeDays, otherTfs);
+          }
+        } catch { /* proceed without dampening */ }
 
         const currentPrice = closes[closes.length - 1];
         const prevPrice = closes.length >= 2 ? closes[closes.length - 2] : currentPrice;
