@@ -21,19 +21,22 @@ export default function AdminAnalysisTab() {
     setLoading(true);
     const { data } = await supabase
       .from('daily_analysis_cache')
-      .select('asset_type, exchange, analyzed_at');
+      .select('asset_type, exchange, timeframe_days, analyzed_at');
 
     if (data && data.length > 0) {
       const groups: Record<string, CacheStats> = {};
       for (const row of data) {
-        const key = `${row.asset_type}|${row.exchange || 'global'}`;
+        const key = `${row.asset_type}|${row.exchange || 'global'}|${row.timeframe_days}`;
         if (!groups[key]) {
-          groups[key] = { asset_type: row.asset_type, exchange: row.exchange, count: 0, newest: row.analyzed_at };
+          groups[key] = { asset_type: row.asset_type, exchange: row.exchange, timeframe_days: row.timeframe_days, count: 0, newest: row.analyzed_at };
         }
         groups[key].count++;
         if (row.analyzed_at > groups[key].newest) groups[key].newest = row.analyzed_at;
       }
-      setStats(Object.values(groups));
+      setStats(Object.values(groups).sort((a, b) => {
+        if (a.asset_type !== b.asset_type) return a.asset_type.localeCompare(b.asset_type);
+        return a.timeframe_days - b.timeframe_days;
+      }));
     }
     setLoading(false);
   };
