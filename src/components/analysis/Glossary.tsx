@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { BookOpen, ChevronDown } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { BookOpen, ChevronDown, ShoppingCart, TrendingUp, Package, TrendingDown } from 'lucide-react';
 
 interface Term {
   term: string;
   short: string;
   detail: string;
+  richDetail?: ReactNode;
 }
 
 const TERMS: Term[] = [
