@@ -46,6 +46,7 @@ import { getStockChart } from '@/services/api/yahoo';
 import { fetchCryptoHistory, fetchEquityHistory, fetchForexHistory } from '@/services/fetcher';
 import { getUnsupportedCoin, loadUnsupportedCoins } from '@/utils/unsupportedCoins';
 import { processTA } from '@/analysis/processTA';
+import { applyCrossTimeframeAdjustment } from '@/analysis/crossTimeframe';
 import type { ForecastMethodId } from '@/analysis/forecast';
 import {
   CRYPTO_PICKS, STOCK_PICKS_BY_EXCHANGE, ETF_PICKS_BY_EXCHANGE, FOREX_PICKS,
