@@ -352,6 +352,8 @@ export default function Index() {
       };
 
       const ta = processTA(result.priceData.closes, result.priceData.timestamps, result.priceData.volumes, forecastPercent, 'crypto', forecastMethods, riskLevel);
+      const adjustedSignal = await applyCrossTimeframeAdjustment(ta.signal, coinId, timeframeDays);
+      ta.signal = adjustedSignal;
       currentAssetRef.current = { id: coinId, type: 'crypto' };
       setAssetInfo(info);
       setTechnicalData(ta);
