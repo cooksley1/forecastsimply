@@ -111,7 +111,17 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
           </div>
         </div>
       </header>
-      <ApiKeySettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {settingsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setSettingsOpen(false)}>
+          <div className="bg-card border border-border rounded-xl p-4 sm:p-6 max-w-md w-full shadow-xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm sm:text-base font-semibold text-foreground">🔑 API Keys</h2>
+              <button onClick={() => setSettingsOpen(false)} className="text-muted-foreground hover:text-foreground text-lg leading-none">&times;</button>
+            </div>
+            <ApiKeySettings embedded />
+          </div>
+        </div>
+      )}
       <LoginDialog open={loginOpen} onClose={() => setLoginOpen(false)} />
       {user && <AccountPanel open={accountOpen} onClose={() => setAccountOpen(false)} watchlist={watchlist} onWatchlistRemove={onWatchlistRemove} onWatchlistClear={onWatchlistClear} onWatchlistNoteUpdate={onWatchlistNoteUpdate} />}
     </>
