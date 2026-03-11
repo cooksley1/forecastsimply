@@ -33,6 +33,7 @@ import IndicatorsPanel from '@/components/analysis/IndicatorsPanel';
 import PortfolioBuilder from '@/components/analysis/PortfolioBuilder';
 import TopPicks from '@/components/analysis/TopPicks';
 import TopPicksDashboard from '@/components/analysis/TopPicksDashboard';
+import BestPickFinder from '@/components/analysis/BestPickFinder';
 import CongressTrades from '@/components/analysis/CongressTrades';
 import BreakoutFinder from '@/components/analysis/BreakoutFinder';
 import ConditionScreener from '@/components/analysis/ConditionScreener';
@@ -1109,6 +1110,14 @@ export default function Index() {
         {overviewMode && !technicalData && !loading && !error && (
           <div className="space-y-6">
             <LiveTracker />
+
+            <BestPickFinder onViewAsset={(id, type) => {
+              setOverviewMode(false);
+              setAssetType(type);
+              if (type === 'crypto') analyseCrypto(id);
+              else if (type === 'stocks') analyseStock(id, 'stocks');
+              else if (type === 'etfs') analyseStock(id, 'etfs');
+            }} />
 
             <TopPicksDashboard onSelect={(id, type) => {
               setOverviewMode(false);
