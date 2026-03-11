@@ -68,9 +68,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return; // onAuthStateChange will handle the rest
           }
         } catch (err) {
-          console.error('[Auth] Failed to process OAuth token:', err);
+          console.warn('[Auth] Could not process lovable token, falling back to session check');
         }
-        // If we couldn't process it, just finish loading
+        // Always fall back to getting the existing session
+        try {
+          const { data: { session: sess } } = await supabase.auth.getSession();
+          setSession(sess);
+          setUser(sess?.user ?? null);
+        } catch (err) {
+          console.error('[Auth] Failed to get session:', err);
+        }
         setLoading(false);
       })();
     } else {
