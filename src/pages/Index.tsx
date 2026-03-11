@@ -33,6 +33,7 @@ import IndicatorsPanel from '@/components/analysis/IndicatorsPanel';
 import PortfolioBuilder from '@/components/analysis/PortfolioBuilder';
 import TopPicks from '@/components/analysis/TopPicks';
 import TopPicksDashboard from '@/components/analysis/TopPicksDashboard';
+import BestPickFinder from '@/components/analysis/BestPickFinder';
 import CongressTrades from '@/components/analysis/CongressTrades';
 import BreakoutFinder from '@/components/analysis/BreakoutFinder';
 import ConditionScreener from '@/components/analysis/ConditionScreener';
