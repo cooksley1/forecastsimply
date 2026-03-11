@@ -1115,7 +1115,7 @@ export default function Index() {
 
         {/* ── OVERVIEW MODE (All tab) ── */}
         {overviewMode && !technicalData && !loading && !error && (
-          <div className="space-y-6">
+          <div key="overview-mode" className="space-y-6">
             <LiveTracker />
 
             <BestPickFinder onViewAsset={(id, type) => {
