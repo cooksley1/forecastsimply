@@ -185,14 +185,14 @@ export default function QuickPicks({
           )}
         </div>
 
-        {/* Projected return caveat */}
+        {/* Projected return + composite score */}
         {p.signal?.projectedReturn !== undefined && (
-          <div className="text-[9px] leading-tight text-muted-foreground">
+          <div className="text-[9px] leading-tight text-muted-foreground flex items-center gap-2">
             <span className={p.signal.projectedReturn >= 0 ? 'text-positive font-semibold' : 'text-destructive font-semibold'}>
               {p.signal.projectedReturn >= 0 ? '+' : ''}{p.signal.projectedReturn.toFixed(1)}% expected
             </span>
             {p.signal.peakWarning && (
-              <span className="ml-1 text-warning">⚠ {p.signal.peakWarning}</span>
+              <span className="text-warning">⚠ {p.signal.peakWarning}</span>
             )}
           </div>
         )}
