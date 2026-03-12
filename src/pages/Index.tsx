@@ -657,7 +657,7 @@ export default function Index() {
     setRanking(true);
     const picks = getQuickPicks();
     const tfDays = timeframeDaysForRank || timeframeDays;
-    const results: Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }> = {};
+    const results: Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string; compositeScore?: number }> = {};
 
     // If picks already have signals from cache (via getQuickPicks), short-circuit
     const alreadySignalled = picks.filter(p => p.signal).length;
