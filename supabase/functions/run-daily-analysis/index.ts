@@ -832,7 +832,7 @@ async function fetchCryptoList(limit = 300): Promise<{ id: string; sym: string; 
     const count = Math.min(perPage, limit - all.length);
     const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${count}&page=${page}&sparkline=false`;
     try {
-      const res = await fetch(url, {
+      const res = await fetchWithRetry(url, {
         headers: { 'User-Agent': UA, 'Accept': 'application/json' },
         signal: AbortSignal.timeout(15000),
       });
