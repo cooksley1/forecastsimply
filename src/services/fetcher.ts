@@ -291,6 +291,58 @@ export async function fetchCryptoHistory(coinId: string, days: number, knownSymb
 }
 
 /**
+ * Build synthetic chart data from CMC when all primary sources fail.
+ * Uses the CMC proxy to get current price + 24h/7d changes.
+ */
+async function buildCMCFallbackData(coinId: string, symbol: string, days: number): Promise<CryptoFetchResult | null> {
+  const cmcData = await getCMCCoinData(symbol);
+  if (!cmcData || !cmcData.price) return null;
+
+  const livePrice = cmcData.price;
+  const pct24h = cmcData.change24h || 0;
+  const pct7d = cmcData.change7d || pct24h * 3;
+
+  const now = Date.now();
+  const points = Math.min(days, 30);
+  const timestamps: number[] = [];
+  const closes: number[] = [];
+  const volumes: number[] = [];
+
+  const dailyChange = (pct7d / 7) / 100;
+  const startPrice = livePrice / (1 + dailyChange * points);
+
+  for (let i = 0; i <= points; i++) {
+    const t = now - (points - i) * 86400000;
+    const progress = i / points;
+    const price = startPrice * (1 + dailyChange * i) + (Math.sin(progress * Math.PI * 4) * startPrice * 0.005);
+    timestamps.push(t);
+    closes.push(price);
+    volumes.push(cmcData.volume24h ? cmcData.volume24h * (0.8 + Math.random() * 0.4) : 0);
+  }
+
+  closes[closes.length - 1] = livePrice;
+
+  return {
+    priceData: { timestamps, closes, volumes },
+    coinData: {
+      name: cmcData.name,
+      symbol: cmcData.symbol,
+      market_data: {
+        current_price: { usd: livePrice },
+        price_change_percentage_24h: pct24h,
+        price_change_percentage_7d: pct7d,
+        market_cap: { usd: cmcData.marketCap },
+        total_volume: { usd: cmcData.volume24h },
+        circulating_supply: cmcData.circulatingSupply,
+        max_supply: cmcData.maxSupply,
+      },
+      market_cap_rank: cmcData.rank,
+    },
+    source: 'CoinMarketCap (synthetic chart)',
+  };
+}
+
+
  * Build minimal chart data from CoinLore + DIA when main sources are rate-limited.
  * CoinLore provides current price and % changes; DIA provides live price.
  * We construct a synthetic price history from the available change percentages.
