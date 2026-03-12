@@ -82,6 +82,7 @@ const MemoBreakoutFinder = memo(BreakoutFinder);
 export default function Index() {
   const { user } = useAuth();
   const { isExempt } = useRefreshExempt();
+  const { track } = useActivityTracker();
   const [assetType, setAssetType] = useState<AssetType>('crypto');
   const [overviewMode, setOverviewMode] = useState(true);
   const [loading, setLoading] = useState(false);
