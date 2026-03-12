@@ -846,8 +846,16 @@ Deno.serve(async (req) => {
     for (const asset of batch) {
       results.processed++;
       try {
-        const yahooTicker = assetType === 'crypto' ? geckoToYahoo(asset.id) : asset.sym;
-        const chartData = await fetchYahooChart(yahooTicker, range);
+        let chartData: ChartData;
+        if (assetType === 'forex') {
+          const from = asset.id.slice(0, 3);
+          const to = asset.id.slice(3, 6);
+          const fxData = await fetchForexChart(from, to, timeframeDays);
+          chartData = { closes: fxData.closes, volumes: [] };
+        } else {
+          const yahooTicker = assetType === 'crypto' ? geckoToYahoo(asset.id) : asset.sym;
+          chartData = await fetchYahooChart(yahooTicker, range);
+        }
 
         if (chartData.closes.length < 20) {
           results.skipped++;
