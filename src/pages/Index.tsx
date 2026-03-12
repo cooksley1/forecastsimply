@@ -94,6 +94,7 @@ export default function Index() {
   const [activeOverlays, setActiveOverlays] = useState<OverlayId[]>([]);
   const [fullscreenChart, setFullscreenChart] = useState(false);
   const isNewSearchRef = useRef(false);
+  const analysisSnapshotRef = useRef<HTMLDivElement>(null);
   const [dataSource, setDataSource] = useState<string>('');
   const [dataFetchedAt, setDataFetchedAt] = useState<Date | null>(null);
   // Country-based defaults
