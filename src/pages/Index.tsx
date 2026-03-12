@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { canRankRefresh, recordRankRefresh } from '@/utils/refreshLimit';
 import { APP_VERSION } from '@/utils/version';
 import { useRefreshExempt } from '@/hooks/useRefreshExempt';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import PriceAlertDialog from '@/components/alerts/PriceAlertDialog';
 import type { SortCriteria, RankTimeframe } from '@/components/search/QuickPicks';
 import { RANK_TIMEFRAME_DAYS } from '@/components/search/QuickPicks';
