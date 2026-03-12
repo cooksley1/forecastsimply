@@ -437,7 +437,7 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, addToWatchlist, saveToHistory]);
+  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, saveToHistory]);
 
   /* ── Auto-reanalyse ── */
   useEffect(() => {
