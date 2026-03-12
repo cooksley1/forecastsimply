@@ -135,10 +135,12 @@ export default function QuickPicks({
     sorted.sort((a, b) => (b.signal?.compositeScore ?? b.signal?.score ?? 0) - (a.signal?.compositeScore ?? a.signal?.score ?? 0));
   }
 
-  // Pin watchlist items at top (max 5)
+  // Pin watchlist items at top — only in default/yield mode where there's no composite ranking.
+  // In ranked modes (best-buys, sells, growth), keep sort order strict and just mark pinned items.
+  const isRankedMode = sortBy === 'best-buys' || sortBy === 'sells' || sortBy === 'growth';
   const watchlistPinned: PickItem[] = [];
   const rest: PickItem[] = [];
-  if (watchlistIds && watchlistIds.size > 0) {
+  if (watchlistIds && watchlistIds.size > 0 && !isRankedMode) {
     for (const p of sorted) {
       if (watchlistIds.has(p.id) && watchlistPinned.length < 5) {
         watchlistPinned.push(p);
@@ -155,13 +157,15 @@ export default function QuickPicks({
   const hasMore = allOrdered.length > maxVisible;
   const isFiltering = ranking || (loading && sortBy !== 'default');
 
-  const renderCard = (p: PickItem, i: number, isPinned: boolean) => (
+  const renderCard = (p: PickItem, i: number, isPinned: boolean) => {
+    const isWatchlisted = !isPinned && isRankedMode && watchlistIds?.has(p.id);
+    return (
     <button
       key={p.id}
       onClick={() => onSelect(p.id)}
       disabled={loading}
       className={`flex items-start gap-3 px-3 py-2.5 rounded-xl border text-left hover:border-primary/40 hover:bg-primary/5 transition-all disabled:opacity-50 group ${
-        isPinned ? 'bg-primary/5 border-primary/20' : 'bg-sf-elevated border-border'
+        isPinned ? 'bg-primary/5 border-primary/20' : isWatchlisted ? 'bg-primary/5 border-primary/10' : 'bg-sf-elevated border-border'
       }`}
     >
       {/* Rank / pin indicator */}
@@ -183,16 +187,19 @@ export default function QuickPicks({
           {isPinned && (
             <span className="text-[8px] text-primary/70 font-medium">WATCHLIST</span>
           )}
+          {isWatchlisted && (
+            <span className="text-[8px] text-primary/70 font-medium">WATCHLIST</span>
+          )}
         </div>
 
-        {/* Projected return caveat */}
+        {/* Projected return + composite score */}
         {p.signal?.projectedReturn !== undefined && (
-          <div className="text-[9px] leading-tight text-muted-foreground">
+          <div className="text-[9px] leading-tight text-muted-foreground flex items-center gap-2">
             <span className={p.signal.projectedReturn >= 0 ? 'text-positive font-semibold' : 'text-destructive font-semibold'}>
               {p.signal.projectedReturn >= 0 ? '+' : ''}{p.signal.projectedReturn.toFixed(1)}% expected
             </span>
             {p.signal.peakWarning && (
-              <span className="ml-1 text-warning">⚠ {p.signal.peakWarning}</span>
+              <span className="text-warning">⚠ {p.signal.peakWarning}</span>
             )}
           </div>
         )}
@@ -200,6 +207,11 @@ export default function QuickPicks({
 
       {/* Info badges */}
       <div className="flex items-center gap-2 shrink-0">
+        {p.signal?.compositeScore !== undefined && sortBy !== 'default' && sortBy !== 'yield' && (
+          <span className="text-[9px] font-mono text-muted-foreground/70" title="Composite score (signal + forecast + confidence)">
+            {p.signal.compositeScore}%
+          </span>
+        )}
         {showDividends && p.divYield !== undefined && p.divYield > 0 && (
           <span className={`text-[10px] font-bold ${yieldBadge(p.divYield).cls}`}>
             💰 {p.divYield.toFixed(1)}%
@@ -213,6 +225,7 @@ export default function QuickPicks({
       </div>
     </button>
   );
+  };
 
   return (
     <div className="space-y-2">
