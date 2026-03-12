@@ -889,7 +889,7 @@ export default function Index() {
                 loading={loading || (screenerLoading && (useStockScreener || useEtfScreener)) || (cryptoScreenerLoading && assetType === 'crypto')}
                 onRank={handleRankPicks}
                 ranking={ranking || ((assetType === 'stocks' ? dailyStockLoading : dailyCryptoLoading) && pickSort !== 'default')}
-                showDividends={assetType === 'stocks'}
+                showDividends={assetType === 'stocks' || assetType === 'etfs'}
                 sortBy={pickSort}
                 onSortChange={setPickSort}
                 maxVisible={15}
