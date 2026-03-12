@@ -55,24 +55,19 @@ export default function AdminAnalysisTab() {
 
   const fetchStats = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('daily_analysis_cache')
-      .select('asset_type, exchange, timeframe_days, analyzed_at');
+    // Use server-side aggregate to avoid 1000-row default limit
+    const { data, error } = await supabase.rpc('get_cache_stats');
 
-    if (data && data.length > 0) {
-      const groups: Record<string, CacheStats> = {};
-      for (const row of data) {
-        const key = `${row.asset_type}|${row.exchange || 'global'}|${row.timeframe_days}`;
-        if (!groups[key]) {
-          groups[key] = { asset_type: row.asset_type, exchange: row.exchange, timeframe_days: row.timeframe_days, count: 0, newest: row.analyzed_at };
-        }
-        groups[key].count++;
-        if (row.analyzed_at > groups[key].newest) groups[key].newest = row.analyzed_at;
-      }
-      setStats(Object.values(groups).sort((a, b) => {
-        if (a.asset_type !== b.asset_type) return a.asset_type.localeCompare(b.asset_type);
-        return a.timeframe_days - b.timeframe_days;
-      }));
+    if (data && Array.isArray(data) && data.length > 0) {
+      setStats(data.map((row: any) => ({
+        asset_type: row.asset_type,
+        exchange: row.exchange === 'global' ? null : row.exchange,
+        timeframe_days: row.timeframe_days,
+        count: Number(row.count),
+        newest: row.newest,
+      })));
+    } else {
+      setStats([]);
     }
     setLoading(false);
   };
