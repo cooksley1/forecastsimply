@@ -74,14 +74,17 @@ Deno.serve(async (req) => {
       .split("T")[0];
 
     // Check existing picks for this month
-    const { data: existing } = await supabase
+    const { data: existing, error: existErr } = await supabase
       .from("tracked_picks")
-      .select("id, asset_type, timeframe_days, rank")
+      .select("id, asset_type, asset_id, timeframe_days, rank")
       .eq("month_start", monthStart);
+
+    console.log("Existing picks for", monthStart, ":", existing?.length, "error:", existErr?.message);
 
     const existingKey = new Set(
       (existing || []).map((e: any) => `${e.asset_type}-${e.timeframe_days}-${e.rank}`)
     );
+    console.log("Existing keys:", [...existingKey]);
 
     const results: any[] = [];
 
