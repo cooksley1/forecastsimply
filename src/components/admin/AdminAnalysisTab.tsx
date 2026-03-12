@@ -213,31 +213,62 @@ export default function AdminAnalysisTab() {
 
   const triggerRunAll = async () => {
     setRunAllActive(true);
-    const combos: { type: 'stocks' | 'crypto' | 'etfs' | 'forex'; tf: number }[] = [];
-    const types: ('stocks' | 'crypto' | 'etfs' | 'forex')[] = ['stocks', 'crypto', 'etfs', 'forex'];
-    const timeframes = [30, 90, 180, 365];
-    for (const type of types) {
-      for (const tf of timeframes) {
-        combos.push({ type, tf });
-      }
-    }
+    setRunAllProgress('Starting…');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
 
-    for (let i = 0; i < combos.length; i++) {
-      const { type, tf } = combos[i];
-      const label = `${type} ${tf === 30 ? '1M' : tf === 90 ? '3M' : tf === 180 ? '6M' : '1Y'}`;
-      setRunAllProgress(`${i + 1}/${combos.length}: ${label}`);
-      try {
-        await triggerAnalysis(type, tf);
-        // Small delay between runs to avoid overwhelming
-        await new Promise(r => setTimeout(r, 1000));
-      } catch {
-        // Continue with next combo
+      // Build queue: forex first (fastest), then crypto, etfs, then stocks (slowest)
+      // Each type runs all 4 timeframes before moving to the next
+      const types: string[] = ['forex', 'crypto', 'etfs', 'stocks'];
+      const timeframes = [30, 90, 180, 365];
+      const allCombos: { type: string; tf: number }[] = [];
+      for (const type of types) {
+        for (const tf of timeframes) {
+          allCombos.push({ type, tf });
+        }
       }
+
+      // Send the first combo with the rest as a queue — the backend handles chaining
+      const first = allCombos[0];
+      const queue = allCombos.slice(1).map(c => ({ type: c.type, tf: c.tf }));
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/run-daily-analysis`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            asset_type: first.type,
+            offset: 0,
+            timeframe: first.tf,
+            queue,
+          }),
+        }
+      );
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed');
+
+      toast.success(`Run All started — ${allCombos.length} combos queued. Backend will chain them automatically.`);
+      setRunAllProgress('Running (auto-chaining)…');
+
+      // Poll stats periodically
+      const interval = setInterval(fetchStats, 15000);
+      setTimeout(() => {
+        clearInterval(interval);
+        setRunAllActive(false);
+        setRunAllProgress('');
+        fetchStats();
+      }, 120000); // Stop polling after 2 min (runs continue in background)
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to trigger Run All');
+      setRunAllActive(false);
+      setRunAllProgress('');
     }
-    setRunAllProgress('');
-    setRunAllActive(false);
-    toast.success('All analysis runs triggered!');
-    fetchStats();
   };
 
   const formatDate = (d: string) => {

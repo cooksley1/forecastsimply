@@ -8,6 +8,37 @@ const corsHeaders = {
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
 const BATCH_SIZE = 40;
 const YAHOO_DELAY = 150;
+const MAX_RETRIES = 3;
+
+// ═══════════════════════════════════════════════════
+//  RETRY WRAPPER — exponential backoff for all API calls
+// ═══════════════════════════════════════════════════
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit & { signal?: AbortSignal } = {},
+  retries = MAX_RETRIES,
+): Promise<Response> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, options);
+      // Retry on rate-limit or server errors
+      if ((res.status === 429 || res.status >= 500) && attempt < retries) {
+        const wait = 1000 * Math.pow(2, attempt - 1) + Math.random() * 500;
+        console.warn(`[retry] ${res.status} for ${url.slice(0, 80)}… attempt ${attempt}/${retries}, waiting ${Math.round(wait)}ms`);
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      return res;
+    } catch (err: any) {
+      if (attempt >= retries) throw err;
+      const wait = 1000 * Math.pow(2, attempt - 1);
+      console.warn(`[retry] Network error for ${url.slice(0, 80)}… attempt ${attempt}/${retries}: ${err.message}`);
+      await new Promise(r => setTimeout(r, wait));
+    }
+  }
+  throw new Error(`Max retries (${retries}) exceeded for ${url.slice(0, 80)}`);
+}
 
 // ═══════════════════════════════════════════════════
 //  TECHNICAL ANALYSIS INDICATORS
@@ -580,9 +611,9 @@ interface ChartData { closes: number[]; volumes: number[]; }
 
 async function fetchYahooChart(symbol: string, range = '3mo', interval = '1d'): Promise<ChartData> {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}&includePrePost=false`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: { 'User-Agent': UA },
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(12000),
   });
   if (!res.ok) throw new Error(`Yahoo ${res.status} for ${symbol}`);
   const data = await res.json();
@@ -592,7 +623,6 @@ async function fetchYahooChart(symbol: string, range = '3mo', interval = '1d'): 
   const rawCloses: (number | null)[] = result.indicators.quote[0].close;
   const rawVolumes: (number | null)[] = result.indicators.quote[0].volume || [];
   
-  // Filter out nulls, keeping closes and volumes aligned
   const closes: number[] = [];
   const volumes: number[] = [];
   for (let i = 0; i < rawCloses.length; i++) {
@@ -775,7 +805,7 @@ async function fetchForexChart(from: string, to: string, days: number): Promise<
   const start = new Date(end);
   start.setDate(start.getDate() - days);
   const url = `https://api.frankfurter.app/${fmtDate(start)}..${fmtDate(end)}?from=${from}&to=${to}`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  const res = await fetchWithRetry(url, { signal: AbortSignal.timeout(15000) });
   if (!res.ok) throw new Error(`Frankfurter ${res.status} for ${from}/${to}`);
   const data = await res.json();
   const rates: Record<string, Record<string, number>> = data.rates || {};
@@ -802,7 +832,7 @@ async function fetchCryptoList(limit = 300): Promise<{ id: string; sym: string; 
     const count = Math.min(perPage, limit - all.length);
     const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${count}&page=${page}&sparkline=false`;
     try {
-      const res = await fetch(url, {
+      const res = await fetchWithRetry(url, {
         headers: { 'User-Agent': UA, 'Accept': 'application/json' },
         signal: AbortSignal.timeout(15000),
       });
@@ -865,6 +895,8 @@ Deno.serve(async (req) => {
   const offset = parseInt(url.searchParams.get('offset') || bodyParams.offset || '0');
   const batchSize = parseInt(url.searchParams.get('batch_size') || bodyParams.batch_size || String(BATCH_SIZE));
   const timeframeDays = parseInt(url.searchParams.get('timeframe') || bodyParams.timeframe || '90');
+  // Queue for sequential orchestration: remaining combos to run after this one completes
+  const queue: { type: string; tf: number }[] = bodyParams.queue || [];
 
   const startTime = Date.now();
   const results = { processed: 0, succeeded: 0, failed: 0, skipped: 0 };
@@ -880,10 +912,21 @@ Deno.serve(async (req) => {
     } else if (assetType === 'forex') {
       assets = FOREX_PAIRS.map(p => ({ id: `${p.from}${p.to}`, sym: `${p.from}/${p.to}`, name: `${p.from}/${p.to}`, divYield: 0 }));
     } else if (assetType === 'etfs') {
-      // Try Yahoo screener first, fall back to curated list
+      // 1. Try Yahoo screener
       let etfList = await fetchStockList(exchange, 'ETF');
+      // 2. Fall back to DB-managed ETF list
+      if (etfList.length === 0) {
+        try {
+          const { data: etfConfig } = await db.from('app_config').select('value').eq('key', `etf_list_${exchange}`).maybeSingle();
+          if (etfConfig?.value && Array.isArray(etfConfig.value)) {
+            etfList = (etfConfig.value as any[]).map((e: any) => ({ sym: e.sym, name: e.name, divYield: 0 }));
+            console.log(`[daily-analysis] Loaded ${etfList.length} ETFs for ${exchange} from DB`);
+          }
+        } catch { /* ignore */ }
+      }
+      // 3. Final fallback to hardcoded list
       if (etfList.length === 0 && CURATED_ETFS[exchange]) {
-        console.log(`[daily-analysis] Yahoo ETF screener returned 0 for ${exchange}, using curated list`);
+        console.log(`[daily-analysis] Using hardcoded fallback ETF list for ${exchange}`);
         etfList = CURATED_ETFS[exchange].map(e => ({ sym: e.sym, name: e.name, divYield: 0 }));
       }
       assets = etfList.map(s => ({ id: s.sym, sym: s.sym, name: s.name, divYield: s.divYield }));
@@ -976,32 +1019,76 @@ Deno.serve(async (req) => {
       await new Promise(r => setTimeout(r, YAHOO_DELAY));
     }
 
-    // Self-chain: if more assets remain, trigger next batch
+    // Self-chain: if more assets remain, trigger next batch (pass queue along)
     const nextOffset = offset + batchSize;
     let chainedNext = false;
 
     if (nextOffset < totalAssets) {
       chainedNext = true;
-      const nextUrl = `${supabaseUrl}/functions/v1/run-daily-analysis?asset_type=${assetType}&exchange=${exchange}&offset=${nextOffset}&batch_size=${batchSize}&timeframe=${timeframeDays}`;
-      fetch(nextUrl, {
+      fetch(`${supabaseUrl}/functions/v1/run-daily-analysis`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${serviceKey}`,
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          asset_type: assetType,
+          exchange,
+          offset: nextOffset,
+          batch_size: batchSize,
+          timeframe: timeframeDays,
+          queue, // pass queue along for when this combo finishes
+        }),
       }).catch(err => console.warn('[daily-analysis] Chain failed:', err.message));
+    } else if (queue.length > 0) {
+      // This asset_type+timeframe combo is COMPLETE — pick up next from queue
+      const next = queue[0];
+      const remaining = queue.slice(1);
+      console.log(`[daily-analysis] ✓ ${assetType}/${timeframeDays}d complete → next: ${next.type}/${next.tf}d (${remaining.length} remaining in queue)`);
+      fetch(`${supabaseUrl}/functions/v1/run-daily-analysis`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${serviceKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          asset_type: next.type,
+          offset: 0,
+          timeframe: next.tf,
+          queue: remaining,
+        }),
+      }).catch(err => console.warn('[daily-analysis] Queue chain failed:', err.message));
+    } else if (!chainedNext && offset === 0 || nextOffset >= totalAssets) {
+      // Fully complete (no more batches AND no queue) — log final status
+      console.log(`[daily-analysis] ✅ ALL DONE — no more items in queue`);
     }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    const summary = `${assetType}/${exchange} [${offset}–${offset + batch.length}/${totalAssets}] in ${elapsed}s — OK:${results.succeeded} Fail:${results.failed} Skip:${results.skipped}${chainedNext ? ' → chaining next batch' : ' ✓ COMPLETE'}`;
+    const queueInfo = queue.length > 0 ? ` [queue: ${queue.length} remaining]` : '';
+    const summary = `${assetType}/${exchange} [${offset}–${offset + batch.length}/${totalAssets}] in ${elapsed}s — OK:${results.succeeded} Fail:${results.failed} Skip:${results.skipped}${chainedNext ? ' → chaining next batch' : ' ✓ COMPLETE'}${queueInfo}`;
     console.log(`[daily-analysis] ${summary}`);
 
     return new Response(
-      JSON.stringify({ success: true, summary, results, nextOffset: chainedNext ? nextOffset : null }),
+      JSON.stringify({ success: true, summary, results, nextOffset: chainedNext ? nextOffset : null, has_more: chainedNext }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
     console.error('[daily-analysis] Fatal error:', error);
+    // If we have a queue and this failed, try to continue with the next item
+    try {
+      if (queue.length > 0) {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        const next = queue[0];
+        const remaining = queue.slice(1);
+        console.warn(`[daily-analysis] Recovering from error — skipping to next queue item: ${next.type}/${next.tf}d`);
+        fetch(`${supabaseUrl}/functions/v1/run-daily-analysis`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ asset_type: next.type, offset: 0, timeframe: next.tf, queue: remaining }),
+        }).catch(() => {});
+      }
+    } catch { /* ignore recovery errors */ }
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
