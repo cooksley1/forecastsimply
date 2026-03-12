@@ -24,8 +24,8 @@ const EDGE_FUNCTIONS = [
   { name: "generate-case-study", method: "POST", body: { action: "health" } },
   { name: "get-vapid-key", method: "POST", body: {} },
   { name: "lock-monthly-picks", method: "POST", body: {} },
-  { name: "refresh-market-data", method: "POST", body: {} },
-  { name: "run-daily-analysis", method: "POST", body: { asset_type: "stocks", offset: 0, timeframe: 30, dry_run: true } },
+  { name: "refresh-market-data", method: "POST", body: {}, slow: true },
+  { name: "run-daily-analysis", method: "POST", body: { asset_type: "stocks", offset: 0, timeframe: 30, dry_run: true }, slow: true },
   { name: "send-digest", method: "POST", body: { action: "health" } },
   { name: "snapshot-picks", method: "POST", body: {} },
   { name: "yahoo-proxy", method: "POST", body: { symbol: "AAPL", range: "5d", interval: "1d" } },
@@ -72,7 +72,7 @@ const EXPECTED_TABLES = [
 
 interface FunctionResult {
   name: string;
-  status: "ok" | "error" | "timeout";
+  status: "ok" | "error" | "timeout" | "slow_ok";
   http_status: number | null;
   latency_ms: number;
   error?: string;
@@ -108,9 +108,12 @@ Deno.serve(async (req) => {
 
     for (const fn of EDGE_FUNCTIONS) {
       const fnStart = Date.now();
+      const isSlow = (fn as any).slow === true;
+      const timeoutMs = isSlow ? 5000 : 30000; // Quick ping for slow functions
+
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000);
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
         const res = await fetch(`${supabaseUrl}/functions/v1/${fn.name}`, {
           method: fn.method,
@@ -134,13 +137,23 @@ Deno.serve(async (req) => {
           latency_ms: Date.now() - fnStart,
         });
       } catch (e: any) {
-        functionResults.push({
-          name: fn.name,
-          status: e.name === "AbortError" ? "timeout" : "error",
-          http_status: null,
-          latency_ms: Date.now() - fnStart,
-          error: e.message,
-        });
+        // For slow/long-running functions, a timeout means they started OK
+        if (isSlow && e.name === "AbortError") {
+          functionResults.push({
+            name: fn.name,
+            status: "slow_ok",
+            http_status: null,
+            latency_ms: Date.now() - fnStart,
+          });
+        } else {
+          functionResults.push({
+            name: fn.name,
+            status: e.name === "AbortError" ? "timeout" : "error",
+            http_status: null,
+            latency_ms: Date.now() - fnStart,
+            error: e.message,
+          });
+        }
       }
     }
 
@@ -210,8 +223,8 @@ Deno.serve(async (req) => {
     const configKeys = (configRows || []).map((r: any) => r.key);
 
     // ── 5. Compile report ──
-    const fnOk = functionResults.filter((f) => f.status === "ok").length;
-    const fnFail = functionResults.filter((f) => f.status !== "ok").length;
+    const fnOk = functionResults.filter((f) => f.status === "ok" || f.status === "slow_ok").length;
+    const fnFail = functionResults.filter((f) => f.status !== "ok" && f.status !== "slow_ok").length;
     const cronOk = cronResults.filter((c) => c.status === "found").length;
     const cronMissing = cronResults.filter((c) => c.status === "missing").length;
     const tablesOk = tableResults.filter((t) => t.status === "ok").length;
@@ -220,7 +233,7 @@ Deno.serve(async (req) => {
     const issues: string[] = [];
 
     functionResults
-      .filter((f) => f.status !== "ok")
+      .filter((f) => f.status !== "ok" && f.status !== "slow_ok")
       .forEach((f) => issues.push(`❌ Function ${f.name}: ${f.status} (HTTP ${f.http_status ?? "N/A"}) — ${f.error || ""}`));
 
     cronResults

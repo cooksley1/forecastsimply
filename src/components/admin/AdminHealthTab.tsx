@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 
 interface FunctionResult {
   name: string;
-  status: 'ok' | 'error' | 'timeout';
+  status: 'ok' | 'error' | 'timeout' | 'slow_ok';
   http_status: number | null;
   latency_ms: number;
   error?: string;
@@ -171,9 +171,10 @@ export default function AdminHealthTab() {
                       <td className="p-2">
                         <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
                           fn.status === 'ok' ? 'bg-positive/10 text-positive' :
+                          fn.status === 'slow_ok' ? 'bg-positive/10 text-positive' :
                           fn.status === 'timeout' ? 'bg-warning/10 text-warning' :
                           'bg-destructive/10 text-destructive'
-                        }`}>{fn.status.toUpperCase()}</span>
+                        }`}>{fn.status === 'slow_ok' ? 'SLOW OK' : fn.status.toUpperCase()}</span>
                       </td>
                       <td className="p-2 text-muted-foreground font-mono">{fn.http_status ?? '—'}</td>
                       <td className="p-2 text-right text-muted-foreground font-mono">{fn.latency_ms}ms</td>
