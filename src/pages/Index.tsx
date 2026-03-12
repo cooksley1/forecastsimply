@@ -430,7 +430,7 @@ export default function Index() {
       currentAssetRef.current = { id: pairId, type: 'forex' };
       setAssetInfo(info);
       setTechnicalData(ta);
-      addToWatchlist(info);
+      // Don't auto-add to watchlist — user will use explicit button
       saveToHistory(info, ta, result.source);
     } catch (e: any) {
       setError(e.message || 'Failed to fetch forex data. Try again.');
