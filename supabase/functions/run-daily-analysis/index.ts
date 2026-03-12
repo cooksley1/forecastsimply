@@ -623,6 +623,13 @@ const EXCHANGE_CONFIGS: Record<string, ExchangeConfig> = {
   NASDAQ: { region: 'us', exchangeFilter: 'NMS', suffix: '', maxEquities: 4500 },
 };
 
+// ETF exchange configs — same regions but uses quoteType 'ETF'
+const ETF_EXCHANGE_CONFIGS: Record<string, ExchangeConfig> = {
+  ASX:    { region: 'au', suffix: '.AX', maxEquities: 500 },
+  NYSE:   { region: 'us', exchangeFilter: 'PCX', suffix: '', maxEquities: 1000 },
+  NASDAQ: { region: 'us', exchangeFilter: 'NMS', suffix: '', maxEquities: 500 },
+};
+
 async function fetchStockList(exchange: string): Promise<{ sym: string; name: string; divYield: number }[]> {
   const config = EXCHANGE_CONFIGS[exchange];
   if (!config) return [];
