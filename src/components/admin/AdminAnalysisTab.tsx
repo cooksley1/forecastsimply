@@ -229,6 +229,71 @@ export default function AdminAnalysisTab() {
         </p>
       </div>
 
+      {/* Health Check Panel */}
+      <div className={`border rounded-xl p-4 space-y-3 ${
+        healthReport
+          ? healthReport.healthy
+            ? 'border-positive/30 bg-positive/5'
+            : 'border-warning/30 bg-warning/5'
+          : 'border-border bg-card'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xs font-semibold text-foreground">🩺 Cache Health Monitor</h3>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Automated check runs every 6 hours. Alerts when any timeframe is empty or stale (&gt;24h).
+            </p>
+          </div>
+          <Button size="sm" variant="outline" onClick={runHealthCheck} disabled={healthLoading} className="gap-1.5">
+            {healthLoading ? (
+              <><span className="inline-block w-3 h-3 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" /> Checking…</>
+            ) : '🩺 Run Now'}
+          </Button>
+        </div>
+
+        {healthReport && (
+          <>
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+              {healthReport.results.map(r => (
+                <div
+                  key={r.label}
+                  className={`flex flex-col items-center gap-0.5 rounded-lg border px-1.5 py-2 text-center ${
+                    r.status === 'healthy'
+                      ? 'bg-positive/10 border-positive/30'
+                      : r.status === 'stale'
+                        ? 'bg-warning/10 border-warning/30'
+                        : 'bg-destructive/10 border-destructive/30'
+                  }`}
+                >
+                  <span className="text-[9px] font-mono font-bold text-foreground">{r.label.replace('Stocks ', 'S').replace('Crypto ', 'C')}</span>
+                  <span className={`text-[9px] font-semibold ${
+                    r.status === 'healthy' ? 'text-positive' : r.status === 'stale' ? 'text-warning' : 'text-destructive'
+                  }`}>
+                    {r.status === 'healthy' ? '✓' : r.status === 'stale' ? '⚠' : '✕'} {r.status}
+                  </span>
+                  {r.age_hours !== null && (
+                    <span className="text-[8px] text-muted-foreground font-mono">{r.age_hours < 1 ? `${Math.round(r.age_hours * 60)}m` : `${Math.round(r.age_hours)}h`}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {healthReport.issues.length > 0 && (
+              <div className="space-y-1 bg-background/50 rounded-lg px-3 py-2">
+                <p className="text-[10px] font-semibold text-destructive">Issues detected:</p>
+                {healthReport.issues.map((issue, i) => (
+                  <p key={i} className="text-[10px] text-muted-foreground">{issue}</p>
+                ))}
+              </div>
+            )}
+
+            <p className="text-[9px] text-muted-foreground">
+              Last checked: {new Date(healthReport.checked_at).toLocaleString()}
+            </p>
+          </>
+        )}
+      </div>
+
       {/* Timeframe selector + Trigger buttons */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1">
