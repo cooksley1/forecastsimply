@@ -343,6 +343,7 @@ async function buildCMCFallbackData(coinId: string, symbol: string, days: number
 }
 
 
+/**
  * Build minimal chart data from CoinLore + DIA when main sources are rate-limited.
  * CoinLore provides current price and % changes; DIA provides live price.
  * We construct a synthetic price history from the available change percentages.
