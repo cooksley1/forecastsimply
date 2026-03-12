@@ -675,11 +675,16 @@ export default function Index() {
       for (const pick of picks) {
         const cached = cacheMap.get(pick.id);
         if (cached) {
+          const normSignal = Math.max(0, Math.min(100, ((cached.signal_score + 15) / 30) * 100));
+          const normReturn = Math.max(0, Math.min(100, ((cached.forecast_return_pct ?? 0) / 50) * 100));
+          const normConf = Math.max(0, Math.min(100, cached.confidence));
+          const compositeScore = Math.round(normSignal * 0.4 + normReturn * 0.35 + normConf * 0.25);
           results[pick.id] = {
             label: cached.signal_label,
             score: cached.signal_score,
             confidence: cached.confidence,
             projectedReturn: cached.forecast_return_pct,
+            compositeScore,
           };
           usedCache++;
         }
