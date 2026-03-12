@@ -321,7 +321,7 @@ export default function Index() {
   }, [user]);
 
 
-  const analyseCrypto = useCallback(async (coinId: string) => {
+  const analyseCrypto = useCallback(async (coinId: string, knownSymbol?: string) => {
     const unsupported = getUnsupportedCoin(coinId);
     if (unsupported) {
       setError(`⚠️ ${unsupported.name} is not supported. ${unsupported.reason}`);
@@ -331,7 +331,7 @@ export default function Index() {
     setError(null);
     setOverviewMode(false);
     try {
-      const result = await fetchCryptoHistory(coinId, timeframeDays);
+      const result = await fetchCryptoHistory(coinId, timeframeDays, knownSymbol);
       setDataSource(result.source);
       const diaSymbol = geckoIdToDIASymbol(coinId);
       let coinData = result.coinData;
@@ -560,11 +560,15 @@ export default function Index() {
   }, [assetType, stockExchange, etfExchange, analyseCrypto, analyseStock, analyseForex]);
 
   const handleQuickPick = useCallback((id: string) => {
-    if (assetType === 'crypto') analyseCrypto(id);
+    if (assetType === 'crypto') {
+      // Look up symbol from screener coins for better Yahoo/CMC ticker matching
+      const coin = cryptoCoins.find(c => c.id === id);
+      analyseCrypto(id, coin?.sym);
+    }
     else if (assetType === 'stocks') analyseStock(id, 'stocks');
     else if (assetType === 'etfs') analyseStock(id, 'etfs');
     else if (assetType === 'forex') analyseForex(id);
-  }, [assetType, analyseCrypto, analyseStock, analyseForex]);
+  }, [assetType, analyseCrypto, analyseStock, analyseForex, cryptoCoins]);
 
   const handleWatchlistSelect = useCallback((item: WatchlistItem) => {
     if (item.assetType === 'crypto') analyseCrypto(item.id);
@@ -707,12 +711,12 @@ export default function Index() {
     recordRankRefresh();
 
     // Fallback: compute on-the-fly (for uncached assets or when cache is empty)
-    const fetchOne = async (pick: { id: string }) => {
+    const fetchOne = async (pick: { id: string; label?: string }) => {
       if (results[pick.id]) return; // already from cache
       try {
         let closes: number[], timestamps: number[], volumes: number[];
         if (assetType === 'crypto') {
-          const result = await fetchCryptoHistory(pick.id, tfDays);
+          const result = await fetchCryptoHistory(pick.id, tfDays, pick.label);
           closes = result.priceData.closes;
           timestamps = result.priceData.timestamps;
           volumes = result.priceData.volumes || [];

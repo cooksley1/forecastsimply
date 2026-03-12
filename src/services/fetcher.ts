@@ -152,13 +152,13 @@ async function getCoinMetadata(coinId: string, symbol?: string): Promise<any> {
   return null;
 }
 
-/** Crypto: CoinGecko → CoinPaprika → Yahoo Finance (for ALL) → CoinLore+DIA fallback */
-export async function fetchCryptoHistory(coinId: string, days: number): Promise<CryptoFetchResult> {
+/** Crypto: CoinGecko → CoinPaprika → Yahoo Finance (for ALL) → CMC → CoinLore+DIA fallback */
+export async function fetchCryptoHistory(coinId: string, days: number, knownSymbol?: string): Promise<CryptoFetchResult> {
   const errors: string[] = [];
   const isAllTime = days >= 9999;
-  // Derive symbol from GECKO_TO_YAHOO map (e.g. 'BTC-USD' → 'BTC')
+  // Derive symbol from GECKO_TO_YAHOO map (e.g. 'BTC-USD' → 'BTC') or use provided symbol
   const yahooEntry = GECKO_TO_YAHOO[coinId];
-  const coinSymbol = yahooEntry ? yahooEntry.replace('-USD', '') : undefined;
+  const coinSymbol = knownSymbol || (yahooEntry ? yahooEntry.replace('-USD', '') : undefined);
 
   // For ALL time, try Yahoo Finance first since it has full history for free
   if (isAllTime) {
@@ -232,7 +232,7 @@ export async function fetchCryptoHistory(coinId: string, days: number): Promise<
 
   // Source 3: Yahoo Finance (non-ALL time fallback too)
   if (!isAllTime) {
-    const yahooTicker = GECKO_TO_YAHOO[coinId] || guessYahooTicker(coinId);
+    const yahooTicker = GECKO_TO_YAHOO[coinId] || guessYahooTicker(coinId, coinSymbol);
     if (yahooTicker) {
       try {
         const chart = await getStockChart(yahooTicker, days);
@@ -254,7 +254,18 @@ export async function fetchCryptoHistory(coinId: string, days: number): Promise<
     }
   }
 
-  // Source 4: CoinLore (live data, no rate limits) + DIA price — generate synthetic chart
+  // Source 4: CMC synthetic chart (uses CMC proxy for current price + % changes)
+  if (coinSymbol) {
+    try {
+      const result = await buildCMCFallbackData(coinId, coinSymbol, days);
+      if (result) return result;
+    } catch (cmcError: any) {
+      console.warn('CMC fallback failed:', cmcError.message);
+      errors.push(`CMC: ${cmcError.message}`);
+    }
+  }
+
+  // Source 5: CoinLore (live data, no rate limits) + DIA price — generate synthetic chart
   try {
     const result = await buildFallbackCryptoData(coinId, days);
     if (result) return result;
@@ -278,6 +289,59 @@ export async function fetchCryptoHistory(coinId: string, days: number): Promise<
     'All crypto data sources are temporarily busy. This usually resolves in a few seconds — please try again shortly.'
   );
 }
+
+/**
+ * Build synthetic chart data from CMC when all primary sources fail.
+ * Uses the CMC proxy to get current price + 24h/7d changes.
+ */
+async function buildCMCFallbackData(coinId: string, symbol: string, days: number): Promise<CryptoFetchResult | null> {
+  const cmcData = await getCMCCoinData(symbol);
+  if (!cmcData || !cmcData.price) return null;
+
+  const livePrice = cmcData.price;
+  const pct24h = cmcData.change24h || 0;
+  const pct7d = cmcData.change7d || pct24h * 3;
+
+  const now = Date.now();
+  const points = Math.min(days, 30);
+  const timestamps: number[] = [];
+  const closes: number[] = [];
+  const volumes: number[] = [];
+
+  const dailyChange = (pct7d / 7) / 100;
+  const startPrice = livePrice / (1 + dailyChange * points);
+
+  for (let i = 0; i <= points; i++) {
+    const t = now - (points - i) * 86400000;
+    const progress = i / points;
+    const price = startPrice * (1 + dailyChange * i) + (Math.sin(progress * Math.PI * 4) * startPrice * 0.005);
+    timestamps.push(t);
+    closes.push(price);
+    volumes.push(cmcData.volume24h ? cmcData.volume24h * (0.8 + Math.random() * 0.4) : 0);
+  }
+
+  closes[closes.length - 1] = livePrice;
+
+  return {
+    priceData: { timestamps, closes, volumes },
+    coinData: {
+      name: cmcData.name,
+      symbol: cmcData.symbol,
+      market_data: {
+        current_price: { usd: livePrice },
+        price_change_percentage_24h: pct24h,
+        price_change_percentage_7d: pct7d,
+        market_cap: { usd: cmcData.marketCap },
+        total_volume: { usd: cmcData.volume24h },
+        circulating_supply: cmcData.circulatingSupply,
+        max_supply: cmcData.maxSupply,
+      },
+      market_cap_rank: cmcData.rank,
+    },
+    source: 'CoinMarketCap (synthetic chart)',
+  };
+}
+
 
 /**
  * Build minimal chart data from CoinLore + DIA when main sources are rate-limited.
