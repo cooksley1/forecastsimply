@@ -357,6 +357,21 @@ export default function AdminAnalysisTab() {
           )}
         </Button>
 
+        <Button
+          onClick={() => triggerAnalysis('forex')}
+          disabled={!!running}
+          className="gap-2"
+        >
+          {running === 'forex' ? (
+            <>
+              <span className="inline-block w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              Running Forex ({selectedTimeframe}d)…
+            </>
+          ) : (
+            <>💱 Run Forex ({selectedTimeframe}d)</>
+          )}
+        </Button>
+
         <Button variant="outline" onClick={fetchStats} disabled={loading} className="gap-2">
           🔄 Refresh Stats
         </Button>
