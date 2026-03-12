@@ -880,7 +880,12 @@ Deno.serve(async (req) => {
     } else if (assetType === 'forex') {
       assets = FOREX_PAIRS.map(p => ({ id: `${p.from}${p.to}`, sym: `${p.from}/${p.to}`, name: `${p.from}/${p.to}`, divYield: 0 }));
     } else if (assetType === 'etfs') {
-      const etfList = await fetchStockList(exchange, 'ETF');
+      // Try Yahoo screener first, fall back to curated list
+      let etfList = await fetchStockList(exchange, 'ETF');
+      if (etfList.length === 0 && CURATED_ETFS[exchange]) {
+        console.log(`[daily-analysis] Yahoo ETF screener returned 0 for ${exchange}, using curated list`);
+        etfList = CURATED_ETFS[exchange].map(e => ({ sym: e.sym, name: e.name, divYield: 0 }));
+      }
       assets = etfList.map(s => ({ id: s.sym, sym: s.sym, name: s.name, divYield: s.divYield }));
     } else {
       const stockList = await fetchStockList(exchange, 'EQUITY');
