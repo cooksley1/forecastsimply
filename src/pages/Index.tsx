@@ -449,6 +449,7 @@ export default function Index() {
       currentAssetRef.current = { id: pairId, type: 'forex' };
       setAssetInfo(info);
       setTechnicalData(ta);
+      setDataFetchedAt(new Date());
       // Don't auto-add to watchlist — user will use explicit button
       saveToHistory(info, ta, result.source);
     } catch (e: any) {
