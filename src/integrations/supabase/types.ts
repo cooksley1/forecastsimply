@@ -764,6 +764,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_cache_stats: {
+        Args: never
+        Returns: {
+          asset_type: string
+          count: number
+          exchange: string
+          newest: string
+          timeframe_days: number
+        }[]
+      }
       get_cron_jobs: {
         Args: never
         Returns: {
