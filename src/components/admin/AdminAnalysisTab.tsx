@@ -19,6 +19,20 @@ interface UnsupportedCoinRow {
   reason: string;
 }
 
+interface HealthResult {
+  label: string;
+  status: 'healthy' | 'stale' | 'empty';
+  count: number;
+  age_hours: number | null;
+}
+
+interface HealthReport {
+  checked_at: string;
+  results: HealthResult[];
+  issues: string[];
+  healthy: boolean;
+}
+
 export default function AdminAnalysisTab() {
   const [running, setRunning] = useState<string | null>(null);
   const [selectedTimeframe, setSelectedTimeframe] = useState(90);
@@ -27,6 +41,10 @@ export default function AdminAnalysisTab() {
   const [excludedSuffixes, setExcludedSuffixes] = useState<string[]>([]);
   const [newSuffix, setNewSuffix] = useState('');
   const [suffixSaving, setSuffixSaving] = useState(false);
+
+  // Health check state
+  const [healthReport, setHealthReport] = useState<HealthReport | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
 
   // Unsupported coins state
   const [unsupportedCoins, setUnsupportedCoins] = useState<UnsupportedCoinRow[]>([]);
@@ -64,9 +82,44 @@ export default function AdminAnalysisTab() {
     setUnsupportedCoins((data as UnsupportedCoinRow[]) || []);
   };
 
+  const fetchHealthReport = async () => {
+    const { data } = await supabase.from('app_config').select('value').eq('key', 'cache_health_report').maybeSingle();
+    if (data?.value && typeof data.value === 'object') {
+      setHealthReport(data.value as unknown as HealthReport);
+    }
+  };
+
+  const runHealthCheck = async () => {
+    setHealthLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-cache-health`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed');
+      setHealthReport(result);
+      toast.success(result.healthy ? 'All caches healthy ✓' : `${result.issues.length} issue(s) found`);
+    } catch (e: any) {
+      toast.error(e.message || 'Health check failed');
+    } finally {
+      setHealthLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchStats();
     fetchUnsupportedCoins();
+    fetchHealthReport();
     // Load excluded suffixes
     supabase.from('app_config').select('value').eq('key', 'excluded_email_suffixes').maybeSingle()
       .then(({ data }) => {
@@ -174,6 +227,71 @@ export default function AdminAnalysisTab() {
         <p className="text-xs text-muted-foreground">
           Pre-computed technical analysis for instant Best Buys, Growth, and Yield filters. Runs automatically at 3:00 AM AEST daily.
         </p>
+      </div>
+
+      {/* Health Check Panel */}
+      <div className={`border rounded-xl p-4 space-y-3 ${
+        healthReport
+          ? healthReport.healthy
+            ? 'border-positive/30 bg-positive/5'
+            : 'border-warning/30 bg-warning/5'
+          : 'border-border bg-card'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xs font-semibold text-foreground">🩺 Cache Health Monitor</h3>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Automated check runs every 6 hours. Alerts when any timeframe is empty or stale (&gt;24h).
+            </p>
+          </div>
+          <Button size="sm" variant="outline" onClick={runHealthCheck} disabled={healthLoading} className="gap-1.5">
+            {healthLoading ? (
+              <><span className="inline-block w-3 h-3 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" /> Checking…</>
+            ) : '🩺 Run Now'}
+          </Button>
+        </div>
+
+        {healthReport && (
+          <>
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+              {healthReport.results.map(r => (
+                <div
+                  key={r.label}
+                  className={`flex flex-col items-center gap-0.5 rounded-lg border px-1.5 py-2 text-center ${
+                    r.status === 'healthy'
+                      ? 'bg-positive/10 border-positive/30'
+                      : r.status === 'stale'
+                        ? 'bg-warning/10 border-warning/30'
+                        : 'bg-destructive/10 border-destructive/30'
+                  }`}
+                >
+                  <span className="text-[9px] font-mono font-bold text-foreground">{r.label.replace('Stocks ', 'S').replace('Crypto ', 'C')}</span>
+                  <span className={`text-[9px] font-semibold ${
+                    r.status === 'healthy' ? 'text-positive' : r.status === 'stale' ? 'text-warning' : 'text-destructive'
+                  }`}>
+                    {r.status === 'healthy' ? '✓' : r.status === 'stale' ? '⚠' : '✕'} {r.status}
+                  </span>
+                  {r.age_hours !== null && (
+                    <span className="text-[8px] text-muted-foreground font-mono">{r.age_hours < 1 ? `${Math.round(r.age_hours * 60)}m` : `${Math.round(r.age_hours)}h`}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {healthReport.issues.length > 0 && (
+              <div className="space-y-1 bg-background/50 rounded-lg px-3 py-2">
+                <p className="text-[10px] font-semibold text-destructive">Issues detected:</p>
+                {healthReport.issues.map((issue, i) => (
+                  <p key={i} className="text-[10px] text-muted-foreground">{issue}</p>
+                ))}
+              </div>
+            )}
+
+            <p className="text-[9px] text-muted-foreground">
+              Last checked: {new Date(healthReport.checked_at).toLocaleString()}
+            </p>
+          </>
+        )}
       </div>
 
       {/* Timeframe selector + Trigger buttons */}
