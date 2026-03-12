@@ -357,6 +357,7 @@ export default function AdminAnalysisTab() {
           )}
         </Button>
 
+        <Button variant="outline" onClick={fetchStats} disabled={loading} className="gap-2">
           🔄 Refresh Stats
         </Button>
       </div>
