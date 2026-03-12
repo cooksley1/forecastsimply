@@ -358,7 +358,7 @@ export default function Index() {
       currentAssetRef.current = { id: coinId, type: 'crypto' };
       setAssetInfo(info);
       setTechnicalData(ta);
-      addToWatchlist(info);
+      // Don't auto-add to watchlist — user will use explicit button
       updateSecondaryPrice(livePrice);
       saveToHistory(info, ta, result.source);
     } catch (e: any) {
