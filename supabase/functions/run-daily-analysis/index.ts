@@ -1091,7 +1091,7 @@ Deno.serve(async (req) => {
         const next = queue[0];
         const remaining = queue.slice(1);
         console.warn(`[daily-analysis] Recovering from error — skipping to next queue item: ${next.type}/${next.tf}d`);
-        fetch(`${supabaseUrl}/functions/v1/run-daily-analysis`, {
+        await fetch(`${supabaseUrl}/functions/v1/run-daily-analysis`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ asset_type: next.type, offset: 0, timeframe: next.tf, queue: remaining }),
