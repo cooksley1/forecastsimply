@@ -894,7 +894,7 @@ export default function Index() {
                 onSelect={handleQuickPick}
                 loading={loading || (screenerLoading && (useStockScreener || useEtfScreener)) || (cryptoScreenerLoading && assetType === 'crypto')}
                 onRank={handleRankPicks}
-                ranking={ranking || ((assetType === 'stocks' ? dailyStockLoading : assetType === 'crypto' ? dailyCryptoLoading : false) && pickSort !== 'default')}
+                ranking={ranking || ((assetType === 'stocks' ? dailyStockLoading : assetType === 'crypto' ? dailyCryptoLoading : assetType === 'etfs' ? dailyEtfLoading : false) && pickSort !== 'default')}
                 showDividends={assetType === 'stocks' || assetType === 'etfs'}
                 sortBy={pickSort}
                 onSortChange={setPickSort}
