@@ -321,7 +321,7 @@ export default function Index() {
   }, [user]);
 
 
-  const analyseCrypto = useCallback(async (coinId: string) => {
+  const analyseCrypto = useCallback(async (coinId: string, knownSymbol?: string) => {
     const unsupported = getUnsupportedCoin(coinId);
     if (unsupported) {
       setError(`⚠️ ${unsupported.name} is not supported. ${unsupported.reason}`);
@@ -331,7 +331,7 @@ export default function Index() {
     setError(null);
     setOverviewMode(false);
     try {
-      const result = await fetchCryptoHistory(coinId, timeframeDays);
+      const result = await fetchCryptoHistory(coinId, timeframeDays, knownSymbol);
       setDataSource(result.source);
       const diaSymbol = geckoIdToDIASymbol(coinId);
       let coinData = result.coinData;
