@@ -704,6 +704,40 @@ async function fetchStockList(exchange: string, quoteType: 'EQUITY' | 'ETF' = 'E
 }
 
 // ═══════════════════════════════════════════════════
+//  FOREX PAIRS (Frankfurter API — free, no auth)
+// ═══════════════════════════════════════════════════
+
+const FOREX_PAIRS = [
+  { from: 'AUD', to: 'USD' }, { from: 'EUR', to: 'USD' }, { from: 'GBP', to: 'USD' },
+  { from: 'USD', to: 'JPY' }, { from: 'AUD', to: 'EUR' }, { from: 'USD', to: 'CAD' },
+  { from: 'NZD', to: 'USD' }, { from: 'AUD', to: 'GBP' }, { from: 'EUR', to: 'GBP' },
+  { from: 'USD', to: 'CHF' }, { from: 'EUR', to: 'JPY' }, { from: 'GBP', to: 'JPY' },
+  { from: 'AUD', to: 'NZD' }, { from: 'AUD', to: 'CAD' }, { from: 'EUR', to: 'AUD' },
+  { from: 'USD', to: 'SGD' }, { from: 'USD', to: 'HKD' }, { from: 'EUR', to: 'CHF' },
+];
+
+function fmtDate(d: Date): string { return d.toISOString().split('T')[0]; }
+
+async function fetchForexChart(from: string, to: string, days: number): Promise<{ closes: number[] }> {
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - days);
+  const url = `https://api.frankfurter.app/${fmtDate(start)}..${fmtDate(end)}?from=${from}&to=${to}`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  if (!res.ok) throw new Error(`Frankfurter ${res.status} for ${from}/${to}`);
+  const data = await res.json();
+  const rates: Record<string, Record<string, number>> = data.rates || {};
+  const sortedDates = Object.keys(rates).sort();
+  const closes: number[] = [];
+  for (const date of sortedDates) {
+    const rate = rates[date]?.[to];
+    if (rate != null) closes.push(rate);
+  }
+  if (closes.length < 10) throw new Error(`Insufficient forex data for ${from}/${to}`);
+  return { closes };
+}
+
+// ═══════════════════════════════════════════════════
 //  CRYPTO LIST FETCHING
 // ═══════════════════════════════════════════════════
 
