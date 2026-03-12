@@ -19,6 +19,20 @@ interface UnsupportedCoinRow {
   reason: string;
 }
 
+interface HealthResult {
+  label: string;
+  status: 'healthy' | 'stale' | 'empty';
+  count: number;
+  age_hours: number | null;
+}
+
+interface HealthReport {
+  checked_at: string;
+  results: HealthResult[];
+  issues: string[];
+  healthy: boolean;
+}
+
 export default function AdminAnalysisTab() {
   const [running, setRunning] = useState<string | null>(null);
   const [selectedTimeframe, setSelectedTimeframe] = useState(90);
@@ -27,6 +41,10 @@ export default function AdminAnalysisTab() {
   const [excludedSuffixes, setExcludedSuffixes] = useState<string[]>([]);
   const [newSuffix, setNewSuffix] = useState('');
   const [suffixSaving, setSuffixSaving] = useState(false);
+
+  // Health check state
+  const [healthReport, setHealthReport] = useState<HealthReport | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
 
   // Unsupported coins state
   const [unsupportedCoins, setUnsupportedCoins] = useState<UnsupportedCoinRow[]>([]);
