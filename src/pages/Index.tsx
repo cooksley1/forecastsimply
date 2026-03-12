@@ -1004,7 +1004,7 @@ export default function Index() {
             </button>
 
             {/* Signal + metadata bar */}
-            <div id="section-signal" className="flex flex-col sm:flex-row sm:items-center gap-3 scroll-mt-36">
+            <div ref={analysisSnapshotRef} id="section-signal" className="flex flex-col sm:flex-row sm:items-center gap-3 scroll-mt-36">
               <SignalPanel signal={technicalData.signal} price={assetInfo.price} name={assetInfo.name} symbol={assetInfo.symbol} />
               <div className="flex items-center gap-2 flex-wrap ml-auto">
                 {/* Add to Watchlist button */}
