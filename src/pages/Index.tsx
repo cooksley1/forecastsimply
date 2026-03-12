@@ -908,14 +908,9 @@ export default function Index() {
                 onRankTimeframeChange={(tf) => { setRankTimeframe(tf); setRankedPicks({}); setTimeframeDays(RANK_TIMEFRAME_DAYS[tf] || 90); }}
                 watchlistIds={new Set(watchlist.filter(w => w.assetType === assetType).slice(0, 5).map(w => w.id))}
               />
-              {pickSort !== 'default' && (dailyStockAnalysis.length > 0 || dailyCryptoAnalysis.length > 0 || dailyEtfAnalysis.length > 0) && (
+              {pickSort !== 'default' && (dailyStockAnalysis.length > 0 || dailyCryptoAnalysis.length > 0 || dailyEtfAnalysis.length > 0 || dailyForexAnalysis.length > 0) && (
                 <p className="text-[9px] text-muted-foreground/70 italic text-center">
                   ⏱ Results from pre-computed daily analysis (runs 3am AEST). Select any asset for a live re-verification.
-                </p>
-              )}
-              {pickSort !== 'default' && assetType === 'forex' && !ranking && (
-                <p className="text-[9px] text-muted-foreground/70 italic text-center">
-                  ⚡ Forex ranking uses live analysis — may take a moment.
                 </p>
               )}
             </div>
