@@ -39,9 +39,10 @@ export function useShareAnalysis() {
         .insert({
           ...payload,
           shared_by: user?.user?.id || null,
-        })
+        } as any)
         .select('id')
         .single();
+      if (error) throw error;
       if (error) throw error;
       const id = (data as any).id;
       shareIdCache.current[cacheKey] = id;
@@ -61,7 +62,7 @@ export function useShareAnalysis() {
     const text = buildShareText(payload, url);
     try {
       await navigator.clipboard.writeText(text);
-      toast.success('Copied to clipboard!');
+      toast.success('Copied! Link expires in 30 days.', { duration: 4000 });
     } catch {
       toast.error('Failed to copy');
     }

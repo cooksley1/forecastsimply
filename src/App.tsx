@@ -24,6 +24,7 @@ import Changelog from "./pages/Changelog";
 import SharedAnalysis from "./pages/SharedAnalysis";
 import NotFound from "./pages/NotFound";
 import CookieBanner from "./components/CookieBanner";
+import PWAInstallBanner from "./components/PWAInstallBanner";
 import UpdatePrompt from "./components/UpdatePrompt";
 import { toast } from "sonner";
 
@@ -71,6 +72,7 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <CookieBanner />
+                <PWAInstallBanner />
                 <UpdatePrompt />
               </BrowserRouter>
             </TooltipProvider>

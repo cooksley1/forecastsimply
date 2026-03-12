@@ -29,7 +29,7 @@ async function fetchWithProxy(url: string): Promise<any> {
     try {
       const fullUrl = proxy + encodeURIComponent(url);
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 4000);
+      const timeout = setTimeout(() => controller.abort('Request timeout after 4s'), 4000);
 
       const res = await fetch(fullUrl, { signal: controller.signal });
       clearTimeout(timeout);
@@ -56,7 +56,8 @@ async function fetchWithProxy(url: string): Promise<any> {
 
       errors.push(`${proxy}: unexpected JSON structure`);
     } catch (e: any) {
-      errors.push(`${proxy}: ${e.message}`);
+      const msg = e.name === 'AbortError' ? `${proxy}: timeout` : `${proxy}: ${e.message}`;
+      errors.push(msg);
       continue;
     }
   }
