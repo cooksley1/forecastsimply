@@ -1,4 +1,5 @@
 import { getCoinChart, getCoinData } from './api/coingecko';
+import { getCMCCoinData } from './api/coinmarketcap';
 import { geckoIdToCoinPaprikaId, cpHistorical } from './api/coinpaprika';
 import { getStockChart } from './api/yahoo';
 import { avDailyHistory } from './api/alphavantage';
