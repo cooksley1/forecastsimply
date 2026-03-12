@@ -171,6 +171,11 @@ export default function RecommendationPanel({ recommendations, onSimulate, activ
         })}
       </div>
       <p className="text-[10px] sm:text-xs text-muted-foreground italic">Algorithmic analysis only. Not financial advice. Always do your own research.</p>
+
+      {/* News Sentiment Deep Dive */}
+      {assetInfo && signal && (
+        <SentimentPanel assetInfo={assetInfo} signal={signal} />
+      )}
     </div>
   );
 }
