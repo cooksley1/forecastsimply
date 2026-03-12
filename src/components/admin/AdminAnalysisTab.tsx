@@ -82,9 +82,44 @@ export default function AdminAnalysisTab() {
     setUnsupportedCoins((data as UnsupportedCoinRow[]) || []);
   };
 
+  const fetchHealthReport = async () => {
+    const { data } = await supabase.from('app_config').select('value').eq('key', 'cache_health_report').maybeSingle();
+    if (data?.value && typeof data.value === 'object') {
+      setHealthReport(data.value as unknown as HealthReport);
+    }
+  };
+
+  const runHealthCheck = async () => {
+    setHealthLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-cache-health`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed');
+      setHealthReport(result);
+      toast.success(result.healthy ? 'All caches healthy ✓' : `${result.issues.length} issue(s) found`);
+    } catch (e: any) {
+      toast.error(e.message || 'Health check failed');
+    } finally {
+      setHealthLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchStats();
     fetchUnsupportedCoins();
+    fetchHealthReport();
     // Load excluded suffixes
     supabase.from('app_config').select('value').eq('key', 'excluded_email_suffixes').maybeSingle()
       .then(({ data }) => {
