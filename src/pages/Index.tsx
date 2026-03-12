@@ -647,7 +647,7 @@ export default function Index() {
     }
 
     return withSignals;
-  }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks, useStockScreener, useEtfScreener, screenerStocks, cryptoCoins, pickSort, dailyStockAnalysis, dailyCryptoAnalysis, dailyEtfAnalysis]);
+  }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks, useStockScreener, useEtfScreener, screenerStocks, cryptoCoins, pickSort, dailyStockAnalysis, dailyCryptoAnalysis, dailyEtfAnalysis, dailyForexAnalysis]);
 
   const handleRankPicks = useCallback(async (timeframeDaysForRank?: number) => {
     setRanking(true);
