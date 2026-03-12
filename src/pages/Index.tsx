@@ -146,6 +146,11 @@ export default function Index() {
     timeframeDays: timeframeDays,
     enabled: assetType === 'etfs',
   });
+  const { data: dailyForexAnalysis, loading: dailyForexLoading } = useDailyAnalysis({
+    assetType: 'forex',
+    timeframeDays: timeframeDays,
+    enabled: assetType === 'forex',
+  });
   const currentAssetRef = useRef<{ id: string; type: AssetType } | null>(null);
   const isFirstRender = useRef(true);
 
