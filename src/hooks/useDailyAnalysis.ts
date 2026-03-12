@@ -23,7 +23,7 @@ export interface CachedAnalysis {
 }
 
 interface UseDailyAnalysisOptions {
-  assetType: 'stocks' | 'crypto' | 'etfs';
+  assetType: 'stocks' | 'crypto' | 'etfs' | 'forex';
   exchange?: string;
   timeframeDays?: number;
   enabled?: boolean;

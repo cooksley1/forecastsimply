@@ -704,6 +704,40 @@ async function fetchStockList(exchange: string, quoteType: 'EQUITY' | 'ETF' = 'E
 }
 
 // ═══════════════════════════════════════════════════
+//  FOREX PAIRS (Frankfurter API — free, no auth)
+// ═══════════════════════════════════════════════════
+
+const FOREX_PAIRS = [
+  { from: 'AUD', to: 'USD' }, { from: 'EUR', to: 'USD' }, { from: 'GBP', to: 'USD' },
+  { from: 'USD', to: 'JPY' }, { from: 'AUD', to: 'EUR' }, { from: 'USD', to: 'CAD' },
+  { from: 'NZD', to: 'USD' }, { from: 'AUD', to: 'GBP' }, { from: 'EUR', to: 'GBP' },
+  { from: 'USD', to: 'CHF' }, { from: 'EUR', to: 'JPY' }, { from: 'GBP', to: 'JPY' },
+  { from: 'AUD', to: 'NZD' }, { from: 'AUD', to: 'CAD' }, { from: 'EUR', to: 'AUD' },
+  { from: 'USD', to: 'SGD' }, { from: 'USD', to: 'HKD' }, { from: 'EUR', to: 'CHF' },
+];
+
+function fmtDate(d: Date): string { return d.toISOString().split('T')[0]; }
+
+async function fetchForexChart(from: string, to: string, days: number): Promise<{ closes: number[] }> {
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - days);
+  const url = `https://api.frankfurter.app/${fmtDate(start)}..${fmtDate(end)}?from=${from}&to=${to}`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  if (!res.ok) throw new Error(`Frankfurter ${res.status} for ${from}/${to}`);
+  const data = await res.json();
+  const rates: Record<string, Record<string, number>> = data.rates || {};
+  const sortedDates = Object.keys(rates).sort();
+  const closes: number[] = [];
+  for (const date of sortedDates) {
+    const rate = rates[date]?.[to];
+    if (rate != null) closes.push(rate);
+  }
+  if (closes.length < 10) throw new Error(`Insufficient forex data for ${from}/${to}`);
+  return { closes };
+}
+
+// ═══════════════════════════════════════════════════
 //  CRYPTO LIST FETCHING
 // ═══════════════════════════════════════════════════
 
@@ -791,6 +825,8 @@ Deno.serve(async (req) => {
     if (assetType === 'crypto') {
       const cryptoList = await fetchCryptoList(300);
       assets = cryptoList.map(c => ({ id: c.id, sym: c.sym, name: c.name, price: c.price, change: c.change, divYield: 0 }));
+    } else if (assetType === 'forex') {
+      assets = FOREX_PAIRS.map(p => ({ id: `${p.from}${p.to}`, sym: `${p.from}/${p.to}`, name: `${p.from}/${p.to}`, divYield: 0 }));
     } else if (assetType === 'etfs') {
       const etfList = await fetchStockList(exchange, 'ETF');
       assets = etfList.map(s => ({ id: s.sym, sym: s.sym, name: s.name, divYield: s.divYield }));
@@ -810,8 +846,16 @@ Deno.serve(async (req) => {
     for (const asset of batch) {
       results.processed++;
       try {
-        const yahooTicker = assetType === 'crypto' ? geckoToYahoo(asset.id) : asset.sym;
-        const chartData = await fetchYahooChart(yahooTicker, range);
+        let chartData: ChartData;
+        if (assetType === 'forex') {
+          const from = asset.id.slice(0, 3);
+          const to = asset.id.slice(3, 6);
+          const fxData = await fetchForexChart(from, to, timeframeDays);
+          chartData = { closes: fxData.closes, volumes: [] };
+        } else {
+          const yahooTicker = assetType === 'crypto' ? geckoToYahoo(asset.id) : asset.sym;
+          chartData = await fetchYahooChart(yahooTicker, range);
+        }
 
         if (chartData.closes.length < 20) {
           results.skipped++;
@@ -845,7 +889,7 @@ Deno.serve(async (req) => {
           symbol: asset.sym,
           name: asset.name,
           asset_type: assetType,
-          exchange: assetType === 'crypto' ? null : exchange,
+          exchange: (assetType === 'crypto' || assetType === 'forex') ? null : exchange,
           price: currentPrice,
           change_pct: Math.round(changePct * 100) / 100,
           dividend_yield: Math.round((asset.divYield || 0) * 10) / 10,

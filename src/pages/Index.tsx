@@ -146,6 +146,11 @@ export default function Index() {
     timeframeDays: timeframeDays,
     enabled: assetType === 'etfs',
   });
+  const { data: dailyForexAnalysis, loading: dailyForexLoading } = useDailyAnalysis({
+    assetType: 'forex',
+    timeframeDays: timeframeDays,
+    enabled: assetType === 'forex',
+  });
   const currentAssetRef = useRef<{ id: string; type: AssetType } | null>(null);
   const isFirstRender = useRef(true);
 
@@ -568,7 +573,7 @@ export default function Index() {
     let items: { label: string; id: string; name?: string; divYield?: number; signal?: { label: string; score: number; confidence: number; projectedReturn?: number; compositeScore?: number } }[] = [];
 
     // When a non-default filter is active and we have cached analysis, use cache as the primary source
-    const cacheSource = assetType === 'stocks' ? dailyStockAnalysis : assetType === 'crypto' ? dailyCryptoAnalysis : assetType === 'etfs' ? dailyEtfAnalysis : [];
+    const cacheSource = assetType === 'stocks' ? dailyStockAnalysis : assetType === 'crypto' ? dailyCryptoAnalysis : assetType === 'etfs' ? dailyEtfAnalysis : assetType === 'forex' ? dailyForexAnalysis : [];
     const useCache = pickSort !== 'default' && cacheSource.length > 0;
 
     if (useCache) {
@@ -642,7 +647,7 @@ export default function Index() {
     }
 
     return withSignals;
-  }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks, useStockScreener, useEtfScreener, screenerStocks, cryptoCoins, pickSort, dailyStockAnalysis, dailyCryptoAnalysis, dailyEtfAnalysis]);
+  }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks, useStockScreener, useEtfScreener, screenerStocks, cryptoCoins, pickSort, dailyStockAnalysis, dailyCryptoAnalysis, dailyEtfAnalysis, dailyForexAnalysis]);
 
   const handleRankPicks = useCallback(async (timeframeDaysForRank?: number) => {
     setRanking(true);
@@ -659,7 +664,7 @@ export default function Index() {
     }
 
     // Try to use daily analysis cache first (instant results)
-    const cacheSource = assetType === 'crypto' ? dailyCryptoAnalysis : assetType === 'stocks' ? dailyStockAnalysis : assetType === 'etfs' ? dailyEtfAnalysis : [];
+    const cacheSource = assetType === 'crypto' ? dailyCryptoAnalysis : assetType === 'stocks' ? dailyStockAnalysis : assetType === 'etfs' ? dailyEtfAnalysis : assetType === 'forex' ? dailyForexAnalysis : [];
     if (cacheSource.length > 0) {
       const cacheMap = new Map(cacheSource.map(c => [c.asset_id, c]));
       let usedCache = 0;
@@ -753,7 +758,7 @@ export default function Index() {
 
     setRankedPicks(results);
     setRanking(false);
-  }, [getQuickPicks, assetType, timeframeDays, dailyStockAnalysis, dailyCryptoAnalysis, isExempt]);
+  }, [getQuickPicks, assetType, timeframeDays, dailyStockAnalysis, dailyCryptoAnalysis, dailyEtfAnalysis, dailyForexAnalysis, isExempt]);
 
   const handleCurrencyChange = useCallback((code: string) => {
     const newVal = code === 'none' ? null : code;
@@ -894,7 +899,7 @@ export default function Index() {
                 onSelect={handleQuickPick}
                 loading={loading || (screenerLoading && (useStockScreener || useEtfScreener)) || (cryptoScreenerLoading && assetType === 'crypto')}
                 onRank={handleRankPicks}
-                ranking={ranking || ((assetType === 'stocks' ? dailyStockLoading : assetType === 'crypto' ? dailyCryptoLoading : assetType === 'etfs' ? dailyEtfLoading : false) && pickSort !== 'default')}
+                ranking={ranking || ((assetType === 'stocks' ? dailyStockLoading : assetType === 'crypto' ? dailyCryptoLoading : assetType === 'etfs' ? dailyEtfLoading : assetType === 'forex' ? dailyForexLoading : false) && pickSort !== 'default')}
                 showDividends={assetType === 'stocks' || assetType === 'etfs'}
                 sortBy={pickSort}
                 onSortChange={setPickSort}
@@ -903,14 +908,9 @@ export default function Index() {
                 onRankTimeframeChange={(tf) => { setRankTimeframe(tf); setRankedPicks({}); setTimeframeDays(RANK_TIMEFRAME_DAYS[tf] || 90); }}
                 watchlistIds={new Set(watchlist.filter(w => w.assetType === assetType).slice(0, 5).map(w => w.id))}
               />
-              {pickSort !== 'default' && (dailyStockAnalysis.length > 0 || dailyCryptoAnalysis.length > 0 || dailyEtfAnalysis.length > 0) && (
+              {pickSort !== 'default' && (dailyStockAnalysis.length > 0 || dailyCryptoAnalysis.length > 0 || dailyEtfAnalysis.length > 0 || dailyForexAnalysis.length > 0) && (
                 <p className="text-[9px] text-muted-foreground/70 italic text-center">
                   ⏱ Results from pre-computed daily analysis (runs 3am AEST). Select any asset for a live re-verification.
-                </p>
-              )}
-              {pickSort !== 'default' && assetType === 'forex' && !ranking && (
-                <p className="text-[9px] text-muted-foreground/70 italic text-center">
-                  ⚡ Forex ranking uses live analysis — may take a moment.
                 </p>
               )}
             </div>

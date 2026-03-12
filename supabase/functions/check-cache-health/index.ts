@@ -14,6 +14,14 @@ const EXPECTED_COMBOS = [
   { asset_type: 'crypto', timeframe_days: 90, label: 'Crypto 3M' },
   { asset_type: 'crypto', timeframe_days: 180, label: 'Crypto 6M' },
   { asset_type: 'crypto', timeframe_days: 365, label: 'Crypto 1Y' },
+  { asset_type: 'etfs', timeframe_days: 30, label: 'ETFs 1M' },
+  { asset_type: 'etfs', timeframe_days: 90, label: 'ETFs 3M' },
+  { asset_type: 'etfs', timeframe_days: 180, label: 'ETFs 6M' },
+  { asset_type: 'etfs', timeframe_days: 365, label: 'ETFs 1Y' },
+  { asset_type: 'forex', timeframe_days: 30, label: 'Forex 1M' },
+  { asset_type: 'forex', timeframe_days: 90, label: 'Forex 3M' },
+  { asset_type: 'forex', timeframe_days: 180, label: 'Forex 6M' },
+  { asset_type: 'forex', timeframe_days: 365, label: 'Forex 1Y' },
 ];
 
 const STALE_THRESHOLD_HOURS = 24;

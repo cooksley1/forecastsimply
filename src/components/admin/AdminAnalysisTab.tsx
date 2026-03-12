@@ -179,7 +179,7 @@ export default function AdminAnalysisTab() {
     saveSuffixes(excludedSuffixes.filter(x => x !== s));
   };
 
-  const triggerAnalysis = async (assetType: 'stocks' | 'crypto' | 'etfs') => {
+  const triggerAnalysis = async (assetType: 'stocks' | 'crypto' | 'etfs' | 'forex') => {
     setRunning(assetType);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -357,6 +357,21 @@ export default function AdminAnalysisTab() {
           )}
         </Button>
 
+        <Button
+          onClick={() => triggerAnalysis('forex')}
+          disabled={!!running}
+          className="gap-2"
+        >
+          {running === 'forex' ? (
+            <>
+              <span className="inline-block w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              Running Forex ({selectedTimeframe}d)…
+            </>
+          ) : (
+            <>💱 Run Forex ({selectedTimeframe}d)</>
+          )}
+        </Button>
+
         <Button variant="outline" onClick={fetchStats} disabled={loading} className="gap-2">
           🔄 Refresh Stats
         </Button>
@@ -367,17 +382,18 @@ export default function AdminAnalysisTab() {
         <div className="space-y-2">
           <h3 className="text-xs font-semibold text-foreground">Cache Coverage</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {(['stocks', 'crypto', 'etfs'] as const).map(type => {
+            {(['stocks', 'crypto', 'etfs', 'forex'] as const).map(type => {
               const TIMEFRAMES = [
                 { days: 30, label: '1M' },
                 { days: 90, label: '3M' },
                 { days: 180, label: '6M' },
                 { days: 365, label: '1Y' },
               ];
+              const typeEmoji: Record<string, string> = { stocks: '📈', crypto: '🪙', etfs: '🏛️', forex: '💱' };
               return (
                 <div key={type} className="border border-border rounded-xl bg-card p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <span>{type === 'stocks' ? '📈' : '🪙'}</span>
+                    <span>{typeEmoji[type] || '📊'}</span>
                     <span className="text-sm font-semibold text-foreground capitalize">{type}</span>
                   </div>
                   <div className="grid grid-cols-4 gap-2">
@@ -438,7 +454,7 @@ export default function AdminAnalysisTab() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span>{s.asset_type === 'stocks' ? '📈' : '🪙'}</span>
+                  <span>{s.asset_type === 'stocks' ? '📈' : s.asset_type === 'etfs' ? '🏛️' : s.asset_type === 'forex' ? '💱' : '🪙'}</span>
                   <span className="text-sm font-semibold text-foreground capitalize">{s.asset_type}</span>
                   {s.exchange && (
                     <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono">{s.exchange}</span>
