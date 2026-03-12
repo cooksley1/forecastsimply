@@ -1,11 +1,15 @@
 import { Play, Info, TrendingUp, TrendingDown, Clock } from 'lucide-react';
-import type { Recommendation } from '@/types/analysis';
+import type { Recommendation, Signal } from '@/types/analysis';
+import type { AssetInfo } from '@/types/assets';
 import { fmtPrice } from '@/utils/format';
+import SentimentPanel from './SentimentPanel';
 
 interface Props {
   recommendations: Recommendation[];
   onSimulate?: (rec: Recommendation) => void;
   activeSimulations?: Set<string>;
+  assetInfo?: AssetInfo;
+  signal?: Signal;
 }
 
 const horizonLabels: Record<string, string> = {
@@ -53,7 +57,7 @@ function getActionExplanation(rec: Recommendation): string {
   return `Entry at ${fmtPrice(rec.entry)}, target ${fmtPrice(rec.target)} (+${pctToTarget}%), stop at ${fmtPrice(rec.stopLoss)} (-${pctRisk}%) ${timeframe}.`;
 }
 
-export default function RecommendationPanel({ recommendations, onSimulate, activeSimulations }: Props) {
+export default function RecommendationPanel({ recommendations, onSimulate, activeSimulations, assetInfo, signal }: Props) {
   return (
     <div className="space-y-4">
       <div>
@@ -167,6 +171,11 @@ export default function RecommendationPanel({ recommendations, onSimulate, activ
         })}
       </div>
       <p className="text-[10px] sm:text-xs text-muted-foreground italic">Algorithmic analysis only. Not financial advice. Always do your own research.</p>
+
+      {/* News Sentiment Deep Dive */}
+      {assetInfo && signal && (
+        <SentimentPanel assetInfo={assetInfo} signal={signal} />
+      )}
     </div>
   );
 }

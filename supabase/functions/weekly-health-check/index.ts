@@ -30,6 +30,7 @@ const EDGE_FUNCTIONS = [
   { name: "snapshot-picks", method: "POST", body: {} },
   { name: "yahoo-proxy", method: "POST", body: { symbol: "AAPL", range: "5d", interval: "1d" } },
   { name: "yahoo-search", method: "POST", body: { query: "AAPL" } },
+  { name: "sentiment-analysis", method: "POST", body: { symbol: "AAPL", name: "Apple", assetType: "stocks", currentPrice: 150, signalLabel: "Hold", signalScore: 0 }, slow: true },
 ];
 
 const EXPECTED_CRON_JOBS = [

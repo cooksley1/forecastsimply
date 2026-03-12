@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.yahoo-search]
 verify_jwt = false
+
+[functions.sentiment-analysis]
+verify_jwt = false
