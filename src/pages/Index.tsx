@@ -140,6 +140,12 @@ export default function Index() {
     timeframeDays: timeframeDays,
     enabled: assetType === 'crypto',
   });
+  const { data: dailyEtfAnalysis, loading: dailyEtfLoading } = useDailyAnalysis({
+    assetType: 'etfs',
+    exchange: etfExchange,
+    timeframeDays: timeframeDays,
+    enabled: assetType === 'etfs',
+  });
   const currentAssetRef = useRef<{ id: string; type: AssetType } | null>(null);
   const isFirstRender = useRef(true);
 
@@ -562,7 +568,7 @@ export default function Index() {
     let items: { label: string; id: string; name?: string; divYield?: number; signal?: { label: string; score: number; confidence: number; projectedReturn?: number; compositeScore?: number } }[] = [];
 
     // When a non-default filter is active and we have cached analysis, use cache as the primary source
-    const cacheSource = assetType === 'stocks' ? dailyStockAnalysis : assetType === 'crypto' ? dailyCryptoAnalysis : [];
+    const cacheSource = assetType === 'stocks' ? dailyStockAnalysis : assetType === 'crypto' ? dailyCryptoAnalysis : assetType === 'etfs' ? dailyEtfAnalysis : [];
     const useCache = pickSort !== 'default' && cacheSource.length > 0;
 
     if (useCache) {
@@ -636,7 +642,7 @@ export default function Index() {
     }
 
     return withSignals;
-  }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks, useStockScreener, useEtfScreener, screenerStocks, cryptoCoins, pickSort, dailyStockAnalysis, dailyCryptoAnalysis]);
+  }, [assetType, stockExchange, etfExchange, dividendOnly, rankedPicks, useStockScreener, useEtfScreener, screenerStocks, cryptoCoins, pickSort, dailyStockAnalysis, dailyCryptoAnalysis, dailyEtfAnalysis]);
 
   const handleRankPicks = useCallback(async (timeframeDaysForRank?: number) => {
     setRanking(true);
@@ -653,7 +659,7 @@ export default function Index() {
     }
 
     // Try to use daily analysis cache first (instant results)
-    const cacheSource = assetType === 'crypto' ? dailyCryptoAnalysis : assetType === 'stocks' ? dailyStockAnalysis : [];
+    const cacheSource = assetType === 'crypto' ? dailyCryptoAnalysis : assetType === 'stocks' ? dailyStockAnalysis : assetType === 'etfs' ? dailyEtfAnalysis : [];
     if (cacheSource.length > 0) {
       const cacheMap = new Map(cacheSource.map(c => [c.asset_id, c]));
       let usedCache = 0;
@@ -888,7 +894,7 @@ export default function Index() {
                 onSelect={handleQuickPick}
                 loading={loading || (screenerLoading && (useStockScreener || useEtfScreener)) || (cryptoScreenerLoading && assetType === 'crypto')}
                 onRank={handleRankPicks}
-                ranking={ranking || ((assetType === 'stocks' ? dailyStockLoading : assetType === 'crypto' ? dailyCryptoLoading : false) && pickSort !== 'default')}
+                ranking={ranking || ((assetType === 'stocks' ? dailyStockLoading : assetType === 'crypto' ? dailyCryptoLoading : assetType === 'etfs' ? dailyEtfLoading : false) && pickSort !== 'default')}
                 showDividends={assetType === 'stocks' || assetType === 'etfs'}
                 sortBy={pickSort}
                 onSortChange={setPickSort}
@@ -897,14 +903,14 @@ export default function Index() {
                 onRankTimeframeChange={(tf) => { setRankTimeframe(tf); setRankedPicks({}); setTimeframeDays(RANK_TIMEFRAME_DAYS[tf] || 90); }}
                 watchlistIds={new Set(watchlist.filter(w => w.assetType === assetType).slice(0, 5).map(w => w.id))}
               />
-              {pickSort !== 'default' && (dailyStockAnalysis.length > 0 || dailyCryptoAnalysis.length > 0) && (
+              {pickSort !== 'default' && (dailyStockAnalysis.length > 0 || dailyCryptoAnalysis.length > 0 || dailyEtfAnalysis.length > 0) && (
                 <p className="text-[9px] text-muted-foreground/70 italic text-center">
                   ⏱ Results from pre-computed daily analysis (runs 3am AEST). Select any asset for a live re-verification.
                 </p>
               )}
-              {pickSort !== 'default' && assetType !== 'stocks' && assetType !== 'crypto' && !ranking && (
+              {pickSort !== 'default' && assetType === 'forex' && !ranking && (
                 <p className="text-[9px] text-muted-foreground/70 italic text-center">
-                  ⚡ {assetType === 'etfs' ? 'ETF' : 'Forex'} ranking uses live analysis — may take a moment.
+                  ⚡ Forex ranking uses live analysis — may take a moment.
                 </p>
               )}
             </div>

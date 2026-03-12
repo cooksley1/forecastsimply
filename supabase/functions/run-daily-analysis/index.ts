@@ -623,8 +623,16 @@ const EXCHANGE_CONFIGS: Record<string, ExchangeConfig> = {
   NASDAQ: { region: 'us', exchangeFilter: 'NMS', suffix: '', maxEquities: 4500 },
 };
 
-async function fetchStockList(exchange: string): Promise<{ sym: string; name: string; divYield: number }[]> {
-  const config = EXCHANGE_CONFIGS[exchange];
+// ETF exchange configs — same regions but uses quoteType 'ETF'
+const ETF_EXCHANGE_CONFIGS: Record<string, ExchangeConfig> = {
+  ASX:    { region: 'au', suffix: '.AX', maxEquities: 500 },
+  NYSE:   { region: 'us', exchangeFilter: 'PCX', suffix: '', maxEquities: 1000 },
+  NASDAQ: { region: 'us', exchangeFilter: 'NMS', suffix: '', maxEquities: 500 },
+};
+
+async function fetchStockList(exchange: string, quoteType: 'EQUITY' | 'ETF' = 'EQUITY'): Promise<{ sym: string; name: string; divYield: number }[]> {
+  const configs = quoteType === 'ETF' ? ETF_EXCHANGE_CONFIGS : EXCHANGE_CONFIGS;
+  const config = configs[exchange];
   if (!config) return [];
 
   let session: { crumb: string; cookies: string } | null = null;
@@ -663,7 +671,7 @@ async function fetchStockList(exchange: string): Promise<{ sym: string; name: st
           size, offset,
           sortField: 'intradaymarketcap',
           sortType: 'DESC',
-          quoteType: 'EQUITY',
+          quoteType,
           query: { operator: 'AND', operands },
         }),
         signal: AbortSignal.timeout(15000),
@@ -783,8 +791,11 @@ Deno.serve(async (req) => {
     if (assetType === 'crypto') {
       const cryptoList = await fetchCryptoList(300);
       assets = cryptoList.map(c => ({ id: c.id, sym: c.sym, name: c.name, price: c.price, change: c.change, divYield: 0 }));
+    } else if (assetType === 'etfs') {
+      const etfList = await fetchStockList(exchange, 'ETF');
+      assets = etfList.map(s => ({ id: s.sym, sym: s.sym, name: s.name, divYield: s.divYield }));
     } else {
-      const stockList = await fetchStockList(exchange);
+      const stockList = await fetchStockList(exchange, 'EQUITY');
       assets = stockList.map(s => ({ id: s.sym, sym: s.sym, name: s.name, divYield: s.divYield }));
     }
 
@@ -833,7 +844,7 @@ Deno.serve(async (req) => {
           asset_id: asset.id,
           symbol: asset.sym,
           name: asset.name,
-          asset_type: assetType === 'crypto' ? 'crypto' : 'stocks',
+          asset_type: assetType,
           exchange: assetType === 'crypto' ? null : exchange,
           price: currentPrice,
           change_pct: Math.round(changePct * 100) / 100,

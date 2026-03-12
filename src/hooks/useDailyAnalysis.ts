@@ -48,7 +48,7 @@ export function useDailyAnalysis({ assetType, exchange, timeframeDays = 90, enab
         .eq('timeframe_days', timeframeDays)
         .order('signal_score', { ascending: false });
 
-      if (exchange && assetType === 'stocks') {
+      if (exchange && (assetType === 'stocks' || assetType === 'etfs')) {
         query = query.eq('exchange', exchange);
       }
 

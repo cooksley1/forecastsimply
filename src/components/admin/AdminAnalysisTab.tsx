@@ -179,7 +179,7 @@ export default function AdminAnalysisTab() {
     saveSuffixes(excludedSuffixes.filter(x => x !== s));
   };
 
-  const triggerAnalysis = async (assetType: 'stocks' | 'crypto') => {
+  const triggerAnalysis = async (assetType: 'stocks' | 'crypto' | 'etfs') => {
     setRunning(assetType);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -342,6 +342,21 @@ export default function AdminAnalysisTab() {
           )}
         </Button>
 
+        <Button
+          onClick={() => triggerAnalysis('etfs')}
+          disabled={!!running}
+          className="gap-2"
+        >
+          {running === 'etfs' ? (
+            <>
+              <span className="inline-block w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              Running ETFs ({selectedTimeframe}d)…
+            </>
+          ) : (
+            <>🏛️ Run ETFs ({selectedTimeframe}d)</>
+          )}
+        </Button>
+
         <Button variant="outline" onClick={fetchStats} disabled={loading} className="gap-2">
           🔄 Refresh Stats
         </Button>
@@ -352,7 +367,7 @@ export default function AdminAnalysisTab() {
         <div className="space-y-2">
           <h3 className="text-xs font-semibold text-foreground">Cache Coverage</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {(['stocks', 'crypto'] as const).map(type => {
+            {(['stocks', 'crypto', 'etfs'] as const).map(type => {
               const TIMEFRAMES = [
                 { days: 30, label: '1M' },
                 { days: 90, label: '3M' },
