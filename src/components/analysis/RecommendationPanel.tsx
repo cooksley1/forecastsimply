@@ -57,7 +57,7 @@ function getActionExplanation(rec: Recommendation): string {
   return `Entry at ${fmtPrice(rec.entry)}, target ${fmtPrice(rec.target)} (+${pctToTarget}%), stop at ${fmtPrice(rec.stopLoss)} (-${pctRisk}%) ${timeframe}.`;
 }
 
-export default function RecommendationPanel({ recommendations, onSimulate, activeSimulations }: Props) {
+export default function RecommendationPanel({ recommendations, onSimulate, activeSimulations, assetInfo, signal }: Props) {
   return (
     <div className="space-y-4">
       <div>
