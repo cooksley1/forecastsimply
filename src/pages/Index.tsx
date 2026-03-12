@@ -94,6 +94,7 @@ export default function Index() {
   const [activeOverlays, setActiveOverlays] = useState<OverlayId[]>([]);
   const [fullscreenChart, setFullscreenChart] = useState(false);
   const isNewSearchRef = useRef(false);
+  const analysisSnapshotRef = useRef<HTMLDivElement>(null);
   const [dataSource, setDataSource] = useState<string>('');
   const [dataFetchedAt, setDataFetchedAt] = useState<Date | null>(null);
   // Country-based defaults
@@ -1004,7 +1005,7 @@ export default function Index() {
             </button>
 
             {/* Signal + metadata bar */}
-            <div id="section-signal" className="flex flex-col sm:flex-row sm:items-center gap-3 scroll-mt-36">
+            <div ref={analysisSnapshotRef} id="section-signal" className="flex flex-col sm:flex-row sm:items-center gap-3 scroll-mt-36">
               <SignalPanel signal={technicalData.signal} price={assetInfo.price} name={assetInfo.name} symbol={assetInfo.symbol} />
               <div className="flex items-center gap-2 flex-wrap ml-auto">
                 {/* Add to Watchlist button */}
@@ -1059,7 +1060,7 @@ export default function Index() {
                   title="Set price alert">
                   Alert
                 </button>
-                <SocialShare assetInfo={assetInfo} technicalData={technicalData} />
+                <SocialShare assetInfo={assetInfo} technicalData={technicalData} snapshotRef={analysisSnapshotRef} />
                 <ReportButton assetInfo={assetInfo} technicalData={technicalData} timeframeDays={timeframeDays} riskLevel={riskLevel} dataSource={dataSource} />
               </div>
             </div>

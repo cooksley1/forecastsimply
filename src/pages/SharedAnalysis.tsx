@@ -144,7 +144,7 @@ export default function SharedAnalysis() {
           {data.analysis_summary && (
             <div className="border-t border-border/50 pt-3">
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Analysis Summary</div>
-              <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-line">{data.analysis_summary}</p>
+              <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-line">{data.analysis_summary?.replace(/\*\*/g, '')}</p>
             </div>
           )}
         </div>
