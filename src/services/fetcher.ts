@@ -232,7 +232,7 @@ export async function fetchCryptoHistory(coinId: string, days: number, knownSymb
 
   // Source 3: Yahoo Finance (non-ALL time fallback too)
   if (!isAllTime) {
-    const yahooTicker = GECKO_TO_YAHOO[coinId] || guessYahooTicker(coinId);
+    const yahooTicker = GECKO_TO_YAHOO[coinId] || guessYahooTicker(coinId, coinSymbol);
     if (yahooTicker) {
       try {
         const chart = await getStockChart(yahooTicker, days);
@@ -254,7 +254,18 @@ export async function fetchCryptoHistory(coinId: string, days: number, knownSymb
     }
   }
 
-  // Source 4: CoinLore (live data, no rate limits) + DIA price — generate synthetic chart
+  // Source 4: CMC synthetic chart (uses CMC proxy for current price + % changes)
+  if (coinSymbol) {
+    try {
+      const result = await buildCMCFallbackData(coinId, coinSymbol, days);
+      if (result) return result;
+    } catch (cmcError: any) {
+      console.warn('CMC fallback failed:', cmcError.message);
+      errors.push(`CMC: ${cmcError.message}`);
+    }
+  }
+
+  // Source 5: CoinLore (live data, no rate limits) + DIA price — generate synthetic chart
   try {
     const result = await buildFallbackCryptoData(coinId, days);
     if (result) return result;
