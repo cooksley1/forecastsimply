@@ -103,7 +103,7 @@ export default function Index() {
   const [dividendOnly, setDividendOnly] = useState(false);
   const [etfExchange, setEtfExchange] = useState(COUNTRY_EXCHANGE_MAP[savedCountry] || 'ASX');
   const [ranking, setRanking] = useState(false);
-  const [rankedPicks, setRankedPicks] = useState<Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }>>({});
+  const [rankedPicks, setRankedPicks] = useState<Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string; compositeScore?: number }>>({});
   const [pickSort, setPickSort] = useState<SortCriteria>('default');
   const [rankTimeframe, setRankTimeframe] = useState<RankTimeframe>('6M');
   const [secondaryCurrency, setSecCurrency] = useState<string | null>(getSecondaryCurrency());
