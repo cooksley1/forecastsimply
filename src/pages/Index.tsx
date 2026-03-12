@@ -755,7 +755,11 @@ export default function Index() {
           }
         }
         
-        results[pick.id] = { label: ta.signal.label, score: ta.signal.score, confidence: ta.signal.confidence, projectedReturn, peakMonths, peakWarning };
+        const normSignal = Math.max(0, Math.min(100, ((ta.signal.score + 15) / 30) * 100));
+        const normReturn = Math.max(0, Math.min(100, ((projectedReturn ?? 0) / 50) * 100));
+        const normConf = Math.max(0, Math.min(100, ta.signal.confidence));
+        const compositeScore = Math.round(normSignal * 0.4 + normReturn * 0.35 + normConf * 0.25);
+        results[pick.id] = { label: ta.signal.label, score: ta.signal.score, confidence: ta.signal.confidence, projectedReturn, peakMonths, peakWarning, compositeScore };
       } catch {
         // skip failed ones
       }
