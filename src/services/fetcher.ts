@@ -183,23 +183,25 @@ export async function fetchCryptoHistory(coinId: string, days: number): Promise<
 
   // Source 3: Yahoo Finance (non-ALL time fallback too)
   if (!isAllTime) {
-    const yahooTicker = GECKO_TO_YAHOO[coinId] || `${coinId.toUpperCase()}-USD`;
-    try {
-      const chart = await getStockChart(yahooTicker, days);
-      let coinData: any = null;
-      try { coinData = await getCoinData(coinId); } catch { /* skip */ }
-      return {
-        priceData: {
-          timestamps: chart.timestamps,
-          closes: chart.closes,
-          volumes: chart.volumes,
-        },
-        coinData,
-        source: 'Yahoo Finance',
-      };
-    } catch (yahooError: any) {
-      console.warn('Yahoo Finance crypto fallback failed:', yahooError.message);
-      errors.push(`Yahoo: ${yahooError.message}`);
+    const yahooTicker = GECKO_TO_YAHOO[coinId] || guessYahooTicker(coinId);
+    if (yahooTicker) {
+      try {
+        const chart = await getStockChart(yahooTicker, days);
+        let coinData: any = null;
+        try { coinData = await getCoinData(coinId); } catch { /* skip */ }
+        return {
+          priceData: {
+            timestamps: chart.timestamps,
+            closes: chart.closes,
+            volumes: chart.volumes,
+          },
+          coinData,
+          source: 'Yahoo Finance',
+        };
+      } catch (yahooError: any) {
+        console.warn('Yahoo Finance crypto fallback failed:', yahooError.message);
+        errors.push(`Yahoo: ${yahooError.message}`);
+      }
     }
   }
 
