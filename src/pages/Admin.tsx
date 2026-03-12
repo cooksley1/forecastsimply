@@ -15,6 +15,7 @@ import AdminAnalyticsTab from '@/components/admin/AdminAnalyticsTab';
 import AdminSubscribersTab from '@/components/admin/AdminSubscribersTab';
 import AdminMessagesTab from '@/components/admin/AdminMessagesTab';
 import AdminAnalysisTab from '@/components/admin/AdminAnalysisTab';
+import AdminHealthTab from '@/components/admin/AdminHealthTab';
 
 // ── Types ──
 interface LoginRecord {
