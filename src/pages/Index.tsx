@@ -1215,8 +1215,6 @@ export default function Index() {
         {/* ── OVERVIEW MODE (All tab) ── */}
         {overviewMode && !technicalData && !loading && !error && (
           <div key="overview-mode" className="space-y-6">
-            <LiveTracker />
-
             <BestPickFinder onViewAsset={(id, type) => {
               setOverviewMode(false);
               setAssetType(type);
@@ -1227,6 +1225,8 @@ export default function Index() {
 
             {/* Portfolio Builder accessible from overview */}
             <PortfolioBuilder riskProfile={riskProfile} riskLevel={riskLevel} onRiskLevelChange={setRiskLevel} />
+
+            <LiveTracker />
 
             <TopPicksDashboard onSelect={(id, type) => {
               setOverviewMode(false);
