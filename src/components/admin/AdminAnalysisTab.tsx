@@ -179,7 +179,7 @@ export default function AdminAnalysisTab() {
     saveSuffixes(excludedSuffixes.filter(x => x !== s));
   };
 
-  const triggerAnalysis = async (assetType: 'stocks' | 'crypto') => {
+  const triggerAnalysis = async (assetType: 'stocks' | 'crypto' | 'etfs') => {
     setRunning(assetType);
     try {
       const { data: { session } } = await supabase.auth.getSession();
