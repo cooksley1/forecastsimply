@@ -1029,7 +1029,8 @@ Deno.serve(async (req) => {
           const fxData = await fetchForexChart(from, to, timeframeDays);
           chartData = { closes: fxData.closes, volumes: [] };
         } else {
-          const yahooTicker = assetType === 'crypto' ? geckoToYahoo(asset.id) : asset.sym;
+          const yahooTicker = assetType === 'crypto' ? geckoToYahoo(asset.id, asset.sym) : asset.sym;
+          if (assetType === 'crypto' && !yahooTicker) { results.skipped++; continue; }
           chartData = await fetchYahooChart(yahooTicker, range);
         }
 
