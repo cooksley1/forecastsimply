@@ -135,10 +135,12 @@ export default function QuickPicks({
     sorted.sort((a, b) => (b.signal?.compositeScore ?? b.signal?.score ?? 0) - (a.signal?.compositeScore ?? a.signal?.score ?? 0));
   }
 
-  // Pin watchlist items at top (max 5)
+  // Pin watchlist items at top — only in default/yield mode where there's no composite ranking.
+  // In ranked modes (best-buys, sells, growth), keep sort order strict and just mark pinned items.
+  const isRankedMode = sortBy === 'best-buys' || sortBy === 'sells' || sortBy === 'growth';
   const watchlistPinned: PickItem[] = [];
   const rest: PickItem[] = [];
-  if (watchlistIds && watchlistIds.size > 0) {
+  if (watchlistIds && watchlistIds.size > 0 && !isRankedMode) {
     for (const p of sorted) {
       if (watchlistIds.has(p.id) && watchlistPinned.length < 5) {
         watchlistPinned.push(p);
