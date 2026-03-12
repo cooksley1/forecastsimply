@@ -611,9 +611,9 @@ interface ChartData { closes: number[]; volumes: number[]; }
 
 async function fetchYahooChart(symbol: string, range = '3mo', interval = '1d'): Promise<ChartData> {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}&includePrePost=false`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     headers: { 'User-Agent': UA },
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(12000),
   });
   if (!res.ok) throw new Error(`Yahoo ${res.status} for ${symbol}`);
   const data = await res.json();
@@ -623,7 +623,6 @@ async function fetchYahooChart(symbol: string, range = '3mo', interval = '1d'): 
   const rawCloses: (number | null)[] = result.indicators.quote[0].close;
   const rawVolumes: (number | null)[] = result.indicators.quote[0].volume || [];
   
-  // Filter out nulls, keeping closes and volumes aligned
   const closes: number[] = [];
   const volumes: number[] = [];
   for (let i = 0; i < rawCloses.length; i++) {
