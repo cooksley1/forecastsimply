@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
-import { LineChart, RefreshCw } from 'lucide-react';
+import { LineChart, RefreshCw, ArrowLeft, Bookmark, BookmarkCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { canRankRefresh, recordRankRefresh } from '@/utils/refreshLimit';
 import { APP_VERSION } from '@/utils/version';
