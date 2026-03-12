@@ -349,6 +349,48 @@ export type Database = {
           },
         ]
       }
+      portfolio_holdings: {
+        Row: {
+          asset_id: string
+          asset_type: string
+          avg_price: number
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          quantity: number
+          symbol: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          asset_type?: string
+          avg_price?: number
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          quantity?: number
+          symbol: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          asset_type?: string
+          avg_price?: number
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          quantity?: number
+          symbol?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       price_alerts: {
         Row: {
           active: boolean
