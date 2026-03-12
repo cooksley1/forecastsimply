@@ -573,7 +573,7 @@ export default function Index() {
     let items: { label: string; id: string; name?: string; divYield?: number; signal?: { label: string; score: number; confidence: number; projectedReturn?: number; compositeScore?: number } }[] = [];
 
     // When a non-default filter is active and we have cached analysis, use cache as the primary source
-    const cacheSource = assetType === 'stocks' ? dailyStockAnalysis : assetType === 'crypto' ? dailyCryptoAnalysis : assetType === 'etfs' ? dailyEtfAnalysis : [];
+    const cacheSource = assetType === 'stocks' ? dailyStockAnalysis : assetType === 'crypto' ? dailyCryptoAnalysis : assetType === 'etfs' ? dailyEtfAnalysis : assetType === 'forex' ? dailyForexAnalysis : [];
     const useCache = pickSort !== 'default' && cacheSource.length > 0;
 
     if (useCache) {
