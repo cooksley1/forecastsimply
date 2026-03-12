@@ -367,7 +367,7 @@ export default function AdminAnalysisTab() {
         <div className="space-y-2">
           <h3 className="text-xs font-semibold text-foreground">Cache Coverage</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {(['stocks', 'crypto'] as const).map(type => {
+            {(['stocks', 'crypto', 'etfs'] as const).map(type => {
               const TIMEFRAMES = [
                 { days: 30, label: '1M' },
                 { days: 90, label: '3M' },
