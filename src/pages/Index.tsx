@@ -160,6 +160,7 @@ export default function Index() {
   const isFirstRender = useRef(true);
 
   const addToWatchlist = useCallback((info: AssetInfo) => {
+    track('watchlist_add', { asset_id: info.id, asset_type: info.assetType });
     setWatchlist(prev => {
       // Prevent duplicates — only add if not already in watchlist
       const existing = prev.find(w => w.id === info.id);
