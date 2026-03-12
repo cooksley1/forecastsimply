@@ -1,4 +1,5 @@
 import { getCoinChart, getCoinData } from './api/coingecko';
+import { getCMCCoinData } from './api/coinmarketcap';
 import { geckoIdToCoinPaprikaId, cpHistorical } from './api/coinpaprika';
 import { getStockChart } from './api/yahoo';
 import { avDailyHistory } from './api/alphavantage';
@@ -125,10 +126,39 @@ function guessYahooTicker(coinId: string, symbol?: string): string | null {
   return null; // skip Yahoo for complex IDs
 }
 
+/** Try CoinGecko for metadata, fall back to CMC */
+async function getCoinMetadata(coinId: string, symbol?: string): Promise<any> {
+  try { return await getCoinData(coinId); } catch { /* skip */ }
+  // Try CMC as fallback
+  if (symbol) {
+    const cmc = await getCMCCoinData(symbol);
+    if (cmc) {
+      return {
+        name: cmc.name,
+        symbol: cmc.symbol,
+        market_data: {
+          current_price: { usd: cmc.price },
+          price_change_percentage_24h: cmc.change24h,
+          price_change_percentage_7d: cmc.change7d,
+          market_cap: { usd: cmc.marketCap },
+          total_volume: { usd: cmc.volume24h },
+          circulating_supply: cmc.circulatingSupply,
+          max_supply: cmc.maxSupply,
+        },
+        market_cap_rank: cmc.rank,
+      };
+    }
+  }
+  return null;
+}
+
 /** Crypto: CoinGecko → CoinPaprika → Yahoo Finance (for ALL) → CoinLore+DIA fallback */
 export async function fetchCryptoHistory(coinId: string, days: number): Promise<CryptoFetchResult> {
   const errors: string[] = [];
   const isAllTime = days >= 9999;
+  // Derive symbol from GECKO_TO_YAHOO map (e.g. 'BTC-USD' → 'BTC')
+  const yahooEntry = GECKO_TO_YAHOO[coinId];
+  const coinSymbol = yahooEntry ? yahooEntry.replace('-USD', '') : undefined;
 
   // For ALL time, try Yahoo Finance first since it has full history for free
   if (isAllTime) {
@@ -137,7 +167,7 @@ export async function fetchCryptoHistory(coinId: string, days: number): Promise<
       try {
         const chart = await getStockChart(yahooTicker, days);
         let coinData: any = null;
-        try { coinData = await getCoinData(coinId); } catch { /* skip */ }
+        coinData = await getCoinMetadata(coinId, coinSymbol);
         return {
           priceData: {
             timestamps: chart.timestamps,
@@ -207,7 +237,7 @@ export async function fetchCryptoHistory(coinId: string, days: number): Promise<
       try {
         const chart = await getStockChart(yahooTicker, days);
         let coinData: any = null;
-        try { coinData = await getCoinData(coinId); } catch { /* skip */ }
+        coinData = await getCoinMetadata(coinId, coinSymbol);
         return {
           priceData: {
             timestamps: chart.timestamps,

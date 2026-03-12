@@ -820,10 +820,75 @@ async function fetchForexChart(from: string, to: string, days: number): Promise<
 }
 
 // ═══════════════════════════════════════════════════
-//  CRYPTO LIST FETCHING
+//  CRYPTO LIST FETCHING (CMC primary, CoinGecko fallback)
 // ═══════════════════════════════════════════════════
 
-async function fetchCryptoList(limit = 300): Promise<{ id: string; sym: string; name: string; price: number; change: number }[]> {
+// CMC symbol → CoinGecko ID mapping for the skip-list & Yahoo ticker lookup
+const CMC_SLUG_TO_GECKO: Record<string, string> = {
+  'bitcoin': 'bitcoin', 'ethereum': 'ethereum', 'tether': 'tether',
+  'xrp': 'ripple', 'bnb': 'binancecoin', 'solana': 'solana',
+  'usd-coin': 'usd-coin', 'dogecoin': 'dogecoin', 'cardano': 'cardano',
+  'tron': 'tron', 'chainlink': 'chainlink', 'avalanche': 'avalanche-2',
+  'stellar': 'stellar', 'shiba-inu': 'shiba-inu', 'polkadot-new': 'polkadot',
+  'hedera': 'hedera-hashgraph', 'toncoin': 'the-open-network',
+  'sui': 'sui', 'litecoin': 'litecoin', 'bitcoin-cash': 'bitcoin-cash',
+  'uniswap': 'uniswap', 'near-protocol': 'near', 'aptos': 'aptos',
+  'aave': 'aave', 'internet-computer': 'internet-computer', 'cosmos': 'cosmos',
+  'filecoin': 'filecoin', 'arbitrum': 'arbitrum', 'optimism-ethereum': 'optimism',
+  'vechain': 'vechain', 'maker': 'maker', 'pepe': 'pepe',
+  'render': 'render-token', 'kaspa': 'kaspa', 'ethereum-classic': 'ethereum-classic',
+  'monero': 'monero', 'algorand': 'algorand', 'fantom': 'fantom',
+  'the-graph': 'the-graph', 'lido-dao': 'lido-dao', 'injective': 'injective-protocol',
+  'theta-network': 'theta-token', 'immutable-x': 'immutable-x', 'sei': 'sei-network',
+  'celestia': 'celestia', 'mantle': 'mantle', 'bittensor': 'bittensor',
+  'bonk1': 'bonk', 'floki-inu': 'floki', 'gala': 'gala',
+  'ondo': 'ondo-finance', 'worldcoin': 'worldcoin-wld', 'pendle': 'pendle',
+  'jupiter-exchange-solana': 'jupiter-exchange-solana', 'pyth-network': 'pyth-network',
+  'hyperliquid': 'hyperliquid', 'pi-network': 'pi-network',
+  'polygon-ecosystem-token': 'polygon-ecosystem-token', 'thorchain': 'thorchain',
+  'eos': 'eos', 'flow': 'flow', 'mantra': 'mantra-dao', 'fetch': 'fetch-ai',
+  'stacks': 'stacks', 'arweave': 'arweave', 'helium': 'helium',
+  'official-trump': 'official-trump',
+};
+
+async function fetchCryptoListFromCMC(limit = 300): Promise<{ id: string; sym: string; name: string; price: number; change: number }[] | null> {
+  const cmcKey = Deno.env.get('CMC_API_KEY');
+  if (!cmcKey) return null;
+
+  try {
+    const url = `https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=${limit}&convert=USD`;
+    const res = await fetchWithRetry(url, {
+      headers: { 'X-CMC_PRO_API_KEY': cmcKey, 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) {
+      console.warn(`[daily-analysis] CMC listings failed: ${res.status}`);
+      return null;
+    }
+    const json = await res.json();
+    const data = json?.data;
+    if (!Array.isArray(data)) return null;
+
+    console.log(`[daily-analysis] CMC returned ${data.length} coins (1 credit used)`);
+
+    return data.map((c: any) => {
+      const slug = c.slug || '';
+      const geckoId = CMC_SLUG_TO_GECKO[slug] || slug; // fallback to slug
+      return {
+        id: geckoId,
+        sym: c.symbol?.toUpperCase() || '',
+        name: c.name || '',
+        price: c.quote?.USD?.price || 0,
+        change: c.quote?.USD?.percent_change_24h || 0,
+      };
+    });
+  } catch (err: any) {
+    console.warn('[daily-analysis] CMC fetch error:', err.message);
+    return null;
+  }
+}
+
+async function fetchCryptoListFromCoinGecko(limit = 300): Promise<{ id: string; sym: string; name: string; price: number; change: number }[]> {
   const all: any[] = [];
   const perPage = 250;
   const pages = Math.ceil(limit / perPage);
@@ -851,6 +916,16 @@ async function fetchCryptoList(limit = 300): Promise<{ id: string; sym: string; 
     price: c.current_price || 0,
     change: c.price_change_percentage_24h || 0,
   }));
+}
+
+async function fetchCryptoList(limit = 300): Promise<{ id: string; sym: string; name: string; price: number; change: number }[]> {
+  // Try CMC first (1 credit, no rate-limit issues)
+  const cmcResult = await fetchCryptoListFromCMC(limit);
+  if (cmcResult && cmcResult.length > 0) return cmcResult;
+
+  // Fallback to CoinGecko
+  console.log('[daily-analysis] Falling back to CoinGecko for crypto list');
+  return fetchCryptoListFromCoinGecko(limit);
 }
 
 // ═══════════════════════════════════════════════════
