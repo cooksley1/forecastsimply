@@ -1025,41 +1025,50 @@ Deno.serve(async (req) => {
 
     if (nextOffset < totalAssets) {
       chainedNext = true;
-      fetch(`${supabaseUrl}/functions/v1/run-daily-analysis`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${serviceKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          asset_type: assetType,
-          exchange,
-          offset: nextOffset,
-          batch_size: batchSize,
-          timeframe: timeframeDays,
-          queue, // pass queue along for when this combo finishes
-        }),
-      }).catch(err => console.warn('[daily-analysis] Chain failed:', err.message));
+      try {
+        const chainRes = await fetch(`${supabaseUrl}/functions/v1/run-daily-analysis`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${serviceKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            asset_type: assetType,
+            exchange,
+            offset: nextOffset,
+            batch_size: batchSize,
+            timeframe: timeframeDays,
+            queue,
+          }),
+        });
+        console.log(`[daily-analysis] Chain → ${assetType} offset=${nextOffset} status=${chainRes.status}`);
+      } catch (err: any) {
+        console.warn('[daily-analysis] Chain failed:', err.message);
+      }
     } else if (queue.length > 0) {
       // This asset_type+timeframe combo is COMPLETE — pick up next from queue
       const next = queue[0];
       const remaining = queue.slice(1);
       console.log(`[daily-analysis] ✓ ${assetType}/${timeframeDays}d complete → next: ${next.type}/${next.tf}d (${remaining.length} remaining in queue)`);
-      fetch(`${supabaseUrl}/functions/v1/run-daily-analysis`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${serviceKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          asset_type: next.type,
-          offset: 0,
-          timeframe: next.tf,
-          queue: remaining,
-        }),
-      }).catch(err => console.warn('[daily-analysis] Queue chain failed:', err.message));
-    } else if (!chainedNext && offset === 0 || nextOffset >= totalAssets) {
-      // Fully complete (no more batches AND no queue) — log final status
+      try {
+        const chainRes = await fetch(`${supabaseUrl}/functions/v1/run-daily-analysis`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${serviceKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            asset_type: next.type,
+            offset: 0,
+            timeframe: next.tf,
+            queue: remaining,
+          }),
+        });
+        console.log(`[daily-analysis] Queue chain → ${next.type}/${next.tf}d status=${chainRes.status}`);
+      } catch (err: any) {
+        console.warn('[daily-analysis] Queue chain failed:', err.message);
+      }
+    } else {
       console.log(`[daily-analysis] ✅ ALL DONE — no more items in queue`);
     }
 
