@@ -77,7 +77,7 @@ export default function TopPicksDashboard({ onSelect }: Props) {
   const [etfPicks, setEtfPicks] = useState<HorizonPicks>({ short: [], mid: [], long: [] });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'crypto' | 'stocks' | 'etfs'>('all');
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const analyseAndRank = useCallback(async () => {
     setLoading(true);
