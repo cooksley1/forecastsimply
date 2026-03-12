@@ -8,6 +8,37 @@ const corsHeaders = {
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
 const BATCH_SIZE = 40;
 const YAHOO_DELAY = 150;
+const MAX_RETRIES = 3;
+
+// ═══════════════════════════════════════════════════
+//  RETRY WRAPPER — exponential backoff for all API calls
+// ═══════════════════════════════════════════════════
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit & { signal?: AbortSignal } = {},
+  retries = MAX_RETRIES,
+): Promise<Response> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, options);
+      // Retry on rate-limit or server errors
+      if ((res.status === 429 || res.status >= 500) && attempt < retries) {
+        const wait = 1000 * Math.pow(2, attempt - 1) + Math.random() * 500;
+        console.warn(`[retry] ${res.status} for ${url.slice(0, 80)}… attempt ${attempt}/${retries}, waiting ${Math.round(wait)}ms`);
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      return res;
+    } catch (err: any) {
+      if (attempt >= retries) throw err;
+      const wait = 1000 * Math.pow(2, attempt - 1);
+      console.warn(`[retry] Network error for ${url.slice(0, 80)}… attempt ${attempt}/${retries}: ${err.message}`);
+      await new Promise(r => setTimeout(r, wait));
+    }
+  }
+  throw new Error(`Max retries (${retries}) exceeded for ${url.slice(0, 80)}`);
+}
 
 // ═══════════════════════════════════════════════════
 //  TECHNICAL ANALYSIS INDICATORS
