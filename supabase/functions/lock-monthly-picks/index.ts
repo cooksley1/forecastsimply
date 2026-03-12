@@ -21,9 +21,10 @@ interface CoinLoreTicker {
 const EXCLUDED_SYMBOLS = new Set([
   "USDT", "USDC", "BUSD", "DAI", "TUSD", "USDP", "USDD", "GUSD",
   "FRAX", "LUSD", "SUSD", "MIM", "FDUSD", "PYUSD", "EURC", "EURT",
-  "WBTC", "WETH", "STETH", "CBETH", "RETH",
+  "WBTC", "WETH", "STETH", "CBETH", "RETH", "BFUSD", "USDAI",
+  "USDE", "CRVUSD", "GHO", "DOLA", "ALUSD", "HAY", "ZUSD",
 ]);
-const EXCLUDED_NAME_PATTERNS = ["tether", "usd coin", "stablecoin", "wrapped"];
+const EXCLUDED_NAME_PATTERNS = ["tether", "usd coin", "stablecoin", "wrapped", "peg", "bridged"];
 
 function isStableOrWrapped(t: CoinLoreTicker): boolean {
   if (EXCLUDED_SYMBOLS.has(t.symbol.toUpperCase())) return true;
