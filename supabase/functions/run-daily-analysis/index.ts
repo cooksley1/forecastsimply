@@ -912,10 +912,21 @@ Deno.serve(async (req) => {
     } else if (assetType === 'forex') {
       assets = FOREX_PAIRS.map(p => ({ id: `${p.from}${p.to}`, sym: `${p.from}/${p.to}`, name: `${p.from}/${p.to}`, divYield: 0 }));
     } else if (assetType === 'etfs') {
-      // Try Yahoo screener first, fall back to curated list
+      // 1. Try Yahoo screener
       let etfList = await fetchStockList(exchange, 'ETF');
+      // 2. Fall back to DB-managed ETF list
+      if (etfList.length === 0) {
+        try {
+          const { data: etfConfig } = await db.from('app_config').select('value').eq('key', `etf_list_${exchange}`).maybeSingle();
+          if (etfConfig?.value && Array.isArray(etfConfig.value)) {
+            etfList = (etfConfig.value as any[]).map((e: any) => ({ sym: e.sym, name: e.name, divYield: 0 }));
+            console.log(`[daily-analysis] Loaded ${etfList.length} ETFs for ${exchange} from DB`);
+          }
+        } catch { /* ignore */ }
+      }
+      // 3. Final fallback to hardcoded list
       if (etfList.length === 0 && CURATED_ETFS[exchange]) {
-        console.log(`[daily-analysis] Yahoo ETF screener returned 0 for ${exchange}, using curated list`);
+        console.log(`[daily-analysis] Using hardcoded fallback ETF list for ${exchange}`);
         etfList = CURATED_ETFS[exchange].map(e => ({ sym: e.sym, name: e.name, divYield: 0 }));
       }
       assets = etfList.map(s => ({ id: s.sym, sym: s.sym, name: s.name, divYield: s.divYield }));
