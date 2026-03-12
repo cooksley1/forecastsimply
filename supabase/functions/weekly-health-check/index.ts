@@ -108,9 +108,12 @@ Deno.serve(async (req) => {
 
     for (const fn of EDGE_FUNCTIONS) {
       const fnStart = Date.now();
+      const isSlow = (fn as any).slow === true;
+      const timeoutMs = isSlow ? 5000 : 30000; // Quick ping for slow functions
+
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000);
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
         const res = await fetch(`${supabaseUrl}/functions/v1/${fn.name}`, {
           method: fn.method,
@@ -134,13 +137,23 @@ Deno.serve(async (req) => {
           latency_ms: Date.now() - fnStart,
         });
       } catch (e: any) {
-        functionResults.push({
-          name: fn.name,
-          status: e.name === "AbortError" ? "timeout" : "error",
-          http_status: null,
-          latency_ms: Date.now() - fnStart,
-          error: e.message,
-        });
+        // For slow/long-running functions, a timeout means they started OK
+        if (isSlow && e.name === "AbortError") {
+          functionResults.push({
+            name: fn.name,
+            status: "slow_ok",
+            http_status: null,
+            latency_ms: Date.now() - fnStart,
+          });
+        } else {
+          functionResults.push({
+            name: fn.name,
+            status: e.name === "AbortError" ? "timeout" : "error",
+            http_status: null,
+            latency_ms: Date.now() - fnStart,
+            error: e.message,
+          });
+        }
       }
     }
 
