@@ -145,15 +145,20 @@ export default function Index() {
 
   const addToWatchlist = useCallback((info: AssetInfo) => {
     setWatchlist(prev => {
+      // Prevent duplicates — only add if not already in watchlist
       const existing = prev.find(w => w.id === info.id);
-      const filtered = prev.filter(w => w.id !== info.id);
+      if (existing) {
+        // Update price but don't duplicate
+        const next = prev.map(w => w.id === info.id ? { ...w, price: info.price, change24h: info.change24h } : w);
+        localStorage.setItem('sf_watchlist', JSON.stringify(next));
+        return next;
+      }
       const next: WatchlistItem[] = [{
         id: info.id, symbol: info.symbol, name: info.name, assetType: info.assetType,
         price: info.price, change24h: info.change24h,
-        addedAt: existing?.addedAt ?? Date.now(),
-        addedPrice: existing?.addedPrice ?? info.price,
-        note: existing?.note,
-      }, ...filtered].slice(0, 20);
+        addedAt: Date.now(),
+        addedPrice: info.price,
+      }, ...prev].slice(0, 20);
       localStorage.setItem('sf_watchlist', JSON.stringify(next));
       return next;
     });
