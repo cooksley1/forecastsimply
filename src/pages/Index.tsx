@@ -1225,6 +1225,18 @@ export default function Index() {
               else if (type === 'etfs') analyseStock(id, 'etfs');
             }} />
 
+            {/* My Portfolio - holdings tracker with assessment */}
+            <PortfolioManager
+              analysisCache={[...(dailyCryptoAnalysis || []), ...(dailyStockAnalysis || []), ...(dailyEtfAnalysis || []), ...(dailyForexAnalysis || [])]}
+              onAnalyse={(id, type) => {
+                setOverviewMode(false);
+                setAssetType(type as any);
+                if (type === 'crypto') analyseCrypto(id);
+                else if (type === 'stocks') analyseStock(id, 'stocks');
+                else if (type === 'etfs') analyseStock(id, 'etfs');
+              }}
+            />
+
             {/* Portfolio Builder accessible from overview */}
             <PortfolioBuilder riskProfile={riskProfile} riskLevel={riskLevel} onRiskLevelChange={setRiskLevel} />
 
