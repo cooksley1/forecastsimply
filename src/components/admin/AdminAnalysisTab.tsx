@@ -179,7 +179,8 @@ export default function AdminAnalysisTab() {
     saveSuffixes(excludedSuffixes.filter(x => x !== s));
   };
 
-  const triggerAnalysis = async (assetType: 'stocks' | 'crypto' | 'etfs' | 'forex') => {
+  const triggerAnalysis = async (assetType: 'stocks' | 'crypto' | 'etfs' | 'forex', timeframeOverride?: number) => {
+    const tf = timeframeOverride ?? selectedTimeframe;
     setRunning(assetType);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -194,22 +195,54 @@ export default function AdminAnalysisTab() {
             Authorization: `Bearer ${session.access_token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ asset_type: assetType, offset: 0, timeframe: selectedTimeframe }),
+          body: JSON.stringify({ asset_type: assetType, offset: 0, timeframe: tf }),
         }
       );
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Failed');
 
       toast.success(
-        `${assetType} analysis started — ${result.processed || 0} assets in first batch. ${result.has_more ? 'Auto-chaining next batch…' : 'Complete!'}`
+        `${assetType} ${tf}d — ${result.processed || 0} assets. ${result.has_more ? 'Auto-chaining…' : 'Complete!'}`
       );
-      // Refresh stats after a short delay
-      setTimeout(fetchStats, 3000);
+      // Auto-refresh stats
+      setTimeout(fetchStats, 2000);
     } catch (e: any) {
       toast.error(e.message || 'Failed to trigger analysis');
     } finally {
       setRunning(null);
     }
+  };
+
+  const [runAllActive, setRunAllActive] = useState(false);
+  const [runAllProgress, setRunAllProgress] = useState('');
+
+  const triggerRunAll = async () => {
+    setRunAllActive(true);
+    const combos: { type: 'stocks' | 'crypto' | 'etfs' | 'forex'; tf: number }[] = [];
+    const types: ('stocks' | 'crypto' | 'etfs' | 'forex')[] = ['stocks', 'crypto', 'etfs', 'forex'];
+    const timeframes = [30, 90, 180, 365];
+    for (const type of types) {
+      for (const tf of timeframes) {
+        combos.push({ type, tf });
+      }
+    }
+
+    for (let i = 0; i < combos.length; i++) {
+      const { type, tf } = combos[i];
+      const label = `${type} ${tf === 30 ? '1M' : tf === 90 ? '3M' : tf === 180 ? '6M' : '1Y'}`;
+      setRunAllProgress(`${i + 1}/${combos.length}: ${label}`);
+      try {
+        await triggerAnalysis(type, tf);
+        // Small delay between runs to avoid overwhelming
+        await new Promise(r => setTimeout(r, 1000));
+      } catch {
+        // Continue with next combo
+      }
+    }
+    setRunAllProgress('');
+    setRunAllActive(false);
+    toast.success('All analysis runs triggered!');
+    fetchStats();
   };
 
   const formatDate = (d: string) => {
