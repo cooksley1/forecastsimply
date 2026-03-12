@@ -95,6 +95,7 @@ export default function Index() {
   const [fullscreenChart, setFullscreenChart] = useState(false);
   const isNewSearchRef = useRef(false);
   const [dataSource, setDataSource] = useState<string>('');
+  const [dataFetchedAt, setDataFetchedAt] = useState<Date | null>(null);
   // Country-based defaults
   const savedCountry = localStorage.getItem('sf_country') || 'AU';
   const COUNTRY_EXCHANGE_MAP: Record<string, string> = { AU: 'ASX', US: 'NYSE', UK: 'LSE', HK: 'HKG', JP: 'JPX', CA: 'NYSE', NZ: 'ASX', EU: 'LSE' };
