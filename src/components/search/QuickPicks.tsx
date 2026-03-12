@@ -120,7 +120,7 @@ export default function QuickPicks({
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const hasRanked = picks.some(p => p.signal);
-  const needsRank = sortBy !== 'default' && sortBy !== 'yield' && sortBy !== 'growth';
+  const needsRank = sortBy !== 'default' && sortBy !== 'yield';
 
   // Sort & filter picks
   let sorted = [...picks];
