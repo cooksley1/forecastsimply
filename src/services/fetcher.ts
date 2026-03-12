@@ -103,6 +103,9 @@ const GECKO_TO_YAHOO: Record<string, string> = {
   'stacks': 'STX-USD', 'arweave': 'AR-USD', 'helium': 'HNT-USD',
   'conflux-token': 'CFX-USD', 'oasis-network': 'ROSE-USD',
   'mina-protocol': 'MINA-USD', 'iotex': 'IOTX-USD',
+  // Meme & newer
+  'official-trump': 'TRUMP-USD', 'amp-token': 'AMP-USD',
+  'flare-networks': 'FLR-USD',
 };
 
 /**
