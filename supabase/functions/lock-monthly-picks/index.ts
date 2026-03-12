@@ -97,9 +97,10 @@ Deno.serve(async (req) => {
           if (!existingKey.has(`${assetType}-${tf}-${r}`)) needed.push(r);
         }
         if (needed.length === 0) continue;
+        console.log(`${assetType} tf=${tf}: need ranks`, needed);
 
         // Pull top candidates from daily_analysis_cache
-        const { data: cached } = await supabase
+        const { data: cached, error: cacheErr } = await supabase
           .from("daily_analysis_cache")
           .select("*")
           .eq("asset_type", assetType)
@@ -107,6 +108,7 @@ Deno.serve(async (req) => {
           .order("signal_score", { ascending: false })
           .limit(10);
 
+        console.log(`${assetType} tf=${tf}: cached=${cached?.length}, err=${cacheErr?.message}`);
         if (!cached?.length) continue;
 
         // Pick top N that aren't already locked
