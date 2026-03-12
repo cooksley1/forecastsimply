@@ -39,9 +39,10 @@ export function useShareAnalysis() {
         .insert({
           ...payload,
           shared_by: user?.user?.id || null,
-        })
+        } as any)
         .select('id')
         .single();
+      if (error) throw error;
       if (error) throw error;
       const id = (data as any).id;
       shareIdCache.current[cacheKey] = id;

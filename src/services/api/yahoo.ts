@@ -56,7 +56,8 @@ async function fetchWithProxy(url: string): Promise<any> {
 
       errors.push(`${proxy}: unexpected JSON structure`);
     } catch (e: any) {
-      errors.push(`${proxy}: ${e.message}`);
+      const msg = e.name === 'AbortError' ? `${proxy}: timeout` : `${proxy}: ${e.message}`;
+      errors.push(msg);
       continue;
     }
   }
