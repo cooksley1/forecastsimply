@@ -956,10 +956,50 @@ export default function Index() {
         {/* ── ANALYSIS RESULTS — Card Grid Layout ── */}
         {showAnalysis && (
           <div className="space-y-4">
+            {/* Back button */}
+            <button
+              onClick={() => {
+                setTechnicalData(null);
+                setAssetInfo(null);
+                setError(null);
+                setDataSource('');
+              }}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+              Back to {overviewMode ? 'overview' : assetType}
+            </button>
+
             {/* Signal + metadata bar */}
             <div id="section-signal" className="flex flex-col sm:flex-row sm:items-center gap-3 scroll-mt-36">
               <SignalPanel signal={technicalData.signal} price={assetInfo.price} name={assetInfo.name} symbol={assetInfo.symbol} />
               <div className="flex items-center gap-2 flex-wrap ml-auto">
+                {/* Add to Watchlist button */}
+                {(() => {
+                  const isInWatchlist = watchlist.some(w => w.id === assetInfo.id);
+                  return (
+                    <button
+                      onClick={() => {
+                        if (isInWatchlist) {
+                          removeFromWatchlist(assetInfo.id);
+                          toast.success(`${assetInfo.symbol} removed from watchlist`);
+                        } else {
+                          addToWatchlist(assetInfo);
+                          toast.success(`${assetInfo.symbol} added to watchlist`);
+                        }
+                      }}
+                      className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] sm:text-xs font-medium border transition-all ${
+                        isInWatchlist
+                          ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
+                          : 'border-border text-muted-foreground hover:text-foreground hover:border-primary/50'
+                      }`}
+                      title={isInWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+                    >
+                      {isInWatchlist ? <BookmarkCheck className="w-3 h-3" /> : <Bookmark className="w-3 h-3" />}
+                      {isInWatchlist ? 'Watchlisted' : 'Watchlist'}
+                    </button>
+                  );
+                })()}
                 {dataSource && (
                   <span className="text-[10px] sm:text-xs font-mono text-muted-foreground bg-card px-2 py-1 rounded-lg border border-border">
                     {dataSource}
