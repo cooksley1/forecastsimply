@@ -143,16 +143,21 @@ Deno.serve(async (req) => {
         console.log(`[health] Auto-backfilling ${emptyOrStale.length} empty/stale combos`);
         const backfillQueue = emptyOrStale.slice(1).map(r => ({ type: r.asset_type, tf: r.timeframe_days }));
         const first = emptyOrStale[0];
-        fetch(`${supabaseUrl}/functions/v1/run-daily-analysis`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            asset_type: first.asset_type,
-            offset: 0,
-            timeframe: first.timeframe_days,
-            queue: backfillQueue,
-          }),
-        }).catch(err => console.warn('[health] Auto-backfill trigger failed:', err));
+        try {
+          await fetch(`${supabaseUrl}/functions/v1/run-daily-analysis`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              asset_type: first.asset_type,
+              offset: 0,
+              timeframe: first.timeframe_days,
+              queue: backfillQueue,
+            }),
+          });
+          console.log('[health] Auto-backfill triggered successfully');
+        } catch (err) {
+          console.warn('[health] Auto-backfill trigger failed:', err);
+        }
       }
     } else {
       await sb.from('app_config').update({ value: { has_issues: false, checked_at: new Date().toISOString() } as any, updated_at: new Date().toISOString() }).eq('key', 'cache_health_alert');
