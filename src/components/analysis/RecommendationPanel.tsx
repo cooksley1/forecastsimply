@@ -1,11 +1,15 @@
 import { Play, Info, TrendingUp, TrendingDown, Clock } from 'lucide-react';
-import type { Recommendation } from '@/types/analysis';
+import type { Recommendation, Signal } from '@/types/analysis';
+import type { AssetInfo } from '@/types/assets';
 import { fmtPrice } from '@/utils/format';
+import SentimentPanel from './SentimentPanel';
 
 interface Props {
   recommendations: Recommendation[];
   onSimulate?: (rec: Recommendation) => void;
   activeSimulations?: Set<string>;
+  assetInfo?: AssetInfo;
+  signal?: Signal;
 }
 
 const horizonLabels: Record<string, string> = {
