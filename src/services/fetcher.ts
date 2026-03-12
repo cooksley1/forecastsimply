@@ -105,7 +105,7 @@ const GECKO_TO_YAHOO: Record<string, string> = {
   'mina-protocol': 'MINA-USD', 'iotex': 'IOTX-USD',
   // Meme & newer
   'official-trump': 'TRUMP-USD', 'amp-token': 'AMP-USD',
-  'flare-networks': 'FLR-USD', 'aptos': 'APT-USD',
+  'flare-networks': 'FLR-USD',
 };
 
 /**
