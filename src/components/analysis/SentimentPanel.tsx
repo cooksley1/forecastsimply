@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ExternalLink } from 'lucide-react';
 import { Newspaper, TrendingUp, TrendingDown, Minus, Loader2, AlertTriangle, Sparkles, ArrowRight, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
