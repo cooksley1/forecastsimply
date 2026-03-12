@@ -140,6 +140,12 @@ export default function Index() {
     timeframeDays: timeframeDays,
     enabled: assetType === 'crypto',
   });
+  const { data: dailyEtfAnalysis, loading: dailyEtfLoading } = useDailyAnalysis({
+    assetType: 'etfs',
+    exchange: etfExchange,
+    timeframeDays: timeframeDays,
+    enabled: assetType === 'etfs',
+  });
   const currentAssetRef = useRef<{ id: string; type: AssetType } | null>(null);
   const isFirstRender = useRef(true);
 
