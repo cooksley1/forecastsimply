@@ -167,7 +167,7 @@ export async function fetchCryptoHistory(coinId: string, days: number): Promise<
       try {
         const chart = await getStockChart(yahooTicker, days);
         let coinData: any = null;
-        try { coinData = await getCoinData(coinId); } catch { /* skip */ }
+        coinData = await getCoinMetadata(coinId, coinSymbol);
         return {
           priceData: {
             timestamps: chart.timestamps,
