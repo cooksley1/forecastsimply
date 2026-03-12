@@ -6,6 +6,13 @@ import { toast } from 'sonner';
 import type { AssetInfo } from '@/types/assets';
 import type { Signal, SignalLabel, SignalColor } from '@/types/analysis';
 
+interface NewsHeadline {
+  title: string;
+  source: string;
+  date: string;
+  url: string | null;
+}
+
 interface SentimentData {
   summary: string;
   themes: string[];
@@ -20,6 +27,8 @@ interface SentimentData {
   adjustmentReasoning: string;
   newsQuality: 'Rich' | 'Moderate' | 'Limited';
   disclaimer: string;
+  headlines?: NewsHeadline[];
+  headlineCount?: number;
 }
 
 interface Props {
