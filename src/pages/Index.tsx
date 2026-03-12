@@ -406,7 +406,7 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, addToWatchlist, updateSecondaryPrice, saveToHistory]);
+  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, updateSecondaryPrice, saveToHistory]);
 
   /* ── Forex ── */
   const analyseForex = useCallback(async (pairId: string) => {
