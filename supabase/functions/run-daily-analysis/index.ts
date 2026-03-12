@@ -889,7 +889,7 @@ Deno.serve(async (req) => {
           symbol: asset.sym,
           name: asset.name,
           asset_type: assetType,
-          exchange: assetType === 'crypto' ? null : exchange,
+          exchange: (assetType === 'crypto' || assetType === 'forex') ? null : exchange,
           price: currentPrice,
           change_pct: Math.round(changePct * 100) / 100,
           dividend_yield: Math.round((asset.divYield || 0) * 10) / 10,
