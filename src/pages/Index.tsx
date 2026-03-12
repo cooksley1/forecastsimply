@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
-import { LineChart, RefreshCw } from 'lucide-react';
+import { LineChart, RefreshCw, ArrowLeft, Bookmark, BookmarkCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { canRankRefresh, recordRankRefresh } from '@/utils/refreshLimit';
 import { APP_VERSION } from '@/utils/version';
@@ -145,15 +145,20 @@ export default function Index() {
 
   const addToWatchlist = useCallback((info: AssetInfo) => {
     setWatchlist(prev => {
+      // Prevent duplicates — only add if not already in watchlist
       const existing = prev.find(w => w.id === info.id);
-      const filtered = prev.filter(w => w.id !== info.id);
+      if (existing) {
+        // Update price but don't duplicate
+        const next = prev.map(w => w.id === info.id ? { ...w, price: info.price, change24h: info.change24h } : w);
+        localStorage.setItem('sf_watchlist', JSON.stringify(next));
+        return next;
+      }
       const next: WatchlistItem[] = [{
         id: info.id, symbol: info.symbol, name: info.name, assetType: info.assetType,
         price: info.price, change24h: info.change24h,
-        addedAt: existing?.addedAt ?? Date.now(),
-        addedPrice: existing?.addedPrice ?? info.price,
-        note: existing?.note,
-      }, ...filtered].slice(0, 20);
+        addedAt: Date.now(),
+        addedPrice: info.price,
+      }, ...prev].slice(0, 20);
       localStorage.setItem('sf_watchlist', JSON.stringify(next));
       return next;
     });
@@ -358,7 +363,7 @@ export default function Index() {
       currentAssetRef.current = { id: coinId, type: 'crypto' };
       setAssetInfo(info);
       setTechnicalData(ta);
-      addToWatchlist(info);
+      // Don't auto-add to watchlist — user will use explicit button
       updateSecondaryPrice(livePrice);
       saveToHistory(info, ta, result.source);
     } catch (e: any) {
@@ -366,7 +371,7 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, addToWatchlist, updateSecondaryPrice, saveToHistory]);
+  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, updateSecondaryPrice, saveToHistory]);
 
   /* ── Stocks / ETFs ── */
   const analyseStock = useCallback(async (symbol: string, type: 'stocks' | 'etfs') => {
@@ -398,7 +403,7 @@ export default function Index() {
       currentAssetRef.current = { id: symbol, type };
       setAssetInfo(info);
       setTechnicalData(ta);
-      addToWatchlist(info);
+      // Don't auto-add to watchlist — user will use explicit button
       updateSecondaryPrice(lastPrice);
       saveToHistory(info, ta, result.source);
     } catch (e: any) {
@@ -406,7 +411,7 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, addToWatchlist, updateSecondaryPrice, saveToHistory]);
+  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, updateSecondaryPrice, saveToHistory]);
 
   /* ── Forex ── */
   const analyseForex = useCallback(async (pairId: string) => {
@@ -430,14 +435,14 @@ export default function Index() {
       currentAssetRef.current = { id: pairId, type: 'forex' };
       setAssetInfo(info);
       setTechnicalData(ta);
-      addToWatchlist(info);
+      // Don't auto-add to watchlist — user will use explicit button
       saveToHistory(info, ta, result.source);
     } catch (e: any) {
       setError(e.message || 'Failed to fetch forex data. Try again.');
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, addToWatchlist, saveToHistory]);
+  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, saveToHistory]);
 
   /* ── Auto-reanalyse ── */
   useEffect(() => {
@@ -956,10 +961,50 @@ export default function Index() {
         {/* ── ANALYSIS RESULTS — Card Grid Layout ── */}
         {showAnalysis && (
           <div className="space-y-4">
+            {/* Back button */}
+            <button
+              onClick={() => {
+                setTechnicalData(null);
+                setAssetInfo(null);
+                setError(null);
+                setDataSource('');
+              }}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+              Back to {overviewMode ? 'overview' : assetType}
+            </button>
+
             {/* Signal + metadata bar */}
             <div id="section-signal" className="flex flex-col sm:flex-row sm:items-center gap-3 scroll-mt-36">
               <SignalPanel signal={technicalData.signal} price={assetInfo.price} name={assetInfo.name} symbol={assetInfo.symbol} />
               <div className="flex items-center gap-2 flex-wrap ml-auto">
+                {/* Add to Watchlist button */}
+                {(() => {
+                  const isInWatchlist = watchlist.some(w => w.id === assetInfo.id);
+                  return (
+                    <button
+                      onClick={() => {
+                        if (isInWatchlist) {
+                          removeFromWatchlist(assetInfo.id);
+                          toast.success(`${assetInfo.symbol} removed from watchlist`);
+                        } else {
+                          addToWatchlist(assetInfo);
+                          toast.success(`${assetInfo.symbol} added to watchlist`);
+                        }
+                      }}
+                      className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] sm:text-xs font-medium border transition-all ${
+                        isInWatchlist
+                          ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
+                          : 'border-border text-muted-foreground hover:text-foreground hover:border-primary/50'
+                      }`}
+                      title={isInWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+                    >
+                      {isInWatchlist ? <BookmarkCheck className="w-3 h-3" /> : <Bookmark className="w-3 h-3" />}
+                      {isInWatchlist ? 'Watchlisted' : 'Watchlist'}
+                    </button>
+                  );
+                })()}
                 {dataSource && (
                   <span className="text-[10px] sm:text-xs font-mono text-muted-foreground bg-card px-2 py-1 rounded-lg border border-border">
                     {dataSource}
