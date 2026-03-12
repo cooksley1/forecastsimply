@@ -705,6 +705,11 @@ export default function Admin() {
           <TabsContent value="analysis">
             <AdminAnalysisTab />
           </TabsContent>
+
+          {/* ── Health Tab ── */}
+          <TabsContent value="health">
+            <AdminHealthTab />
+          </TabsContent>
         </Tabs>
       </main>
 
