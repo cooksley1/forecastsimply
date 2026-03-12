@@ -398,7 +398,7 @@ export default function Index() {
       currentAssetRef.current = { id: symbol, type };
       setAssetInfo(info);
       setTechnicalData(ta);
-      addToWatchlist(info);
+      // Don't auto-add to watchlist — user will use explicit button
       updateSecondaryPrice(lastPrice);
       saveToHistory(info, ta, result.source);
     } catch (e: any) {
