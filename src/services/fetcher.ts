@@ -114,26 +114,24 @@ export async function fetchCryptoHistory(coinId: string, days: number): Promise<
   // For ALL time, try Yahoo Finance first since it has full history for free
   if (isAllTime) {
     const yahooTicker = GECKO_TO_YAHOO[coinId] || guessYahooTicker(coinId);
-    if (!yahooTicker) {
-      errors.push('Yahoo: no valid ticker mapping');
-    } else {
-    try {
-      const chart = await getStockChart(yahooTicker, days);
-      // Get coin metadata from CoinGecko or DIA
-      let coinData: any = null;
-      try { coinData = await getCoinData(coinId); } catch { /* skip */ }
-      return {
-        priceData: {
-          timestamps: chart.timestamps,
-          closes: chart.closes,
-          volumes: chart.volumes,
-        },
-        coinData,
-        source: 'Yahoo Finance (full history)',
-      };
-    } catch (yahooError: any) {
-      console.warn('Yahoo Finance crypto failed:', yahooError.message);
-      errors.push(`Yahoo: ${yahooError.message}`);
+    if (yahooTicker) {
+      try {
+        const chart = await getStockChart(yahooTicker, days);
+        let coinData: any = null;
+        try { coinData = await getCoinData(coinId); } catch { /* skip */ }
+        return {
+          priceData: {
+            timestamps: chart.timestamps,
+            closes: chart.closes,
+            volumes: chart.volumes,
+          },
+          coinData,
+          source: 'Yahoo Finance (full history)',
+        };
+      } catch (yahooError: any) {
+        console.warn('Yahoo Finance crypto failed:', yahooError.message);
+        errors.push(`Yahoo: ${yahooError.message}`);
+      }
     }
   }
 
