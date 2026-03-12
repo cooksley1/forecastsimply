@@ -1078,6 +1078,8 @@ export default function Index() {
                   recommendations={technicalData.recommendations}
                   onSimulate={handleSimulate}
                   activeSimulations={new Set(watchlist.filter(w => w.simulation && w.id.startsWith(assetInfo.id)).map(w => w.simulation!.horizon))}
+                  assetInfo={assetInfo}
+                  signal={technicalData.signal}
                 />
               </div>
 
