@@ -1225,6 +1225,9 @@ export default function Index() {
               else if (type === 'etfs') analyseStock(id, 'etfs');
             }} />
 
+            {/* Portfolio Builder accessible from overview */}
+            <PortfolioBuilder riskProfile={riskProfile} riskLevel={riskLevel} onRiskLevelChange={setRiskLevel} />
+
             <TopPicksDashboard onSelect={(id, type) => {
               setOverviewMode(false);
               setAssetType(type);
@@ -1232,9 +1235,6 @@ export default function Index() {
               else if (type === 'stocks') analyseStock(id, 'stocks');
               else if (type === 'etfs') analyseStock(id, 'etfs');
             }} />
-
-            {/* Portfolio Builder accessible from overview */}
-            <PortfolioBuilder riskProfile={riskProfile} riskLevel={riskLevel} onRiskLevelChange={setRiskLevel} />
           </div>
         )}
 
