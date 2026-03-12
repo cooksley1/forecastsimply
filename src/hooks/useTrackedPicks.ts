@@ -26,6 +26,8 @@ export interface TrackedPick {
   case_study_text: string | null;
   completed_at: string | null;
   created_at: string;
+  timeframe_days: number;
+  rank: number;
 }
 
 export interface PickSnapshot {
@@ -49,7 +51,8 @@ export function useActivePicks() {
         .from('tracked_picks')
         .select('*')
         .eq('status', 'active')
-        .order('month_start', { ascending: false });
+        .order('timeframe_days', { ascending: true })
+        .order('rank', { ascending: true });
       if (error) throw error;
       return (data || []) as TrackedPick[];
     },
@@ -64,7 +67,9 @@ export function useAllPicks() {
       const { data, error } = await supabase
         .from('tracked_picks')
         .select('*')
-        .order('month_start', { ascending: false });
+        .order('month_start', { ascending: false })
+        .order('timeframe_days', { ascending: true })
+        .order('rank', { ascending: true });
       if (error) throw error;
       return (data || []) as TrackedPick[];
     },
