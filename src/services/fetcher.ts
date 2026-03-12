@@ -82,7 +82,29 @@ const GECKO_TO_YAHOO: Record<string, string> = {
   'polygon-ecosystem-token': 'POL-USD', 'matic-network': 'MATIC-USD',
   'thorchain': 'RUNE-USD', 'kaia': 'KAIA-USD',
   'dexe': 'DEXE-USD', 'usds': 'USDS-USD', 'usdd': 'USDD-USD',
+  // More top coins
+  '1inch': '1INCH-USD', 'dash': 'DASH-USD', 'neo': 'NEO-USD',
+  'nexo': 'NEXO-USD', 'iota': 'IOTA-USD', 'gho': 'GHO-USD',
+  'frax': 'FRAX-USD', 'sky': 'SKY-USD', 'fartcoin': 'FARTCOIN-USD',
+  'artificial-superintelligence-alliance': 'FET-USD',
 };
+
+/**
+ * Build a Yahoo-style ticker from a CoinGecko symbol.
+ * Only used when GECKO_TO_YAHOO has no entry.
+ * Returns null if we can't build a sensible ticker (avoids junk like FETCH-AI-USD).
+ */
+function guessYahooTicker(coinId: string, symbol?: string): string | null {
+  // If a symbol is available (e.g. "FET"), use it directly
+  if (symbol && /^[A-Z0-9]{1,10}$/i.test(symbol)) {
+    return `${symbol.toUpperCase()}-USD`;
+  }
+  // Only use the coinId if it's a single word (no hyphens) and short
+  if (!coinId.includes('-') && coinId.length <= 8) {
+    return `${coinId.toUpperCase()}-USD`;
+  }
+  return null; // skip Yahoo for complex IDs
+}
 
 /** Crypto: CoinGecko → CoinPaprika → Yahoo Finance (for ALL) → CoinLore+DIA fallback */
 export async function fetchCryptoHistory(coinId: string, days: number): Promise<CryptoFetchResult> {
@@ -91,24 +113,25 @@ export async function fetchCryptoHistory(coinId: string, days: number): Promise<
 
   // For ALL time, try Yahoo Finance first since it has full history for free
   if (isAllTime) {
-    const yahooTicker = GECKO_TO_YAHOO[coinId] || `${coinId.toUpperCase()}-USD`;
-    try {
-      const chart = await getStockChart(yahooTicker, days);
-      // Get coin metadata from CoinGecko or DIA
-      let coinData: any = null;
-      try { coinData = await getCoinData(coinId); } catch { /* skip */ }
-      return {
-        priceData: {
-          timestamps: chart.timestamps,
-          closes: chart.closes,
-          volumes: chart.volumes,
-        },
-        coinData,
-        source: 'Yahoo Finance (full history)',
-      };
-    } catch (yahooError: any) {
-      console.warn('Yahoo Finance crypto failed:', yahooError.message);
-      errors.push(`Yahoo: ${yahooError.message}`);
+    const yahooTicker = GECKO_TO_YAHOO[coinId] || guessYahooTicker(coinId);
+    if (yahooTicker) {
+      try {
+        const chart = await getStockChart(yahooTicker, days);
+        let coinData: any = null;
+        try { coinData = await getCoinData(coinId); } catch { /* skip */ }
+        return {
+          priceData: {
+            timestamps: chart.timestamps,
+            closes: chart.closes,
+            volumes: chart.volumes,
+          },
+          coinData,
+          source: 'Yahoo Finance (full history)',
+        };
+      } catch (yahooError: any) {
+        console.warn('Yahoo Finance crypto failed:', yahooError.message);
+        errors.push(`Yahoo: ${yahooError.message}`);
+      }
     }
   }
 
@@ -160,23 +183,25 @@ export async function fetchCryptoHistory(coinId: string, days: number): Promise<
 
   // Source 3: Yahoo Finance (non-ALL time fallback too)
   if (!isAllTime) {
-    const yahooTicker = GECKO_TO_YAHOO[coinId] || `${coinId.toUpperCase()}-USD`;
-    try {
-      const chart = await getStockChart(yahooTicker, days);
-      let coinData: any = null;
-      try { coinData = await getCoinData(coinId); } catch { /* skip */ }
-      return {
-        priceData: {
-          timestamps: chart.timestamps,
-          closes: chart.closes,
-          volumes: chart.volumes,
-        },
-        coinData,
-        source: 'Yahoo Finance',
-      };
-    } catch (yahooError: any) {
-      console.warn('Yahoo Finance crypto fallback failed:', yahooError.message);
-      errors.push(`Yahoo: ${yahooError.message}`);
+    const yahooTicker = GECKO_TO_YAHOO[coinId] || guessYahooTicker(coinId);
+    if (yahooTicker) {
+      try {
+        const chart = await getStockChart(yahooTicker, days);
+        let coinData: any = null;
+        try { coinData = await getCoinData(coinId); } catch { /* skip */ }
+        return {
+          priceData: {
+            timestamps: chart.timestamps,
+            closes: chart.closes,
+            volumes: chart.volumes,
+          },
+          coinData,
+          source: 'Yahoo Finance',
+        };
+      } catch (yahooError: any) {
+        console.warn('Yahoo Finance crypto fallback failed:', yahooError.message);
+        errors.push(`Yahoo: ${yahooError.message}`);
+      }
     }
   }
 
