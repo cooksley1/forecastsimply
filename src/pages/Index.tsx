@@ -560,11 +560,15 @@ export default function Index() {
   }, [assetType, stockExchange, etfExchange, analyseCrypto, analyseStock, analyseForex]);
 
   const handleQuickPick = useCallback((id: string) => {
-    if (assetType === 'crypto') analyseCrypto(id);
+    if (assetType === 'crypto') {
+      // Look up symbol from screener coins for better Yahoo/CMC ticker matching
+      const coin = cryptoCoins.find(c => c.id === id);
+      analyseCrypto(id, coin?.sym);
+    }
     else if (assetType === 'stocks') analyseStock(id, 'stocks');
     else if (assetType === 'etfs') analyseStock(id, 'etfs');
     else if (assetType === 'forex') analyseForex(id);
-  }, [assetType, analyseCrypto, analyseStock, analyseForex]);
+  }, [assetType, analyseCrypto, analyseStock, analyseForex, cryptoCoins]);
 
   const handleWatchlistSelect = useCallback((item: WatchlistItem) => {
     if (item.assetType === 'crypto') analyseCrypto(item.id);
