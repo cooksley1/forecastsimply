@@ -1,12 +1,27 @@
 project_id = "xusgljsdrntbqzxkmlcu"
 
-[functions.curated-digest]
+[functions.admin-users]
 verify_jwt = false
 
-[functions.send-digest]
+[functions.check-cache-health]
 verify_jwt = false
 
 [functions.check-price-alerts]
+verify_jwt = false
+
+[functions.check-watchlist-alerts]
+verify_jwt = false
+
+[functions.crypto-screener]
+verify_jwt = false
+
+[functions.curated-digest]
+verify_jwt = false
+
+[functions.exchange-screener]
+verify_jwt = false
+
+[functions.generate-case-study]
 verify_jwt = false
 
 [functions.get-vapid-key]
@@ -15,11 +30,23 @@ verify_jwt = false
 [functions.lock-monthly-picks]
 verify_jwt = false
 
+[functions.refresh-market-data]
+verify_jwt = false
+
+[functions.run-daily-analysis]
+verify_jwt = false
+
+[functions.send-digest]
+verify_jwt = false
+
 [functions.snapshot-picks]
 verify_jwt = false
 
-[functions.generate-case-study]
+[functions.weekly-health-check]
 verify_jwt = false
 
-[functions.check-cache-health]
+[functions.yahoo-proxy]
+verify_jwt = false
+
+[functions.yahoo-search]
 verify_jwt = false
