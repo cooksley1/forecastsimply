@@ -187,6 +187,9 @@ export default function QuickPicks({
           {isPinned && (
             <span className="text-[8px] text-primary/70 font-medium">WATCHLIST</span>
           )}
+          {isWatchlisted && (
+            <span className="text-[8px] text-primary/70 font-medium">WATCHLIST</span>
+          )}
         </div>
 
         {/* Projected return + composite score */}
@@ -222,6 +225,7 @@ export default function QuickPicks({
       </div>
     </button>
   );
+  };
 
   return (
     <div className="space-y-2">
