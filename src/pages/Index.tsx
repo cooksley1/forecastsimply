@@ -95,6 +95,7 @@ export default function Index() {
   const [fullscreenChart, setFullscreenChart] = useState(false);
   const isNewSearchRef = useRef(false);
   const [dataSource, setDataSource] = useState<string>('');
+  const [dataFetchedAt, setDataFetchedAt] = useState<Date | null>(null);
   // Country-based defaults
   const savedCountry = localStorage.getItem('sf_country') || 'AU';
   const COUNTRY_EXCHANGE_MAP: Record<string, string> = { AU: 'ASX', US: 'NYSE', UK: 'LSE', HK: 'HKG', JP: 'JPX', CA: 'NYSE', NZ: 'ASX', EU: 'LSE' };
@@ -374,6 +375,7 @@ export default function Index() {
       currentAssetRef.current = { id: coinId, type: 'crypto' };
       setAssetInfo(info);
       setTechnicalData(ta);
+      setDataFetchedAt(new Date());
       // Don't auto-add to watchlist — user will use explicit button
       updateSecondaryPrice(livePrice);
       saveToHistory(info, ta, result.source);
@@ -414,6 +416,7 @@ export default function Index() {
       currentAssetRef.current = { id: symbol, type };
       setAssetInfo(info);
       setTechnicalData(ta);
+      setDataFetchedAt(new Date());
       // Don't auto-add to watchlist — user will use explicit button
       updateSecondaryPrice(lastPrice);
       saveToHistory(info, ta, result.source);
@@ -446,6 +449,7 @@ export default function Index() {
       currentAssetRef.current = { id: pairId, type: 'forex' };
       setAssetInfo(info);
       setTechnicalData(ta);
+      setDataFetchedAt(new Date());
       // Don't auto-add to watchlist — user will use explicit button
       saveToHistory(info, ta, result.source);
     } catch (e: any) {
@@ -1050,7 +1054,10 @@ export default function Index() {
             {/* Refresh bar */}
             <div className="flex items-center justify-between bg-card border border-border rounded-xl px-3 py-2">
               <span className="text-[10px] text-muted-foreground">
-                Last updated: {new Date().toLocaleTimeString()}
+                Last updated: {dataFetchedAt
+                  ? dataFetchedAt.toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' +
+                    dataFetchedAt.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })
+                  : '—'}
               </span>
               <button
                 onClick={handleRefreshAll}
