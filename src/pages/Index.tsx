@@ -659,7 +659,7 @@ export default function Index() {
     }
 
     // Try to use daily analysis cache first (instant results)
-    const cacheSource = assetType === 'crypto' ? dailyCryptoAnalysis : assetType === 'stocks' ? dailyStockAnalysis : [];
+    const cacheSource = assetType === 'crypto' ? dailyCryptoAnalysis : assetType === 'stocks' ? dailyStockAnalysis : assetType === 'etfs' ? dailyEtfAnalysis : [];
     if (cacheSource.length > 0) {
       const cacheMap = new Map(cacheSource.map(c => [c.asset_id, c]));
       let usedCache = 0;
