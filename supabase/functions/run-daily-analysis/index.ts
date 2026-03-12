@@ -630,6 +630,58 @@ const ETF_EXCHANGE_CONFIGS: Record<string, ExchangeConfig> = {
   NASDAQ: { region: 'us', exchangeFilter: 'NMS', suffix: '', maxEquities: 500 },
 };
 
+// Curated ETF lists as fallback when screener returns 0
+const CURATED_ETFS: Record<string, { sym: string; name: string }[]> = {
+  ASX: [
+    { sym: 'VAS.AX', name: 'Vanguard Australian Shares' }, { sym: 'VGS.AX', name: 'Vanguard MSCI Intl Shares' },
+    { sym: 'A200.AX', name: 'BetaShares ASX 200' }, { sym: 'IOZ.AX', name: 'iShares Core S&P/ASX 200' },
+    { sym: 'NDQ.AX', name: 'BetaShares NASDAQ 100' }, { sym: 'IVV.AX', name: 'iShares S&P 500' },
+    { sym: 'VDHG.AX', name: 'Vanguard Diversified High Growth' }, { sym: 'DHHF.AX', name: 'BetaShares Diversified All Growth' },
+    { sym: 'VTS.AX', name: 'Vanguard US Total Market' }, { sym: 'VEU.AX', name: 'Vanguard All-World ex-US' },
+    { sym: 'QUAL.AX', name: 'VanEck MSCI Intl Quality' }, { sym: 'ETHI.AX', name: 'BetaShares Global Sustainability' },
+    { sym: 'HACK.AX', name: 'BetaShares Global Cybersecurity' }, { sym: 'Asia.AX', name: 'BetaShares Asia Technology Tigers' },
+    { sym: 'VGAD.AX', name: 'Vanguard MSCI Intl Hedged' }, { sym: 'IHVV.AX', name: 'iShares S&P 500 Hedged' },
+    { sym: 'MVW.AX', name: 'VanEck Australian Equal Weight' }, { sym: 'STW.AX', name: 'SPDR S&P/ASX 200' },
+    { sym: 'QOZ.AX', name: 'BetaShares FTSE RAFI Aus 200' }, { sym: 'VHY.AX', name: 'Vanguard Australian Shares High Yield' },
+    { sym: 'IEM.AX', name: 'iShares MSCI Emerging Markets' }, { sym: 'MOAT.AX', name: 'VanEck Morningstar Wide Moat' },
+    { sym: 'GOLD.AX', name: 'ETFS Physical Gold' }, { sym: 'PMGOLD.AX', name: 'Perth Mint Gold' },
+    { sym: 'AAA.AX', name: 'BetaShares High Interest Cash' }, { sym: 'QPON.AX', name: 'BetaShares Australian Bank Sr Floating Rate Bond' },
+    { sym: 'VAF.AX', name: 'Vanguard Australian Fixed Interest' }, { sym: 'VIF.AX', name: 'Vanguard Intl Fixed Interest' },
+    { sym: 'VISM.AX', name: 'Vanguard MSCI Intl Small Companies' }, { sym: 'MVS.AX', name: 'VanEck Small Companies Masters' },
+    { sym: 'SEMI.AX', name: 'BetaShares Global Semiconductors' }, { sym: 'RBTZ.AX', name: 'BetaShares Global Robotics & AI' },
+    { sym: 'FUEL.AX', name: 'BetaShares Global Energy Companies' }, { sym: 'FOOD.AX', name: 'BetaShares Global Agriculture' },
+    { sym: 'ACDC.AX', name: 'ETFS Battery Tech & Lithium' }, { sym: 'CLNE.AX', name: 'BetaShares Climate Change Innovation' },
+    { sym: 'BNKS.AX', name: 'BetaShares Global Banks' }, { sym: 'DRIV.AX', name: 'BetaShares Electric Vehicles & Future Mobility' },
+    { sym: 'FANG.AX', name: 'BetaShares FANG+' }, { sym: 'GEAR.AX', name: 'BetaShares Geared Australian Equity' },
+  ],
+  NYSE: [
+    { sym: 'SPY', name: 'SPDR S&P 500 ETF' }, { sym: 'VOO', name: 'Vanguard S&P 500 ETF' },
+    { sym: 'IVV', name: 'iShares Core S&P 500' }, { sym: 'VTI', name: 'Vanguard Total Stock Market' },
+    { sym: 'QQQ', name: 'Invesco QQQ Trust' }, { sym: 'VEA', name: 'Vanguard FTSE Developed Markets' },
+    { sym: 'VWO', name: 'Vanguard FTSE Emerging Markets' }, { sym: 'BND', name: 'Vanguard Total Bond Market' },
+    { sym: 'AGG', name: 'iShares Core US Aggregate Bond' }, { sym: 'GLD', name: 'SPDR Gold Shares' },
+    { sym: 'TLT', name: 'iShares 20+ Year Treasury Bond' }, { sym: 'VIG', name: 'Vanguard Dividend Appreciation' },
+    { sym: 'SCHD', name: 'Schwab US Dividend Equity' }, { sym: 'VNQ', name: 'Vanguard Real Estate' },
+    { sym: 'IWM', name: 'iShares Russell 2000' }, { sym: 'EFA', name: 'iShares MSCI EAFE' },
+    { sym: 'DIA', name: 'SPDR Dow Jones Industrial Average' }, { sym: 'XLF', name: 'Financial Select Sector SPDR' },
+    { sym: 'XLK', name: 'Technology Select Sector SPDR' }, { sym: 'XLE', name: 'Energy Select Sector SPDR' },
+    { sym: 'XLV', name: 'Health Care Select Sector SPDR' }, { sym: 'XLI', name: 'Industrial Select Sector SPDR' },
+    { sym: 'XLP', name: 'Consumer Staples Select Sector SPDR' }, { sym: 'XLY', name: 'Consumer Discretionary Select Sector SPDR' },
+    { sym: 'XLB', name: 'Materials Select Sector SPDR' }, { sym: 'XLU', name: 'Utilities Select Sector SPDR' },
+    { sym: 'ARKK', name: 'ARK Innovation ETF' }, { sym: 'ARKG', name: 'ARK Genomic Revolution ETF' },
+    { sym: 'VGT', name: 'Vanguard Information Technology' }, { sym: 'SMH', name: 'VanEck Semiconductor' },
+    { sym: 'SOXX', name: 'iShares Semiconductor' }, { sym: 'KWEB', name: 'KraneShares CSI China Internet' },
+    { sym: 'EEM', name: 'iShares MSCI Emerging Markets' }, { sym: 'HYG', name: 'iShares iBoxx High Yield Corp Bond' },
+    { sym: 'LQD', name: 'iShares iBoxx Investment Grade Corp Bond' }, { sym: 'SLV', name: 'iShares Silver Trust' },
+    { sym: 'USO', name: 'United States Oil Fund' }, { sym: 'IBIT', name: 'iShares Bitcoin Trust' },
+    { sym: 'BITO', name: 'ProShares Bitcoin Strategy' }, { sym: 'TQQQ', name: 'ProShares UltraPro QQQ' },
+  ],
+  NASDAQ: [
+    { sym: 'QQQ', name: 'Invesco QQQ Trust' }, { sym: 'TQQQ', name: 'ProShares UltraPro QQQ' },
+    { sym: 'SQQQ', name: 'ProShares UltraPro Short QQQ' }, { sym: 'QQQM', name: 'Invesco NASDAQ 100 ETF' },
+  ],
+};
+
 async function fetchStockList(exchange: string, quoteType: 'EQUITY' | 'ETF' = 'EQUITY'): Promise<{ sym: string; name: string; divYield: number }[]> {
   const configs = quoteType === 'ETF' ? ETF_EXCHANGE_CONFIGS : EXCHANGE_CONFIGS;
   const config = configs[exchange];
