@@ -74,14 +74,17 @@ Deno.serve(async (req) => {
       .split("T")[0];
 
     // Check existing picks for this month
-    const { data: existing } = await supabase
+    const { data: existing, error: existErr } = await supabase
       .from("tracked_picks")
-      .select("id, asset_type, timeframe_days, rank")
+      .select("id, asset_type, asset_id, timeframe_days, rank")
       .eq("month_start", monthStart);
+
+    console.log("Existing picks for", monthStart, ":", existing?.length, "error:", existErr?.message);
 
     const existingKey = new Set(
       (existing || []).map((e: any) => `${e.asset_type}-${e.timeframe_days}-${e.rank}`)
     );
+    console.log("Existing keys:", [...existingKey]);
 
     const results: any[] = [];
 
@@ -94,9 +97,10 @@ Deno.serve(async (req) => {
           if (!existingKey.has(`${assetType}-${tf}-${r}`)) needed.push(r);
         }
         if (needed.length === 0) continue;
+        console.log(`${assetType} tf=${tf}: need ranks`, needed);
 
         // Pull top candidates from daily_analysis_cache
-        const { data: cached } = await supabase
+        const { data: cached, error: cacheErr } = await supabase
           .from("daily_analysis_cache")
           .select("*")
           .eq("asset_type", assetType)
@@ -104,6 +108,7 @@ Deno.serve(async (req) => {
           .order("signal_score", { ascending: false })
           .limit(10);
 
+        console.log(`${assetType} tf=${tf}: cached=${cached?.length}, err=${cacheErr?.message}`);
         if (!cached?.length) continue;
 
         // Pick top N that aren't already locked
