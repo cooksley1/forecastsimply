@@ -510,6 +510,7 @@ export default function Index() {
   };
 
   const handleSearch = useCallback(async (query: string) => {
+    track('search', { data: { query, asset_type: assetType } });
     isNewSearchRef.current = true;
     if (assetType === 'crypto') {
       const unsupported = getUnsupportedCoin(query);
