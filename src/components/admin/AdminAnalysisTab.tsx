@@ -454,7 +454,7 @@ export default function AdminAnalysisTab() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span>{s.asset_type === 'stocks' ? '📈' : '🪙'}</span>
+                  <span>{s.asset_type === 'stocks' ? '📈' : s.asset_type === 'etfs' ? '🏛️' : s.asset_type === 'forex' ? '💱' : '🪙'}</span>
                   <span className="text-sm font-semibold text-foreground capitalize">{s.asset_type}</span>
                   {s.exchange && (
                     <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono">{s.exchange}</span>
