@@ -405,6 +405,11 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
           </div>
         )}
 
+        {/* Portfolio Tab */}
+        {activeTab === 'portfolio' && (
+          <PortfolioImporter />
+        )}
+
         {/* Newsletter / Digest Tab */}
         {activeTab === 'newsletter' && (
           <div className="space-y-4">
