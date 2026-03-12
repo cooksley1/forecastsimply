@@ -1059,7 +1059,7 @@ export default function Index() {
                   title="Set price alert">
                   Alert
                 </button>
-                <SocialShare assetInfo={assetInfo} technicalData={technicalData} />
+                <SocialShare assetInfo={assetInfo} technicalData={technicalData} snapshotRef={analysisSnapshotRef} />
                 <ReportButton assetInfo={assetInfo} technicalData={technicalData} timeframeDays={timeframeDays} riskLevel={riskLevel} dataSource={dataSource} />
               </div>
             </div>
