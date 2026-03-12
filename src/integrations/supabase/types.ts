@@ -664,6 +664,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity: {
+        Row: {
+          asset_id: string | null
+          asset_type: string | null
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          page: string | null
+          user_id: string | null
+        }
+        Insert: {
+          asset_id?: string | null
+          asset_type?: string | null
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          page?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          asset_id?: string | null
+          asset_type?: string | null
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          page?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           country: string | null
