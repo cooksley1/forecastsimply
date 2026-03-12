@@ -152,13 +152,13 @@ async function getCoinMetadata(coinId: string, symbol?: string): Promise<any> {
   return null;
 }
 
-/** Crypto: CoinGecko → CoinPaprika → Yahoo Finance (for ALL) → CoinLore+DIA fallback */
-export async function fetchCryptoHistory(coinId: string, days: number): Promise<CryptoFetchResult> {
+/** Crypto: CoinGecko → CoinPaprika → Yahoo Finance (for ALL) → CMC → CoinLore+DIA fallback */
+export async function fetchCryptoHistory(coinId: string, days: number, knownSymbol?: string): Promise<CryptoFetchResult> {
   const errors: string[] = [];
   const isAllTime = days >= 9999;
-  // Derive symbol from GECKO_TO_YAHOO map (e.g. 'BTC-USD' → 'BTC')
+  // Derive symbol from GECKO_TO_YAHOO map (e.g. 'BTC-USD' → 'BTC') or use provided symbol
   const yahooEntry = GECKO_TO_YAHOO[coinId];
-  const coinSymbol = yahooEntry ? yahooEntry.replace('-USD', '') : undefined;
+  const coinSymbol = knownSymbol || (yahooEntry ? yahooEntry.replace('-USD', '') : undefined);
 
   // For ALL time, try Yahoo Finance first since it has full history for free
   if (isAllTime) {
