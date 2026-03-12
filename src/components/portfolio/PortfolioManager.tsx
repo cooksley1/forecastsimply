@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
-import { Plus, Upload, Trash2, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Loader2, ArrowRight } from 'lucide-react';
+import { Plus, Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePortfolioHoldings, type PortfolioHolding } from '@/hooks/usePortfolioHoldings';
 import { parseCSV } from '@/utils/csvPortfolioParser';
