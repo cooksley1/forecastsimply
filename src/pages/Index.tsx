@@ -103,7 +103,7 @@ export default function Index() {
   const [dividendOnly, setDividendOnly] = useState(false);
   const [etfExchange, setEtfExchange] = useState(COUNTRY_EXCHANGE_MAP[savedCountry] || 'ASX');
   const [ranking, setRanking] = useState(false);
-  const [rankedPicks, setRankedPicks] = useState<Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }>>({});
+  const [rankedPicks, setRankedPicks] = useState<Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string; compositeScore?: number }>>({});
   const [pickSort, setPickSort] = useState<SortCriteria>('default');
   const [rankTimeframe, setRankTimeframe] = useState<RankTimeframe>('6M');
   const [secondaryCurrency, setSecCurrency] = useState<string | null>(getSecondaryCurrency());
@@ -657,7 +657,7 @@ export default function Index() {
     setRanking(true);
     const picks = getQuickPicks();
     const tfDays = timeframeDaysForRank || timeframeDays;
-    const results: Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string }> = {};
+    const results: Record<string, { label: string; score: number; confidence: number; projectedReturn?: number; peakMonths?: number; peakWarning?: string; compositeScore?: number }> = {};
 
     // If picks already have signals from cache (via getQuickPicks), short-circuit
     const alreadySignalled = picks.filter(p => p.signal).length;
@@ -675,11 +675,16 @@ export default function Index() {
       for (const pick of picks) {
         const cached = cacheMap.get(pick.id);
         if (cached) {
+          const normSignal = Math.max(0, Math.min(100, ((cached.signal_score + 15) / 30) * 100));
+          const normReturn = Math.max(0, Math.min(100, ((cached.forecast_return_pct ?? 0) / 50) * 100));
+          const normConf = Math.max(0, Math.min(100, cached.confidence));
+          const compositeScore = Math.round(normSignal * 0.4 + normReturn * 0.35 + normConf * 0.25);
           results[pick.id] = {
             label: cached.signal_label,
             score: cached.signal_score,
             confidence: cached.confidence,
             projectedReturn: cached.forecast_return_pct,
+            compositeScore,
           };
           usedCache++;
         }
@@ -750,7 +755,11 @@ export default function Index() {
           }
         }
         
-        results[pick.id] = { label: ta.signal.label, score: ta.signal.score, confidence: ta.signal.confidence, projectedReturn, peakMonths, peakWarning };
+        const normSignal = Math.max(0, Math.min(100, ((ta.signal.score + 15) / 30) * 100));
+        const normReturn = Math.max(0, Math.min(100, ((projectedReturn ?? 0) / 50) * 100));
+        const normConf = Math.max(0, Math.min(100, ta.signal.confidence));
+        const compositeScore = Math.round(normSignal * 0.4 + normReturn * 0.35 + normConf * 0.25);
+        results[pick.id] = { label: ta.signal.label, score: ta.signal.score, confidence: ta.signal.confidence, projectedReturn, peakMonths, peakWarning, compositeScore };
       } catch {
         // skip failed ones
       }
