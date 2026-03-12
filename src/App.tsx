@@ -21,6 +21,7 @@ import Scorecard from "./pages/Scorecard";
 import Blog from "./pages/Blog";
 import HowItWorks from "./pages/HowItWorks";
 import Changelog from "./pages/Changelog";
+import SharedAnalysis from "./pages/SharedAnalysis";
 import NotFound from "./pages/NotFound";
 import CookieBanner from "./components/CookieBanner";
 import UpdatePrompt from "./components/UpdatePrompt";
@@ -66,6 +67,7 @@ const App = () => (
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/how-it-works" element={<HowItWorks />} />
                   <Route path="/changelog" element={<Changelog />} />
+                  <Route path="/share/:id" element={<SharedAnalysis />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <CookieBanner />
