@@ -15,6 +15,7 @@ import AdminAnalyticsTab from '@/components/admin/AdminAnalyticsTab';
 import AdminSubscribersTab from '@/components/admin/AdminSubscribersTab';
 import AdminMessagesTab from '@/components/admin/AdminMessagesTab';
 import AdminAnalysisTab from '@/components/admin/AdminAnalysisTab';
+import AdminHealthTab from '@/components/admin/AdminHealthTab';
 
 // ── Types ──
 interface LoginRecord {
@@ -565,6 +566,7 @@ export default function Admin() {
             <TabsTrigger value="subscribers">📧 Subscribers</TabsTrigger>
             <TabsTrigger value="digests">📰 Digests</TabsTrigger>
             <TabsTrigger value="analysis">🔬 Analysis</TabsTrigger>
+            <TabsTrigger value="health">🩺 Health</TabsTrigger>
           </TabsList>
 
           {/* ── Analytics Tab ── */}
@@ -702,6 +704,11 @@ export default function Admin() {
           {/* ── Analysis Tab ── */}
           <TabsContent value="analysis">
             <AdminAnalysisTab />
+          </TabsContent>
+
+          {/* ── Health Tab ── */}
+          <TabsContent value="health">
+            <AdminHealthTab />
           </TabsContent>
         </Tabs>
       </main>
