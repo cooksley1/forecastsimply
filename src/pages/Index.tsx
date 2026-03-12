@@ -32,6 +32,7 @@ import TradeSetupPanel from '@/components/analysis/TradeSetupPanel';
 import AnalysisTextPanel from '@/components/analysis/AnalysisTextPanel';
 import IndicatorsPanel from '@/components/analysis/IndicatorsPanel';
 import PortfolioBuilder from '@/components/analysis/PortfolioBuilder';
+import PortfolioManager from '@/components/portfolio/PortfolioManager';
 import TopPicks from '@/components/analysis/TopPicks';
 import TopPicksDashboard from '@/components/analysis/TopPicksDashboard';
 import BestPickFinder from '@/components/analysis/BestPickFinder';
@@ -1223,6 +1224,18 @@ export default function Index() {
               else if (type === 'stocks') analyseStock(id, 'stocks');
               else if (type === 'etfs') analyseStock(id, 'etfs');
             }} />
+
+            {/* My Portfolio - holdings tracker with assessment */}
+            <PortfolioManager
+              analysisCache={[...(dailyCryptoAnalysis || []), ...(dailyStockAnalysis || []), ...(dailyEtfAnalysis || []), ...(dailyForexAnalysis || [])]}
+              onAnalyse={(id, type) => {
+                setOverviewMode(false);
+                setAssetType(type as any);
+                if (type === 'crypto') analyseCrypto(id);
+                else if (type === 'stocks') analyseStock(id, 'stocks');
+                else if (type === 'etfs') analyseStock(id, 'etfs');
+              }}
+            />
 
             {/* Portfolio Builder accessible from overview */}
             <PortfolioBuilder riskProfile={riskProfile} riskLevel={riskLevel} onRiskLevelChange={setRiskLevel} />
