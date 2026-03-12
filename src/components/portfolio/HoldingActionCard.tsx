@@ -1,4 +1,4 @@
-import { Trash2, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Trash2, ArrowRight, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface CacheData {
   price: number;
