@@ -66,19 +66,20 @@ const FILTER_CRITERIA: Record<SortCriteria, { title: string; bullets: string[]; 
   'best-buys': {
     title: 'Best Buys — Selection Criteria',
     bullets: [
-      'Signal must be "Buy" or "Strong Buy" (composite score ≥ 3/10)',
+      'Signal must be "Buy" or "Strong Buy"',
+      'Ranked by Composite Score % (shown on each card) — a weighted blend of Signal Strength (40%), Forecast Return (35%), and Confidence (25%)',
       'Score is built from 11 weighted indicators: SMA(20), SMA(50), MA Crossover, RSI(14), MACD, Bollinger Bands, Stochastic %K, OBV Divergence, VWAP, RSI Divergence, and Trend Strength',
-      'Each indicator contributes +1 to +3 (bullish) or −1 to −3 (bearish)',
-      'Sorted by highest composite score — strongest technical setups first',
+      'Sorted strictly best-to-worst — highest composite score first',
     ],
     note: 'If no assets appear, market conditions are currently unfavourable across the board for this timeframe. This is a valid signal — it means there are no strong buying opportunities right now. Try a different timeframe or check back after market conditions shift.',
   },
   sells: {
     title: 'Sells / Avoid — Selection Criteria',
     bullets: [
-      'Signal must be "Sell", "Strong Sell", or "Hold" (composite score ≤ 0)',
+      'Signal must be "Sell", "Strong Sell", or "Hold"',
+      'Ranked by Composite Score % (shown on each card) — lowest scores indicate strongest bearish setups',
       'Same 11-indicator scoring system — these assets have predominantly bearish readings',
-      'Sorted by lowest score first — weakest setups at the top',
+      'Sorted strictly worst-to-best — weakest composite score first',
     ],
     note: 'These are assets showing technical weakness. "Hold" assets are included because they lack bullish conviction.',
   },
@@ -94,8 +95,9 @@ const FILTER_CRITERIA: Record<SortCriteria, { title: string; bullets: string[]; 
     title: 'Growth — Selection Criteria',
     bullets: [
       'Filters to assets with dividend yield < 1% (capital-growth focus)',
-      'Sorted by highest composite signal score',
+      'Ranked by Composite Score % (shown on each card) — Signal Strength (40%), Forecast Return (35%), Confidence (25%)',
       'Identifies momentum-driven assets reinvesting earnings into growth',
+      'Sorted strictly best-to-worst — highest composite score first',
     ],
   },
 };
