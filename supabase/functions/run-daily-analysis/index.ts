@@ -825,6 +825,8 @@ Deno.serve(async (req) => {
     if (assetType === 'crypto') {
       const cryptoList = await fetchCryptoList(300);
       assets = cryptoList.map(c => ({ id: c.id, sym: c.sym, name: c.name, price: c.price, change: c.change, divYield: 0 }));
+    } else if (assetType === 'forex') {
+      assets = FOREX_PAIRS.map(p => ({ id: `${p.from}${p.to}`, sym: `${p.from}/${p.to}`, name: `${p.from}/${p.to}`, divYield: 0 }));
     } else if (assetType === 'etfs') {
       const etfList = await fetchStockList(exchange, 'ETF');
       assets = etfList.map(s => ({ id: s.sym, sym: s.sym, name: s.name, divYield: s.divYield }));
