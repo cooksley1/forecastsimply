@@ -251,6 +251,7 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
   const tabs = [
     { key: 'profile' as const, label: '👤 Profile' },
     { key: 'preferences' as const, label: '⚙️ Prefs' },
+    { key: 'portfolio' as const, label: '📂 Portfolio' },
     { key: 'apikeys' as const, label: '🔑 API Keys' },
     { key: 'alerts' as const, label: '🔔 Alerts' },
     { key: 'newsletter' as const, label: '📬 Digest' },
