@@ -854,23 +854,95 @@ async function fetchCryptoList(limit = 300): Promise<{ id: string; sym: string; 
 }
 
 // ═══════════════════════════════════════════════════
+//  SKIP LIST — coins that consistently fail Yahoo lookups
+// ═══════════════════════════════════════════════════
+
+const SKIP_CRYPTO_IDS = new Set([
+  // Stablecoins (pegged, no useful TA)
+  'tether', 'usd-coin', 'dai', 'first-digital-usd', 'ethena-usde', 'usdd',
+  'true-usd', 'pax-dollar', 'gemini-dollar', 'frax', 'usds', 'gho',
+  'usual-usd', 'paypal-usd', 'eurc', 'eurs',
+  // Wrapped / pegged tokens
+  'wrapped-bitcoin', 'staked-ether', 'wrapped-steth', 'wrapped-eeth',
+  'rocket-pool-eth', 'coinbase-wrapped-staked-eth', 'binance-peg-ethereum',
+  'wrapped-bnb', 'wrapped-avax', 'wrapped-sol', 'wrapped-fantom',
+  'bridged-usdc-polygon-pos-bridge', 'bridged-usdt',
+  // Tokens with no Yahoo Finance data
+  'hashnote-usyc', 'figure-heloc', 'ousg', 'ethena', 'jito-staked-sol',
+  'mantle-staked-ether', 'susds', 'savings-dai', 'frax-ether',
+  'binance-staked-sol', 'jupiter-staked-sol',
+  // LP / vault / rebasing tokens
+  'lido-staked-matic', 'staked-frax-ether', 'origins-steth',
+]);
+
+// ═══════════════════════════════════════════════════
 //  GECKO ID → YAHOO TICKER MAP
 // ═══════════════════════════════════════════════════
 
 const GECKO_TO_YAHOO: Record<string, string> = {
-  'bitcoin': 'BTC-USD', 'ethereum': 'ETH-USD', 'solana': 'SOL-USD',
-  'binancecoin': 'BNB-USD', 'ripple': 'XRP-USD', 'cardano': 'ADA-USD',
-  'dogecoin': 'DOGE-USD', 'avalanche-2': 'AVAX-USD', 'polkadot': 'DOT-USD',
-  'chainlink': 'LINK-USD', 'litecoin': 'LTC-USD', 'bitcoin-cash': 'BCH-USD',
-  'uniswap': 'UNI-USD', 'cosmos': 'ATOM-USD', 'near': 'NEAR-USD',
-  'tron': 'TRX-USD', 'shiba-inu': 'SHIB-USD', 'aave': 'AAVE-USD',
-  'maker': 'MKR-USD', 'pepe': 'PEPE-USD', 'sui': 'SUI-USD',
-  'the-open-network': 'TON-USD', 'filecoin': 'FIL-USD', 'stellar': 'XLM-USD',
-  'hedera-hashgraph': 'HBAR-USD', 'internet-computer': 'ICP-USD',
+  // Top 20
+  'bitcoin': 'BTC-USD', 'ethereum': 'ETH-USD', 'ripple': 'XRP-USD',
+  'binancecoin': 'BNB-USD', 'solana': 'SOL-USD', 'dogecoin': 'DOGE-USD',
+  'cardano': 'ADA-USD', 'tron': 'TRX-USD', 'chainlink': 'LINK-USD',
+  'avalanche-2': 'AVAX-USD', 'stellar': 'XLM-USD', 'shiba-inu': 'SHIB-USD',
+  'polkadot': 'DOT-USD', 'hedera-hashgraph': 'HBAR-USD',
+  'the-open-network': 'TON-USD', 'sui': 'SUI-USD',
+  'litecoin': 'LTC-USD', 'bitcoin-cash': 'BCH-USD',
+  // 21–50
+  'uniswap': 'UNI-USD', 'near': 'NEAR-USD', 'aptos': 'APT-USD',
+  'aave': 'AAVE-USD', 'internet-computer': 'ICP-USD', 'cosmos': 'ATOM-USD',
+  'filecoin': 'FIL-USD', 'arbitrum': 'ARB-USD', 'optimism': 'OP-USD',
+  'vechain': 'VET-USD', 'maker': 'MKR-USD', 'pepe': 'PEPE-USD',
+  'render-token': 'RNDR-USD', 'kaspa': 'KAS-USD', 'ethereum-classic': 'ETC-USD',
+  'monero': 'XMR-USD', 'algorand': 'ALGO-USD', 'fantom': 'FTM-USD',
+  'the-graph': 'GRT-USD', 'lido-dao': 'LDO-USD', 'injective-protocol': 'INJ-USD',
+  'theta-token': 'THETA-USD', 'immutable-x': 'IMX-USD', 'sei-network': 'SEI-USD',
+  'celestia': 'TIA-USD', 'mantle': 'MNT-USD', 'bittensor': 'TAO-USD',
+  // 51–100
+  'bonk': 'BONK-USD', 'floki': 'FLOKI-USD', 'gala': 'GALA-USD',
+  'ondo-finance': 'ONDO-USD', 'worldcoin-wld': 'WLD-USD', 'pendle': 'PENDLE-USD',
+  'jupiter-exchange-solana': 'JUP-USD', 'pyth-network': 'PYTH-USD',
+  'hyperliquid': 'HYPE-USD', 'pi-network': 'PI-USD',
+  'polygon-ecosystem-token': 'POL-USD', 'matic-network': 'MATIC-USD',
+  'thorchain': 'RUNE-USD', 'eos': 'EOS-USD', 'flow': 'FLOW-USD',
+  'mantra-dao': 'OM-USD', 'fetch-ai': 'FET-USD',
+  'artificial-superintelligence-alliance': 'FET-USD',
+  'okb': 'OKB-USD', 'leo-token': 'LEO-USD',
+  'stacks': 'STX-USD', 'arweave': 'AR-USD', 'helium': 'HNT-USD',
+  'conflux-token': 'CFX-USD', 'oasis-network': 'ROSE-USD',
+  'mina-protocol': 'MINA-USD', 'iotex': 'IOTX-USD',
+  // Additional from screener
+  '1inch': '1INCH-USD', 'dash': 'DASH-USD', 'neo': 'NEO-USD',
+  'nexo': 'NEXO-USD', 'iota': 'IOTA-USD', 'sand': 'SAND-USD',
+  'decentraland': 'MANA-USD', 'the-sandbox': 'SAND-USD',
+  'axie-infinity': 'AXS-USD', 'quant-network': 'QNT-USD',
+  'chiliz': 'CHZ-USD', 'enjincoin': 'ENJ-USD', 'curve-dao-token': 'CRV-USD',
+  'compound-governance-token': 'COMP-USD', 'sushiswap': 'SUSHI-USD',
+  'yearn-finance': 'YFI-USD', 'synthetix-network-token': 'SNX-USD',
+  'illuvium': 'ILV-USD', 'rocket-pool': 'RPL-USD', 'ankr': 'ANKR-USD',
+  'harmony': 'ONE-USD', 'zilliqa': 'ZIL-USD', 'ravencoin': 'RVN-USD',
+  'zcash': 'ZEC-USD', 'basic-attention-token': 'BAT-USD', 'celo': 'CELO-USD',
+  'loopring': 'LRC-USD', 'storj': 'STORJ-USD', 'skale': 'SKL-USD',
+  'ocean-protocol': 'OCEAN-USD', 'mask-network': 'MASK-USD',
+  'bitcoin-sv': 'BSV-USD', 'ecash': 'XEC-USD',
+  // Meme & newer
+  'official-trump': 'TRUMP-USD', 'fartcoin': 'FARTCOIN-USD',
+  'flare-networks': 'FLR-USD', 'kaia': 'KAIA-USD', 'dexe': 'DEXE-USD',
+  'amp-token': 'AMP-USD', 'sky': 'SKY-USD', 'syrup': 'SYRUP-USD',
 };
 
-function geckoToYahoo(geckoId: string): string {
-  return GECKO_TO_YAHOO[geckoId] || `${geckoId.toUpperCase().replace(/-/g, '')}-USD`;
+function geckoToYahoo(geckoId: string, symbol?: string): string {
+  if (GECKO_TO_YAHOO[geckoId]) return GECKO_TO_YAHOO[geckoId];
+  // Use the symbol if it's clean (e.g. "FET" → "FET-USD")
+  if (symbol && /^[A-Z0-9]{1,10}$/i.test(symbol)) {
+    return `${symbol.toUpperCase()}-USD`;
+  }
+  // Only use geckoId if single word and short
+  if (!geckoId.includes('-') && geckoId.length <= 8) {
+    return `${geckoId.toUpperCase()}-USD`;
+  }
+  // Return empty to signal "skip this coin on Yahoo"
+  return '';
 }
 
 // ═══════════════════════════════════════════════════
