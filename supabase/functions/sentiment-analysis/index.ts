@@ -6,6 +6,97 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/* ── Exchange code → readable prefix for search queries ── */
+const EXCHANGE_PREFIXES: Record<string, string> = {
+  '.AX': 'ASX', '.L': 'LSE', '.TO': 'TSX', '.HK': 'HKEX',
+  '.T': 'TYO', '.SI': 'SGX', '.KS': 'KRX', '.NS': 'NSE',
+  '.BO': 'BSE', '.DE': 'XETRA', '.PA': 'Euronext',
+};
+
+function extractExchange(symbol: string): { ticker: string; suffix: string; exchange: string } {
+  for (const [suffix, exchange] of Object.entries(EXCHANGE_PREFIXES)) {
+    if (symbol.endsWith(suffix)) {
+      return { ticker: symbol.replace(suffix, ''), suffix, exchange };
+    }
+  }
+  return { ticker: symbol, suffix: '', exchange: '' };
+}
+
+interface Headline {
+  title: string;
+  source: string;
+  date: string;
+  url?: string;
+}
+
+/* ── Google News RSS (free, global coverage) ── */
+async function fetchGoogleNews(query: string, limit = 8): Promise<Headline[]> {
+  try {
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en&gl=AU&ceid=AU:en`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return [];
+    const xml = await res.text();
+
+    const items: Headline[] = [];
+    // Simple XML parsing for RSS items
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    while ((match = itemRegex.exec(xml)) !== null && items.length < limit) {
+      const block = match[1];
+      const title = block.match(/<title><!\[CDATA\[(.*?)\]\]>|<title>(.*?)<\/title>/)?.[1] || block.match(/<title>(.*?)<\/title>/)?.[1] || '';
+      const source = block.match(/<source[^>]*>(.*?)<\/source>/)?.[1] || 'Google News';
+      const pubDate = block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || '';
+      const link = block.match(/<link>(.*?)<\/link>/)?.[1] || '';
+
+      if (title) {
+        const dateStr = pubDate ? new Date(pubDate).toLocaleDateString() : '';
+        items.push({ title: title.trim(), source, date: dateStr, url: link });
+      }
+    }
+    return items;
+  } catch (e) {
+    console.warn('[Google News] fetch failed:', e);
+    return [];
+  }
+}
+
+/* ── Yahoo Finance news search ── */
+async function fetchYahooNews(query: string, limit = 8): Promise<Headline[]> {
+  try {
+    const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&newsCount=${limit}&quotesCount=0`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.news || []).slice(0, limit).map((n: any) => ({
+      title: n.title,
+      source: n.publisher || 'Yahoo Finance',
+      date: n.providerPublishTime ? new Date(n.providerPublishTime * 1000).toLocaleDateString() : '',
+      url: n.link || '',
+    }));
+  } catch (e) {
+    console.warn('[Yahoo News] fetch failed:', e);
+    return [];
+  }
+}
+
+/* ── Deduplicate headlines by fuzzy title matching ── */
+function deduplicateHeadlines(headlines: Headline[]): Headline[] {
+  const seen = new Set<string>();
+  return headlines.filter(h => {
+    // Normalize: lowercase, remove punctuation, trim
+    const key = h.title.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().slice(0, 60);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -29,53 +120,57 @@ serve(async (req) => {
       });
     }
 
-    // ── 1. Fetch Yahoo Finance news ──
-    let newsHeadlines: string[] = [];
-    try {
-      const yahooNewsUrl = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(symbol)}&newsCount=10&quotesCount=0`;
-      const newsRes = await fetch(yahooNewsUrl, {
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-      });
-      if (newsRes.ok) {
-        const newsData = await newsRes.json();
-        newsHeadlines = (newsData.news || [])
-          .slice(0, 10)
-          .map((n: any) => `- ${n.title} (${n.publisher}, ${new Date(n.providerPublishTime * 1000).toLocaleDateString()})`);
+    const { ticker, suffix, exchange } = extractExchange(symbol);
+    const year = new Date().getFullYear();
+
+    // ── 1. Build multiple search queries for broad coverage ──
+    const queries: string[] = [];
+
+    if (assetType === 'crypto') {
+      queries.push(`${name} crypto news ${year}`);
+      queries.push(`${ticker} cryptocurrency`);
+    } else {
+      // Primary: company name + context
+      queries.push(`"${name}" ${exchange ? exchange : 'stock'} news ${year}`);
+      // Ticker with exchange prefix (e.g., "ASX:HFY" or "ASX HFY")
+      if (exchange) {
+        queries.push(`${exchange}:${ticker} news`);
+        queries.push(`${exchange} ${ticker} stock`);
       }
-    } catch (e) {
-      console.error("Yahoo news fetch failed:", e);
+      // Raw ticker + name combo
+      queries.push(`${ticker} ${name} investor`);
+      // Yahoo-specific: use full symbol
+      queries.push(symbol);
     }
 
-    // ── 2. Try a broader web search via Yahoo for more context ──
-    let additionalContext = "";
-    try {
-      const searchTerms = assetType === "crypto"
-        ? `${name} crypto news outlook ${new Date().getFullYear()}`
-        : `${symbol} ${name} stock news earnings outlook ${new Date().getFullYear()}`;
+    console.log(`[Sentiment] Fetching news for ${symbol} (${name}) with ${queries.length} queries`);
 
-      const searchUrl = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(searchTerms)}&newsCount=5&quotesCount=0`;
-      const searchRes = await fetch(searchUrl, {
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-      });
-      if (searchRes.ok) {
-        const searchData = await searchRes.json();
-        const extraNews = (searchData.news || [])
-          .slice(0, 5)
-          .map((n: any) => `- ${n.title} (${n.publisher})`)
-          .filter((h: string) => !newsHeadlines.includes(h));
-        if (extraNews.length > 0) {
-          additionalContext = `\n\nAdditional related news:\n${extraNews.join("\n")}`;
-        }
-      }
-    } catch (e) {
-      console.error("Additional search failed:", e);
+    // ── 2. Fetch from multiple sources in parallel ──
+    const allHeadlines: Headline[] = [];
+
+    // Google News: run top 3 queries in parallel
+    const googlePromises = queries.slice(0, 3).map(q => fetchGoogleNews(q, 6));
+    // Yahoo Finance: use symbol + name
+    const yahooPromises = [
+      fetchYahooNews(symbol, 8),
+      fetchYahooNews(name, 5),
+    ];
+
+    const results = await Promise.all([...googlePromises, ...yahooPromises]);
+    for (const batch of results) {
+      allHeadlines.push(...batch);
     }
 
-    const newsBlock = newsHeadlines.length > 0
-      ? `Recent news headlines for ${name} (${symbol}):\n${newsHeadlines.join("\n")}${additionalContext}`
-      : `No recent news found for ${name} (${symbol}). Base your analysis on general market knowledge.${additionalContext}`;
+    // Deduplicate
+    const headlines = deduplicateHeadlines(allHeadlines);
+    console.log(`[Sentiment] Found ${allHeadlines.length} raw → ${headlines.length} unique headlines`);
 
-    // ── 3. Send to AI for synthesis ──
+    // ── 3. Format for AI ──
+    const newsBlock = headlines.length > 0
+      ? `Recent news headlines for ${name} (${symbol}):\n${headlines.map((h, i) => `${i + 1}. ${h.title} — ${h.source}${h.date ? ` (${h.date})` : ''}`).join("\n")}`
+      : `No recent news found for ${name} (${symbol}). Base your analysis on general market knowledge and the asset's sector/industry context.`;
+
+    // ── 4. Send to AI for synthesis ──
     const systemPrompt = `You are a financial sentiment analyst. You analyze news, market events, and qualitative factors that technical indicators can't capture — things like earnings reports, regulatory changes, insider trading patterns, management changes, industry trends, and macroeconomic factors.
 
 Your job is to:
@@ -85,12 +180,13 @@ Your job is to:
 4. Provide a sentiment score from -10 (extremely bearish) to +10 (extremely bullish)
 5. Explain how this sentiment aligns with or contradicts the technical analysis signal
 
-Be specific, cite the news items, and be honest when data is limited. Never fabricate news or events.`;
+Be specific, cite the news items by number, and be honest when data is limited. Never fabricate news or events.
+If headlines are available, reference them specifically. If limited, say so clearly.`;
 
     const userPrompt = `Analyze the current sentiment for:
 
 Asset: ${name} (${symbol})
-Type: ${assetType}
+Type: ${assetType}${exchange ? ` · Exchange: ${exchange}` : ''}
 Current Price: $${currentPrice}
 Technical Signal: ${signalLabel} (score: ${signalScore}/15)
 
@@ -162,7 +258,6 @@ Provide your analysis as JSON with this exact structure:
       const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, content];
       analysis = JSON.parse(jsonMatch[1]!.trim());
     } catch {
-      // If JSON parsing fails, return raw content
       analysis = {
         summary: content.slice(0, 500),
         themes: [],
@@ -179,6 +274,15 @@ Provide your analysis as JSON with this exact structure:
         disclaimer: "Analysis may be incomplete due to parsing issues.",
       };
     }
+
+    // Attach the headlines we found so the frontend can display them
+    analysis.headlines = headlines.slice(0, 12).map(h => ({
+      title: h.title,
+      source: h.source,
+      date: h.date,
+      url: h.url || null,
+    }));
+    analysis.headlineCount = headlines.length;
 
     return new Response(JSON.stringify(analysis), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
