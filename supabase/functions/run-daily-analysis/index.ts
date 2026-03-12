@@ -980,7 +980,11 @@ Deno.serve(async (req) => {
 
     if (assetType === 'crypto') {
       const cryptoList = await fetchCryptoList(300);
-      assets = cryptoList.map(c => ({ id: c.id, sym: c.sym, name: c.name, price: c.price, change: c.change, divYield: 0 }));
+      const before = cryptoList.length;
+      const filtered = cryptoList.filter(c => !SKIP_CRYPTO_IDS.has(c.id));
+      const skippedCount = before - filtered.length;
+      if (skippedCount > 0) console.log(`[daily-analysis] Skipped ${skippedCount} stablecoins/wrapped tokens`);
+      assets = filtered.map(c => ({ id: c.id, sym: c.sym, name: c.name, price: c.price, change: c.change, divYield: 0 }));
     } else if (assetType === 'forex') {
       assets = FOREX_PAIRS.map(p => ({ id: `${p.from}${p.to}`, sym: `${p.from}/${p.to}`, name: `${p.from}/${p.to}`, divYield: 0 }));
     } else if (assetType === 'etfs') {
