@@ -113,7 +113,10 @@ export async function fetchCryptoHistory(coinId: string, days: number): Promise<
 
   // For ALL time, try Yahoo Finance first since it has full history for free
   if (isAllTime) {
-    const yahooTicker = GECKO_TO_YAHOO[coinId] || `${coinId.toUpperCase()}-USD`;
+    const yahooTicker = GECKO_TO_YAHOO[coinId] || guessYahooTicker(coinId);
+    if (!yahooTicker) {
+      errors.push('Yahoo: no valid ticker mapping');
+    } else {
     try {
       const chart = await getStockChart(yahooTicker, days);
       // Get coin metadata from CoinGecko or DIA
