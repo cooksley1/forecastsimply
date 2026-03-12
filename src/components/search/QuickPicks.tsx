@@ -157,13 +157,15 @@ export default function QuickPicks({
   const hasMore = allOrdered.length > maxVisible;
   const isFiltering = ranking || (loading && sortBy !== 'default');
 
-  const renderCard = (p: PickItem, i: number, isPinned: boolean) => (
+  const renderCard = (p: PickItem, i: number, isPinned: boolean) => {
+    const isWatchlisted = !isPinned && isRankedMode && watchlistIds?.has(p.id);
+    return (
     <button
       key={p.id}
       onClick={() => onSelect(p.id)}
       disabled={loading}
       className={`flex items-start gap-3 px-3 py-2.5 rounded-xl border text-left hover:border-primary/40 hover:bg-primary/5 transition-all disabled:opacity-50 group ${
-        isPinned ? 'bg-primary/5 border-primary/20' : 'bg-sf-elevated border-border'
+        isPinned ? 'bg-primary/5 border-primary/20' : isWatchlisted ? 'bg-primary/5 border-primary/10' : 'bg-sf-elevated border-border'
       }`}
     >
       {/* Rank / pin indicator */}
