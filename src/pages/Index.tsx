@@ -393,6 +393,7 @@ export default function Index() {
 
   /* ── Stocks / ETFs ── */
   const analyseStock = useCallback(async (symbol: string, type: 'stocks' | 'etfs') => {
+    track('analysis_run', { asset_id: symbol, asset_type: type });
     setLoading(true);
     setError(null);
     setOverviewMode(false);
