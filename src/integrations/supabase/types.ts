@@ -473,6 +473,7 @@ export type Database = {
           id: string
           month_start: string
           name: string
+          rank: number
           reasoning: string | null
           signal_label: string
           signal_score: number
@@ -480,6 +481,7 @@ export type Database = {
           stop_loss: number | null
           symbol: string
           target_price: number | null
+          timeframe_days: number
         }
         Insert: {
           asset_id: string
@@ -499,6 +501,7 @@ export type Database = {
           id?: string
           month_start: string
           name: string
+          rank?: number
           reasoning?: string | null
           signal_label?: string
           signal_score?: number
@@ -506,6 +509,7 @@ export type Database = {
           stop_loss?: number | null
           symbol: string
           target_price?: number | null
+          timeframe_days?: number
         }
         Update: {
           asset_id?: string
@@ -525,6 +529,7 @@ export type Database = {
           id?: string
           month_start?: string
           name?: string
+          rank?: number
           reasoning?: string | null
           signal_label?: string
           signal_score?: number
@@ -532,6 +537,7 @@ export type Database = {
           stop_loss?: number | null
           symbol?: string
           target_price?: number | null
+          timeframe_days?: number
         }
         Relationships: []
       }
