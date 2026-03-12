@@ -630,8 +630,9 @@ const ETF_EXCHANGE_CONFIGS: Record<string, ExchangeConfig> = {
   NASDAQ: { region: 'us', exchangeFilter: 'NMS', suffix: '', maxEquities: 500 },
 };
 
-async function fetchStockList(exchange: string): Promise<{ sym: string; name: string; divYield: number }[]> {
-  const config = EXCHANGE_CONFIGS[exchange];
+async function fetchStockList(exchange: string, quoteType: 'EQUITY' | 'ETF' = 'EQUITY'): Promise<{ sym: string; name: string; divYield: number }[]> {
+  const configs = quoteType === 'ETF' ? ETF_EXCHANGE_CONFIGS : EXCHANGE_CONFIGS;
+  const config = configs[exchange];
   if (!config) return [];
 
   let session: { crumb: string; cookies: string } | null = null;
@@ -670,7 +671,7 @@ async function fetchStockList(exchange: string): Promise<{ sym: string; name: st
           size, offset,
           sortField: 'intradaymarketcap',
           sortType: 'DESC',
-          quoteType: 'EQUITY',
+          quoteType,
           query: { operator: 'AND', operands },
         }),
         signal: AbortSignal.timeout(15000),
