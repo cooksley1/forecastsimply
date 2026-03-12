@@ -82,7 +82,29 @@ const GECKO_TO_YAHOO: Record<string, string> = {
   'polygon-ecosystem-token': 'POL-USD', 'matic-network': 'MATIC-USD',
   'thorchain': 'RUNE-USD', 'kaia': 'KAIA-USD',
   'dexe': 'DEXE-USD', 'usds': 'USDS-USD', 'usdd': 'USDD-USD',
+  // More top coins
+  '1inch': '1INCH-USD', 'dash': 'DASH-USD', 'neo': 'NEO-USD',
+  'nexo': 'NEXO-USD', 'iota': 'IOTA-USD', 'gho': 'GHO-USD',
+  'frax': 'FRAX-USD', 'sky': 'SKY-USD', 'fartcoin': 'FARTCOIN-USD',
+  'artificial-superintelligence-alliance': 'FET-USD',
 };
+
+/**
+ * Build a Yahoo-style ticker from a CoinGecko symbol.
+ * Only used when GECKO_TO_YAHOO has no entry.
+ * Returns null if we can't build a sensible ticker (avoids junk like FETCH-AI-USD).
+ */
+function guessYahooTicker(coinId: string, symbol?: string): string | null {
+  // If a symbol is available (e.g. "FET"), use it directly
+  if (symbol && /^[A-Z0-9]{1,10}$/i.test(symbol)) {
+    return `${symbol.toUpperCase()}-USD`;
+  }
+  // Only use the coinId if it's a single word (no hyphens) and short
+  if (!coinId.includes('-') && coinId.length <= 8) {
+    return `${coinId.toUpperCase()}-USD`;
+  }
+  return null; // skip Yahoo for complex IDs
+}
 
 /** Crypto: CoinGecko → CoinPaprika → Yahoo Finance (for ALL) → CoinLore+DIA fallback */
 export async function fetchCryptoHistory(coinId: string, days: number): Promise<CryptoFetchResult> {
