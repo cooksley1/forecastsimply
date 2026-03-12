@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
       const fnStart = Date.now();
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
+        const timeout = setTimeout(() => controller.abort(), 30000);
 
         const res = await fetch(`${supabaseUrl}/functions/v1/${fn.name}`, {
           method: fn.method,
