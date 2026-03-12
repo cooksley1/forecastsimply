@@ -454,6 +454,63 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_analyses: {
+        Row: {
+          analysis_summary: string | null
+          asset_id: string
+          asset_type: string
+          confidence: number | null
+          created_at: string
+          forecast_return_pct: number | null
+          id: string
+          market_phase: string | null
+          name: string
+          price: number
+          shared_by: string | null
+          signal_label: string | null
+          signal_score: number | null
+          stop_loss: number | null
+          symbol: string
+          target_price: number | null
+        }
+        Insert: {
+          analysis_summary?: string | null
+          asset_id: string
+          asset_type: string
+          confidence?: number | null
+          created_at?: string
+          forecast_return_pct?: number | null
+          id?: string
+          market_phase?: string | null
+          name: string
+          price: number
+          shared_by?: string | null
+          signal_label?: string | null
+          signal_score?: number | null
+          stop_loss?: number | null
+          symbol: string
+          target_price?: number | null
+        }
+        Update: {
+          analysis_summary?: string | null
+          asset_id?: string
+          asset_type?: string
+          confidence?: number | null
+          created_at?: string
+          forecast_return_pct?: number | null
+          id?: string
+          market_phase?: string | null
+          name?: string
+          price?: number
+          shared_by?: string | null
+          signal_label?: string | null
+          signal_score?: number | null
+          stop_loss?: number | null
+          symbol?: string
+          target_price?: number | null
+        }
+        Relationships: []
+      }
       tracked_picks: {
         Row: {
           asset_id: string
