@@ -366,7 +366,7 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, addToWatchlist, updateSecondaryPrice, saveToHistory]);
+  }, [timeframeDays, forecastPercent, forecastMethods, riskLevel, updateSecondaryPrice, saveToHistory]);
 
   /* ── Stocks / ETFs ── */
   const analyseStock = useCallback(async (symbol: string, type: 'stocks' | 'etfs') => {
