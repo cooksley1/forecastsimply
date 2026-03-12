@@ -200,6 +200,11 @@ export default function QuickPicks({
 
       {/* Info badges */}
       <div className="flex items-center gap-2 shrink-0">
+        {p.signal?.compositeScore !== undefined && sortBy !== 'default' && sortBy !== 'yield' && (
+          <span className="text-[9px] font-mono text-muted-foreground/70" title="Composite score (signal + forecast + confidence)">
+            {p.signal.compositeScore}%
+          </span>
+        )}
         {showDividends && p.divYield !== undefined && p.divYield > 0 && (
           <span className={`text-[10px] font-bold ${yieldBadge(p.divYield).cls}`}>
             💰 {p.divYield.toFixed(1)}%
