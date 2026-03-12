@@ -805,7 +805,7 @@ async function fetchForexChart(from: string, to: string, days: number): Promise<
   const start = new Date(end);
   start.setDate(start.getDate() - days);
   const url = `https://api.frankfurter.app/${fmtDate(start)}..${fmtDate(end)}?from=${from}&to=${to}`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  const res = await fetchWithRetry(url, { signal: AbortSignal.timeout(15000) });
   if (!res.ok) throw new Error(`Frankfurter ${res.status} for ${from}/${to}`);
   const data = await res.json();
   const rates: Record<string, Record<string, number>> = data.rates || {};
