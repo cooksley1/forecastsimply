@@ -72,7 +72,7 @@ const EXPECTED_TABLES = [
 
 interface FunctionResult {
   name: string;
-  status: "ok" | "error" | "timeout";
+  status: "ok" | "error" | "timeout" | "slow_ok";
   http_status: number | null;
   latency_ms: number;
   error?: string;
