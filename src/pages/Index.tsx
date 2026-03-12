@@ -711,12 +711,12 @@ export default function Index() {
     recordRankRefresh();
 
     // Fallback: compute on-the-fly (for uncached assets or when cache is empty)
-    const fetchOne = async (pick: { id: string }) => {
+    const fetchOne = async (pick: { id: string; label?: string }) => {
       if (results[pick.id]) return; // already from cache
       try {
         let closes: number[], timestamps: number[], volumes: number[];
         if (assetType === 'crypto') {
-          const result = await fetchCryptoHistory(pick.id, tfDays);
+          const result = await fetchCryptoHistory(pick.id, tfDays, pick.label);
           closes = result.priceData.closes;
           timestamps = result.priceData.timestamps;
           volumes = result.priceData.volumes || [];
