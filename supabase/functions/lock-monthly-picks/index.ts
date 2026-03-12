@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface CoinLoreTicker {
@@ -18,19 +18,16 @@ interface CoinLoreTicker {
   market_cap_usd: string;
 }
 
-// Stablecoins and wrapped tokens to exclude — these don't move
 const EXCLUDED_SYMBOLS = new Set([
   "USDT", "USDC", "BUSD", "DAI", "TUSD", "USDP", "USDD", "GUSD",
   "FRAX", "LUSD", "SUSD", "MIM", "FDUSD", "PYUSD", "EURC", "EURT",
   "WBTC", "WETH", "STETH", "CBETH", "RETH",
 ]);
-
 const EXCLUDED_NAME_PATTERNS = ["tether", "usd coin", "stablecoin", "wrapped"];
 
 function isStableOrWrapped(t: CoinLoreTicker): boolean {
   if (EXCLUDED_SYMBOLS.has(t.symbol.toUpperCase())) return true;
-  const nameLower = t.name.toLowerCase();
-  return EXCLUDED_NAME_PATTERNS.some(p => nameLower.includes(p));
+  return EXCLUDED_NAME_PATTERNS.some(p => t.name.toLowerCase().includes(p));
 }
 
 function preScreenScore(t: CoinLoreTicker): number {
@@ -47,33 +44,15 @@ function preScreenScore(t: CoinLoreTicker): number {
   return s;
 }
 
-const STOCK_UNIVERSE = [
-  { sym: "AAPL", name: "Apple", fallbackPrice: 230 },
-  { sym: "MSFT", name: "Microsoft", fallbackPrice: 450 },
-  { sym: "NVDA", name: "NVIDIA", fallbackPrice: 140 },
-  { sym: "GOOGL", name: "Alphabet", fallbackPrice: 185 },
-  { sym: "AMZN", name: "Amazon", fallbackPrice: 210 },
-  { sym: "TSLA", name: "Tesla", fallbackPrice: 340 },
-  { sym: "META", name: "Meta", fallbackPrice: 620 },
-  { sym: "JPM", name: "JPMorgan", fallbackPrice: 255 },
-];
+const TIMEFRAMES = [30, 90, 180, 365] as const;
+const ASSET_TYPES = ["crypto", "stocks", "etfs"] as const;
+const TOP_N = 3;
 
-const ETF_UNIVERSE = [
-  { sym: "SPY", name: "S&P 500", fallbackPrice: 575 },
-  { sym: "QQQ", name: "Nasdaq 100", fallbackPrice: 510 },
-  { sym: "VTI", name: "Total Market", fallbackPrice: 285 },
-  { sym: "ARKK", name: "ARK Innovation", fallbackPrice: 58 },
-  { sym: "VOO", name: "Vanguard S&P", fallbackPrice: 530 },
-  { sym: "IWM", name: "Russell 2000", fallbackPrice: 220 },
-];
-
-// Fetch with timeout
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 8000): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    return res;
+    return await fetch(url, { ...options, signal: controller.signal });
   } finally {
     clearTimeout(timer);
   }
@@ -94,160 +73,139 @@ Deno.serve(async (req) => {
       .toISOString()
       .split("T")[0];
 
-    // Check if picks already exist for this month
+    // Check existing picks for this month
     const { data: existing } = await supabase
       .from("tracked_picks")
-      .select("id, asset_type")
+      .select("id, asset_type, timeframe_days, rank")
       .eq("month_start", monthStart);
 
-    const existingTypes = new Set((existing || []).map((e: any) => e.asset_type));
+    const existingKey = new Set(
+      (existing || []).map((e: any) => `${e.asset_type}-${e.timeframe_days}-${e.rank}`)
+    );
+
     const results: any[] = [];
 
-    // ── Crypto ── (exclude stablecoins and wrapped tokens)
-    if (!existingTypes.has("crypto")) {
-      try {
-        const res = await fetch("https://api.coinlore.net/api/tickers/?start=0&limit=50");
-        const json = await res.json();
-        const tickers: CoinLoreTicker[] = (json.data || []).filter(
-          (t: CoinLoreTicker) => !isStableOrWrapped(t)
+    // ── Strategy 1: Use daily_analysis_cache for stocks & ETFs ──
+    for (const assetType of ["stocks", "etfs"] as const) {
+      for (const tf of TIMEFRAMES) {
+        // Check if all 3 ranks already exist
+        const needed: number[] = [];
+        for (let r = 1; r <= TOP_N; r++) {
+          if (!existingKey.has(`${assetType}-${tf}-${r}`)) needed.push(r);
+        }
+        if (needed.length === 0) continue;
+
+        // Pull top candidates from daily_analysis_cache
+        const { data: cached } = await supabase
+          .from("daily_analysis_cache")
+          .select("*")
+          .eq("asset_type", assetType)
+          .eq("timeframe_days", tf)
+          .order("signal_score", { ascending: false })
+          .limit(10);
+
+        if (!cached?.length) continue;
+
+        // Pick top N that aren't already locked
+        const alreadyLocked = new Set(
+          (existing || [])
+            .filter((e: any) => e.asset_type === assetType && e.timeframe_days === tf)
+            .map((e: any) => e.asset_id)
         );
 
-        let bestTicker: CoinLoreTicker | null = null;
-        let bestScore = -1;
+        const candidates = cached.filter((c: any) => !alreadyLocked.has(c.asset_id));
+        let rankIdx = 0;
 
-        for (const t of tickers) {
-          const score = preScreenScore(t);
-          if (score > bestScore) {
-            bestScore = score;
-            bestTicker = t;
-          }
+        for (const rank of needed) {
+          const pick = candidates[rankIdx];
+          if (!pick) break;
+          rankIdx++;
+
+          const { data, error } = await supabase.from("tracked_picks").insert({
+            month_start: monthStart,
+            asset_type: assetType,
+            asset_id: pick.asset_id,
+            symbol: pick.symbol,
+            name: pick.name,
+            entry_price: pick.price,
+            signal_score: pick.signal_score ?? 0,
+            signal_label: pick.signal_label ?? "Hold",
+            confidence: pick.confidence ?? 50,
+            target_price: pick.target_price,
+            stop_loss: pick.stop_loss,
+            timeframe_days: tf,
+            rank,
+            reasoning: `#${rank} ranked ${assetType === "etfs" ? "ETF" : "stock"} for ${tf}-day horizon. Signal: ${pick.signal_label} (score ${pick.signal_score}). Confidence: ${pick.confidence}%.`,
+          }).select().single();
+
+          if (data) results.push(data);
+          if (error) console.error(`Insert error ${assetType}/${tf}/#${rank}:`, error);
         }
+      }
+    }
 
-        if (bestTicker) {
-          const price = parseFloat(bestTicker.price_usd) || 0;
-          const confidence = Math.min(85, 30 + bestScore);
-          const signal = bestScore >= 45 ? "Buy" : bestScore >= 25 ? "Hold" : "Sell";
-          const targetPrice = price * (1 + bestScore / 200);
+    // ── Strategy 2: Crypto from CoinLore (all timeframes use same pre-screen) ──
+    let cryptoTickers: CoinLoreTicker[] = [];
+    try {
+      const res = await fetch("https://api.coinlore.net/api/tickers/?start=0&limit=50");
+      const json = await res.json();
+      cryptoTickers = (json.data || []).filter((t: CoinLoreTicker) => !isStableOrWrapped(t));
+    } catch (e) {
+      console.error("CoinLore fetch error:", e);
+    }
+
+    if (cryptoTickers.length > 0) {
+      // Score all tickers
+      const scored = cryptoTickers.map(t => ({ ticker: t, score: preScreenScore(t) }))
+        .sort((a, b) => b.score - a.score);
+
+      for (const tf of TIMEFRAMES) {
+        const needed: number[] = [];
+        for (let r = 1; r <= TOP_N; r++) {
+          if (!existingKey.has(`crypto-${tf}-${r}`)) needed.push(r);
+        }
+        if (needed.length === 0) continue;
+
+        const alreadyLocked = new Set(
+          (existing || [])
+            .filter((e: any) => e.asset_type === "crypto" && e.timeframe_days === tf)
+            .map((e: any) => e.asset_id)
+        );
+
+        const candidates = scored.filter(s => !alreadyLocked.has(s.ticker.id));
+        let rankIdx = 0;
+
+        for (const rank of needed) {
+          const entry = candidates[rankIdx];
+          if (!entry) break;
+          rankIdx++;
+
+          const t = entry.ticker;
+          const price = parseFloat(t.price_usd) || 0;
+          const confidence = Math.min(85, 30 + entry.score);
+          const signal = entry.score >= 45 ? "Buy" : entry.score >= 25 ? "Hold" : "Sell";
+          const targetPrice = price * (1 + entry.score / 200);
 
           const { data, error } = await supabase.from("tracked_picks").insert({
             month_start: monthStart,
             asset_type: "crypto",
-            asset_id: bestTicker.id,
-            symbol: bestTicker.symbol.toUpperCase(),
-            name: bestTicker.name,
+            asset_id: t.id,
+            symbol: t.symbol.toUpperCase(),
+            name: t.name,
             entry_price: price,
-            signal_score: bestScore,
+            signal_score: entry.score,
             signal_label: signal,
             confidence,
             target_price: targetPrice,
-            reasoning: `Top-ranked crypto by pre-screen score (${bestScore}/65). ${signal} signal with ${confidence}% confidence.`,
+            timeframe_days: tf,
+            rank,
+            reasoning: `#${rank} ranked crypto for ${tf}-day horizon. Pre-screen score: ${entry.score}/65. ${signal} signal with ${confidence}% confidence.`,
           }).select().single();
 
           if (data) results.push(data);
-          if (error) console.error("Crypto insert error:", error);
-        }
-      } catch (e) {
-        console.error("Crypto fetch error:", e);
-      }
-    }
-
-    // ── Stocks & ETFs — with timeout + fallback ──
-    for (const [assetType, universe] of [
-      ["stocks", STOCK_UNIVERSE],
-      ["etfs", ETF_UNIVERSE],
-    ] as const) {
-      if (existingTypes.has(assetType)) continue;
-
-      let bestPick: { symbol: string; name: string; price: number; score: number } | null = null;
-      let bestScore = -1;
-      let usedFallback = false;
-
-      // Try yahoo-proxy with per-symbol timeout
-      const supabaseFnUrl = `${supabaseUrl}/functions/v1/yahoo-proxy`;
-      let succeeded = 0;
-
-      for (const item of universe) {
-        try {
-          const res = await fetchWithTimeout(supabaseFnUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${serviceKey}`,
-            },
-            body: JSON.stringify({ symbol: item.sym, range: "3mo", interval: "1d" }),
-          }, 10000);
-
-          if (!res.ok) { await res.text(); continue; }
-          const data = await res.json();
-          const closes: number[] = data.closes || [];
-          if (closes.length < 20) continue;
-
-          succeeded++;
-          const lastPrice = closes[closes.length - 1];
-          const price20ago = closes[Math.max(0, closes.length - 20)];
-          const price5ago = closes[Math.max(0, closes.length - 5)];
-
-          const mom20 = ((lastPrice - price20ago) / price20ago) * 100;
-          const mom5 = ((lastPrice - price5ago) / price5ago) * 100;
-
-          let score = 0;
-          if (mom5 > 0 && mom5 < 5) score += 20;
-          if (mom20 > 0 && mom20 < 15) score += 20;
-          if (mom5 > -2) score += 10;
-          if (mom20 > -5) score += 10;
-
-          const volumes: number[] = data.volumes || [];
-          if (volumes.length >= 20) {
-            const recentVol = volumes.slice(-5).reduce((a: number, b: number) => a + b, 0) / 5;
-            const avgVol = volumes.slice(-20).reduce((a: number, b: number) => a + b, 0) / 20;
-            if (recentVol > avgVol * 1.1) score += 10;
-          }
-
-          if (score > bestScore) {
-            bestScore = score;
-            bestPick = { symbol: item.sym, name: item.name, price: lastPrice, score };
-          }
-        } catch {
-          console.log(`Timeout/error fetching ${item.sym}, continuing...`);
-          continue;
+          if (error) console.error(`Crypto insert error ${tf}/#${rank}:`, error);
         }
       }
-
-      // Fallback: if no yahoo data worked, pick top item with fallback price
-      if (!bestPick) {
-        usedFallback = true;
-        // Pick the first item as a reasonable default
-        const fallbackItem = universe[0];
-        bestPick = {
-          symbol: fallbackItem.sym,
-          name: fallbackItem.name,
-          price: fallbackItem.fallbackPrice,
-          score: 35, // neutral score
-        };
-        bestScore = 35;
-        console.log(`Using fallback for ${assetType}: ${fallbackItem.sym} at $${fallbackItem.fallbackPrice}`);
-      }
-
-      const confidence = Math.min(85, 30 + bestPick.score);
-      const signal = bestPick.score >= 45 ? "Buy" : bestPick.score >= 25 ? "Hold" : "Sell";
-      const targetPrice = bestPick.price * (1 + bestPick.score / 200);
-
-      const { data, error } = await supabase.from("tracked_picks").insert({
-        month_start: monthStart,
-        asset_type: assetType,
-        asset_id: bestPick.symbol,
-        symbol: bestPick.symbol,
-        name: bestPick.name,
-        entry_price: bestPick.price,
-        signal_score: bestPick.score,
-        signal_label: signal,
-        confidence,
-        target_price: targetPrice,
-        reasoning: `Top-ranked ${assetType === "etfs" ? "ETF" : "stock"} by momentum score (${bestPick.score}/70). ${signal} signal with ${confidence}% confidence.${usedFallback ? " (Fallback pricing used — live data unavailable at lock time.)" : ""}`,
-      }).select().single();
-
-      if (data) results.push(data);
-      if (error) console.error(`${assetType} insert error:`, error);
     }
 
     return new Response(JSON.stringify({ locked: results.length, picks: results }), {
