@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { canRankRefresh, recordRankRefresh } from '@/utils/refreshLimit';
 import { APP_VERSION } from '@/utils/version';
 import { useRefreshExempt } from '@/hooks/useRefreshExempt';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import PriceAlertDialog from '@/components/alerts/PriceAlertDialog';
 import type { SortCriteria, RankTimeframe } from '@/components/search/QuickPicks';
 import { RANK_TIMEFRAME_DAYS } from '@/components/search/QuickPicks';
@@ -81,6 +82,7 @@ const MemoBreakoutFinder = memo(BreakoutFinder);
 export default function Index() {
   const { user } = useAuth();
   const { isExempt } = useRefreshExempt();
+  const { track } = useActivityTracker();
   const [assetType, setAssetType] = useState<AssetType>('crypto');
   const [overviewMode, setOverviewMode] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -158,6 +160,7 @@ export default function Index() {
   const isFirstRender = useRef(true);
 
   const addToWatchlist = useCallback((info: AssetInfo) => {
+    track('watchlist_add', { asset_id: info.id, asset_type: info.assetType });
     setWatchlist(prev => {
       // Prevent duplicates — only add if not already in watchlist
       const existing = prev.find(w => w.id === info.id);
@@ -324,6 +327,7 @@ export default function Index() {
 
 
   const analyseCrypto = useCallback(async (coinId: string, knownSymbol?: string) => {
+    track('analysis_run', { asset_id: coinId, asset_type: 'crypto' });
     const unsupported = getUnsupportedCoin(coinId);
     if (unsupported) {
       setError(`⚠️ ${unsupported.name} is not supported. ${unsupported.reason}`);
@@ -390,6 +394,7 @@ export default function Index() {
 
   /* ── Stocks / ETFs ── */
   const analyseStock = useCallback(async (symbol: string, type: 'stocks' | 'etfs') => {
+    track('analysis_run', { asset_id: symbol, asset_type: type });
     setLoading(true);
     setError(null);
     setOverviewMode(false);
@@ -506,6 +511,7 @@ export default function Index() {
   };
 
   const handleSearch = useCallback(async (query: string) => {
+    track('search', { data: { query, asset_type: assetType } });
     isNewSearchRef.current = true;
     if (assetType === 'crypto') {
       const unsupported = getUnsupportedCoin(query);

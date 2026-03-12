@@ -8,6 +8,7 @@ import PriceAlertsList from '@/components/alerts/PriceAlertsList';
 import PushNotificationToggle from '@/components/alerts/PushNotificationToggle';
 import WatchlistAlertSettings from '@/components/alerts/WatchlistAlertSettings';
 import ApiKeySettings from '@/components/settings/ApiKeySettings';
+import PortfolioImporter from '@/components/portfolio/PortfolioImporter';
 
 interface Props {
   open: boolean;
@@ -85,7 +86,7 @@ const ASSET_TYPE_ICONS: Record<string, string> = {
 export default function AccountPanel({ open, onClose, watchlist = [], onWatchlistRemove, onWatchlistClear, onWatchlistNoteUpdate }: Props) {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'watchlist' | 'newsletter' | 'alerts' | 'apikeys'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'preferences' | 'portfolio' | 'watchlist' | 'newsletter' | 'alerts' | 'apikeys'>('profile');
   const [alertRefreshKey, setAlertRefreshKey] = useState(0);
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -250,6 +251,7 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
   const tabs = [
     { key: 'profile' as const, label: '👤 Profile' },
     { key: 'preferences' as const, label: '⚙️ Prefs' },
+    { key: 'portfolio' as const, label: '📂 Portfolio' },
     { key: 'apikeys' as const, label: '🔑 API Keys' },
     { key: 'alerts' as const, label: '🔔 Alerts' },
     { key: 'newsletter' as const, label: '📬 Digest' },
@@ -401,6 +403,11 @@ export default function AccountPanel({ open, onClose, watchlist = [], onWatchlis
               {saveMsg && <span className="text-[10px] text-positive">{saveMsg}</span>}
             </div>
           </div>
+        )}
+
+        {/* Portfolio Tab */}
+        {activeTab === 'portfolio' && (
+          <PortfolioImporter />
         )}
 
         {/* Newsletter / Digest Tab */}
