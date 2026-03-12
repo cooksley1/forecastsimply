@@ -326,6 +326,7 @@ export default function Index() {
 
 
   const analyseCrypto = useCallback(async (coinId: string, knownSymbol?: string) => {
+    track('analysis_run', { asset_id: coinId, asset_type: 'crypto' });
     const unsupported = getUnsupportedCoin(coinId);
     if (unsupported) {
       setError(`⚠️ ${unsupported.name} is not supported. ${unsupported.reason}`);
