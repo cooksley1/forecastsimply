@@ -8,6 +8,7 @@ import PriceAlertsList from '@/components/alerts/PriceAlertsList';
 import PushNotificationToggle from '@/components/alerts/PushNotificationToggle';
 import WatchlistAlertSettings from '@/components/alerts/WatchlistAlertSettings';
 import ApiKeySettings from '@/components/settings/ApiKeySettings';
+import PortfolioImporter from '@/components/portfolio/PortfolioImporter';
 
 interface Props {
   open: boolean;
