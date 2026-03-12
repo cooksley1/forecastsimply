@@ -764,6 +764,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_cron_jobs: {
+        Args: never
+        Returns: {
+          command: string
+          jobname: string
+          schedule: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

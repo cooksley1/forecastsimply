@@ -18,7 +18,16 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, serviceKey);
 
-    const { pick_id } = await req.json();
+    const body = await req.json();
+
+    // Health check support
+    if (body?.action === "health") {
+      return new Response(JSON.stringify({ status: "ok" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { pick_id } = body;
     if (!pick_id) throw new Error("pick_id is required");
 
     // Fetch the pick
