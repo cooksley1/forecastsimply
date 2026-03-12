@@ -1,10 +1,18 @@
 import { useState } from 'react';
+import { ExternalLink } from 'lucide-react';
 import { Newspaper, TrendingUp, TrendingDown, Minus, Loader2, AlertTriangle, Sparkles, ArrowRight, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { AssetInfo } from '@/types/assets';
 import type { Signal, SignalLabel, SignalColor } from '@/types/analysis';
+
+interface NewsHeadline {
+  title: string;
+  source: string;
+  date: string;
+  url: string | null;
+}
 
 interface SentimentData {
   summary: string;
@@ -20,6 +28,8 @@ interface SentimentData {
   adjustmentReasoning: string;
   newsQuality: 'Rich' | 'Moderate' | 'Limited';
   disclaimer: string;
+  headlines?: NewsHeadline[];
+  headlineCount?: number;
 }
 
 interface Props {
@@ -190,7 +200,35 @@ export default function SentimentPanel({ assetInfo, signal }: Props) {
         )}
       </div>
 
-      {/* Technical Alignment */}
+      {/* Headlines found */}
+      {data.headlines && data.headlines.length > 0 && (
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-2.5 space-y-1.5">
+          <div className="text-[9px] font-mono text-muted-foreground flex items-center gap-1">
+            <Newspaper className="w-2.5 h-2.5" />
+            {data.headlineCount ?? data.headlines.length} HEADLINES ANALYSED
+          </div>
+          <div className="space-y-1 max-h-40 overflow-y-auto">
+            {data.headlines.slice(0, 8).map((h, i) => (
+              <div key={i} className="flex items-start gap-1.5 text-[10px]">
+                <span className="text-muted-foreground/50 shrink-0 font-mono w-3 text-right">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  {h.url ? (
+                    <a href={h.url} target="_blank" rel="noopener noreferrer" className="text-foreground/80 hover:text-primary transition-colors leading-tight line-clamp-2">
+                      {h.title}
+                      <ExternalLink className="w-2.5 h-2.5 inline ml-1 opacity-50" />
+                    </a>
+                  ) : (
+                    <span className="text-foreground/80 leading-tight line-clamp-2">{h.title}</span>
+                  )}
+                  <div className="text-[8px] text-muted-foreground/60">{h.source}{h.date ? ` · ${h.date}` : ''}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+
       <div className="flex items-start gap-2 rounded-lg bg-muted/30 border border-border/30 p-2.5">
         <Info className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
         <div>
