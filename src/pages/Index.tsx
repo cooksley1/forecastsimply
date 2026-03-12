@@ -32,6 +32,7 @@ import TradeSetupPanel from '@/components/analysis/TradeSetupPanel';
 import AnalysisTextPanel from '@/components/analysis/AnalysisTextPanel';
 import IndicatorsPanel from '@/components/analysis/IndicatorsPanel';
 import PortfolioBuilder from '@/components/analysis/PortfolioBuilder';
+import PortfolioManager from '@/components/portfolio/PortfolioManager';
 import TopPicks from '@/components/analysis/TopPicks';
 import TopPicksDashboard from '@/components/analysis/TopPicksDashboard';
 import BestPickFinder from '@/components/analysis/BestPickFinder';
