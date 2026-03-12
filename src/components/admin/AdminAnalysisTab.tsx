@@ -408,6 +408,22 @@ export default function AdminAnalysisTab() {
         <Button variant="outline" onClick={fetchStats} disabled={loading} className="gap-2">
           🔄 Refresh Stats
         </Button>
+
+        <Button
+          onClick={triggerRunAll}
+          disabled={!!running || runAllActive}
+          variant="default"
+          className="gap-2 bg-accent text-accent-foreground hover:bg-accent/80"
+        >
+          {runAllActive ? (
+            <>
+              <span className="inline-block w-4 h-4 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />
+              Run All ({runAllProgress})
+            </>
+          ) : (
+            <>🚀 Run All (4 types × 4 timeframes)</>
+          )}
+        </Button>
       </div>
 
       {/* Timeframe coverage matrix */}
