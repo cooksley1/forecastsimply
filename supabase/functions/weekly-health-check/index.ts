@@ -223,8 +223,8 @@ Deno.serve(async (req) => {
     const configKeys = (configRows || []).map((r: any) => r.key);
 
     // ── 5. Compile report ──
-    const fnOk = functionResults.filter((f) => f.status === "ok").length;
-    const fnFail = functionResults.filter((f) => f.status !== "ok").length;
+    const fnOk = functionResults.filter((f) => f.status === "ok" || f.status === "slow_ok").length;
+    const fnFail = functionResults.filter((f) => f.status !== "ok" && f.status !== "slow_ok").length;
     const cronOk = cronResults.filter((c) => c.status === "found").length;
     const cronMissing = cronResults.filter((c) => c.status === "missing").length;
     const tablesOk = tableResults.filter((t) => t.status === "ok").length;
@@ -233,7 +233,7 @@ Deno.serve(async (req) => {
     const issues: string[] = [];
 
     functionResults
-      .filter((f) => f.status !== "ok")
+      .filter((f) => f.status !== "ok" && f.status !== "slow_ok")
       .forEach((f) => issues.push(`❌ Function ${f.name}: ${f.status} (HTTP ${f.http_status ?? "N/A"}) — ${f.error || ""}`));
 
     cronResults
