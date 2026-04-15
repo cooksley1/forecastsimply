@@ -119,7 +119,7 @@ export default function Index() {
     try { return JSON.parse(localStorage.getItem('sf_watchlist') || '[]'); } catch { return []; }
   });
 
-  // Dynamic exchange screener — supports all major exchanges
+  useWatchlistPriceRefresh(watchlist, setWatchlist);
   const [asxSubgroup, setAsxSubgroup] = useState<ScreenerSubgroup>('asx200');
   const useStockScreener = assetType === 'stocks' && SCREENER_SUPPORTED.includes(stockExchange);
   const useEtfScreener = assetType === 'etfs' && SCREENER_SUPPORTED.includes(etfExchange);
