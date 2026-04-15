@@ -137,7 +137,7 @@ export const MARKET_BENCHMARKS: Record<string, { assetId: string; label: string 
   crypto: { assetId: 'bitcoin', label: 'BTC' },
   stocks: { assetId: 'SPY', label: 'SPY' },
   etfs:   { assetId: 'SPY', label: 'SPY' },
-  forex:  { assetId: 'EURUSD=X', label: 'EUR/USD' },
+  forex:  { assetId: 'EURUSD', label: 'EUR/USD' },
 };
 
 export const APP_URL = 'https://forecastsimply.lovable.app';

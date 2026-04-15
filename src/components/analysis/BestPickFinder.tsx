@@ -87,17 +87,31 @@ export default function BestPickFinder({ onViewAsset }: Props) {
         }
       }
 
-      // ── 2. Fetch candidate pool (broad scan — up to 500 assets) ──
-      // Fetch ALL positive-signal assets, not just top 30, so composite scoring
-      // can genuinely surface the best picks from the full universe.
-      const { data, error: dbError } = await supabase
-        .from('daily_analysis_cache')
-        .select('*')
-        .eq('asset_type', assetClass === 'etfs' ? 'stocks' : assetClass)
-        .eq('timeframe_days', days)
-        .gte('signal_score', 1)
-        .order('signal_score', { ascending: false })
-        .limit(500);
+      // ── 2. Fetch candidate pool — full universe scan ──
+      // Fetch ALL positive-signal assets across the entire cache so composite
+      // scoring genuinely surfaces the best picks, not a truncated subset.
+      // Paginate in batches of 1000 (Supabase default limit) to get everything.
+      let allData: any[] = [];
+      let offset = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data: page, error: dbError } = await supabase
+          .from('daily_analysis_cache')
+          .select('*')
+          .eq('asset_type', assetClass)
+          .eq('timeframe_days', days)
+          .gte('signal_score', 1)
+          .order('signal_score', { ascending: false })
+          .range(offset, offset + PAGE - 1);
+
+        if (dbError) throw dbError;
+        if (!page || page.length === 0) break;
+        allData = allData.concat(page);
+        if (page.length < PAGE) break;   // last page
+        offset += PAGE;
+      }
+
+      const data = allData;
 
       if (dbError) throw dbError;
 
