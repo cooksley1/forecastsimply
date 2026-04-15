@@ -473,7 +473,7 @@ export default function AdminAnalysisTab() {
               Run All ({runAllProgress})
             </>
           ) : (
-            <>🚀 Run All (4 types × 4 timeframes)</>
+            <>🚀 Run All (6 combos × 4 timeframes = 24 runs)</>
           )}
         </Button>
       </div>
