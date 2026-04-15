@@ -119,7 +119,7 @@ export default function Index() {
     try { return JSON.parse(localStorage.getItem('sf_watchlist') || '[]'); } catch { return []; }
   });
 
-  useWatchlistPriceRefresh(watchlist, setWatchlist);
+  const { lastRefreshed: watchlistLastRefreshed, isRefreshing: watchlistRefreshing, manualRefresh: refreshWatchlistPrices } = useWatchlistPriceRefresh(watchlist, setWatchlist);
   const [asxSubgroup, setAsxSubgroup] = useState<ScreenerSubgroup>('asx200');
   const useStockScreener = assetType === 'stocks' && SCREENER_SUPPORTED.includes(stockExchange);
   const useEtfScreener = assetType === 'etfs' && SCREENER_SUPPORTED.includes(etfExchange);
@@ -800,6 +800,9 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background">
       <Header
+        watchlistLastRefreshed={watchlistLastRefreshed}
+        watchlistRefreshing={watchlistRefreshing}
+        onWatchlistRefresh={refreshWatchlistPrices}
         watchlist={watchlist}
         onWatchlistSelect={handleWatchlistSelect}
         onWatchlistRemove={removeFromWatchlist}
