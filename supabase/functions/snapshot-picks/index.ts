@@ -59,13 +59,11 @@ Deno.serve(async (req) => {
       } else {
         // Stocks/ETFs via yahoo-proxy
         try {
-          const res = await fetch(`${supabaseUrl}/functions/v1/yahoo-proxy`, {
-            method: "POST",
+          const proxyUrl = `${supabaseUrl}/functions/v1/yahoo-proxy?symbol=${encodeURIComponent(pick.symbol)}&range=5d&interval=1d`;
+          const res = await fetch(proxyUrl, {
             headers: {
-              "Content-Type": "application/json",
               Authorization: `Bearer ${serviceKey}`,
             },
-            body: JSON.stringify({ symbol: pick.symbol, range: "5d", interval: "1d" }),
           });
 
           if (res.ok) {
