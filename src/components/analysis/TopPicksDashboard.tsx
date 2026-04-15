@@ -81,8 +81,9 @@ export default function TopPicksDashboard({ onSelect }: Props) {
   const [cryptoPicks, setCryptoPicks] = useState<HorizonPicks>({ short: [], mid: [], long: [] });
   const [stockPicks, setStockPicks] = useState<HorizonPicks>({ short: [], mid: [], long: [] });
   const [etfPicks, setEtfPicks] = useState<HorizonPicks>({ short: [], mid: [], long: [] });
+  const [forexPicks, setForexPicks] = useState<HorizonPicks>({ short: [], mid: [], long: [] });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'all' | 'crypto' | 'stocks' | 'etfs'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'crypto' | 'stocks' | 'etfs' | 'forex'>('all');
   const [expanded, setExpanded] = useState(false);
 
   const riskProfile: RiskProfile = 'moderate';
@@ -118,6 +119,7 @@ export default function TopPicksDashboard({ onSelect }: Props) {
         cryptoShort, cryptoMid, cryptoLong,
         stocksShort, stocksMid, stocksLong,
         etfsShort, etfsMid, etfsLong,
+        forexShort, forexMid, forexLong,
       ] = await Promise.all([
         fetchPicksForType('crypto', 30),
         fetchPicksForType('crypto', 90),
@@ -128,11 +130,15 @@ export default function TopPicksDashboard({ onSelect }: Props) {
         fetchPicksForType('etfs', 30),
         fetchPicksForType('etfs', 90),
         fetchPicksForType('etfs', 180),
+        fetchPicksForType('forex', 30),
+        fetchPicksForType('forex', 90),
+        fetchPicksForType('forex', 180),
       ]);
 
       setCryptoPicks({ short: cryptoShort.slice(0, 3), mid: cryptoMid.slice(0, 3), long: cryptoLong.slice(0, 3) });
       setStockPicks({ short: stocksShort.slice(0, 3), mid: stocksMid.slice(0, 3), long: stocksLong.slice(0, 3) });
       setEtfPicks({ short: etfsShort.slice(0, 3), mid: etfsMid.slice(0, 3), long: etfsLong.slice(0, 3) });
+      setForexPicks({ short: forexShort.slice(0, 3), mid: forexMid.slice(0, 3), long: forexLong.slice(0, 3) });
     } catch {
       // silent
     }
@@ -146,15 +152,15 @@ export default function TopPicksDashboard({ onSelect }: Props) {
 
   // Merge all picks across asset classes for the "All" tab
   const allPicks: HorizonPicks = {
-    short: [...cryptoPicks.short, ...stockPicks.short, ...etfPicks.short]
+    short: [...cryptoPicks.short, ...stockPicks.short, ...etfPicks.short, ...forexPicks.short]
       .sort((a, b) => b.compositeScore - a.compositeScore).slice(0, 3),
-    mid: [...cryptoPicks.mid, ...stockPicks.mid, ...etfPicks.mid]
+    mid: [...cryptoPicks.mid, ...stockPicks.mid, ...etfPicks.mid, ...forexPicks.mid]
       .sort((a, b) => b.compositeScore - a.compositeScore).slice(0, 3),
-    long: [...cryptoPicks.long, ...stockPicks.long, ...etfPicks.long]
+    long: [...cryptoPicks.long, ...stockPicks.long, ...etfPicks.long, ...forexPicks.long]
       .sort((a, b) => b.compositeScore - a.compositeScore).slice(0, 3),
   };
 
-  const activePicks = activeTab === 'all' ? allPicks : activeTab === 'crypto' ? cryptoPicks : activeTab === 'stocks' ? stockPicks : etfPicks;
+  const activePicks = activeTab === 'all' ? allPicks : activeTab === 'crypto' ? cryptoPicks : activeTab === 'stocks' ? stockPicks : activeTab === 'forex' ? forexPicks : etfPicks;
   const hasAnyPicks = activePicks.short.length > 0 || activePicks.mid.length > 0 || activePicks.long.length > 0;
 
   return (
@@ -176,7 +182,7 @@ export default function TopPicksDashboard({ onSelect }: Props) {
         <div className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-3">
           {/* Category tabs */}
           <div className="flex gap-1 bg-muted/50 rounded-lg p-0.5">
-            {(['all', 'crypto', 'stocks', 'etfs'] as const).map(tab => (
+            {(['all', 'crypto', 'stocks', 'etfs', 'forex'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -186,7 +192,7 @@ export default function TopPicksDashboard({ onSelect }: Props) {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {tab === 'all' ? 'All' : tab === 'crypto' ? 'Crypto' : tab === 'stocks' ? 'Stocks' : 'ETFs'}
+                {tab === 'all' ? 'All' : tab === 'crypto' ? 'Crypto' : tab === 'stocks' ? 'Stocks' : tab === 'forex' ? 'Forex' : 'ETFs'}
               </button>
             ))}
           </div>
@@ -231,7 +237,7 @@ export default function TopPicksDashboard({ onSelect }: Props) {
                                   <span className="text-[10px] text-muted-foreground font-mono">{pick.symbol}</span>
                                   {activeTab === 'all' && (
                                     <span className="text-[8px] font-mono uppercase px-1 py-px rounded bg-muted text-muted-foreground">
-                                      {pick.assetType === 'crypto' ? 'Crypto' : pick.assetType === 'stocks' ? 'Stock' : 'ETF'}
+                                      {pick.assetType === 'crypto' ? 'Crypto' : pick.assetType === 'stocks' ? 'Stock' : pick.assetType === 'forex' ? 'Forex' : 'ETF'}
                                     </span>
                                   )}
                                 </div>
