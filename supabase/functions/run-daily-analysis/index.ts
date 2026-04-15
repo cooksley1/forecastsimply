@@ -790,12 +790,35 @@ async function fetchStockList(exchange: string, quoteType: 'EQUITY' | 'ETF' = 'E
 // ═══════════════════════════════════════════════════
 
 const FOREX_PAIRS = [
-  { from: 'AUD', to: 'USD' }, { from: 'EUR', to: 'USD' }, { from: 'GBP', to: 'USD' },
-  { from: 'USD', to: 'JPY' }, { from: 'AUD', to: 'EUR' }, { from: 'USD', to: 'CAD' },
-  { from: 'NZD', to: 'USD' }, { from: 'AUD', to: 'GBP' }, { from: 'EUR', to: 'GBP' },
-  { from: 'USD', to: 'CHF' }, { from: 'EUR', to: 'JPY' }, { from: 'GBP', to: 'JPY' },
-  { from: 'AUD', to: 'NZD' }, { from: 'AUD', to: 'CAD' }, { from: 'EUR', to: 'AUD' },
-  { from: 'USD', to: 'SGD' }, { from: 'USD', to: 'HKD' }, { from: 'EUR', to: 'CHF' },
+  // ── Majors ──
+  { from: 'EUR', to: 'USD' }, { from: 'GBP', to: 'USD' }, { from: 'USD', to: 'JPY' },
+  { from: 'USD', to: 'CHF' }, { from: 'USD', to: 'CAD' }, { from: 'AUD', to: 'USD' },
+  { from: 'NZD', to: 'USD' },
+  // ── Major crosses ──
+  { from: 'EUR', to: 'GBP' }, { from: 'EUR', to: 'JPY' }, { from: 'EUR', to: 'CHF' },
+  { from: 'EUR', to: 'AUD' }, { from: 'EUR', to: 'CAD' }, { from: 'EUR', to: 'NZD' },
+  { from: 'GBP', to: 'JPY' }, { from: 'GBP', to: 'CHF' }, { from: 'GBP', to: 'AUD' },
+  { from: 'GBP', to: 'CAD' }, { from: 'GBP', to: 'NZD' },
+  { from: 'AUD', to: 'JPY' }, { from: 'AUD', to: 'NZD' }, { from: 'AUD', to: 'CAD' },
+  { from: 'AUD', to: 'CHF' }, { from: 'AUD', to: 'GBP' }, { from: 'AUD', to: 'EUR' },
+  { from: 'NZD', to: 'JPY' }, { from: 'NZD', to: 'CAD' }, { from: 'NZD', to: 'CHF' },
+  { from: 'CAD', to: 'JPY' }, { from: 'CAD', to: 'CHF' },
+  { from: 'CHF', to: 'JPY' },
+  // ── Emerging / Asia-Pacific ──
+  { from: 'USD', to: 'SGD' }, { from: 'USD', to: 'HKD' }, { from: 'USD', to: 'SEK' },
+  { from: 'USD', to: 'NOK' }, { from: 'USD', to: 'DKK' }, { from: 'USD', to: 'PLN' },
+  { from: 'USD', to: 'CZK' }, { from: 'USD', to: 'HUF' }, { from: 'USD', to: 'TRY' },
+  { from: 'USD', to: 'ZAR' }, { from: 'USD', to: 'MXN' }, { from: 'USD', to: 'BRL' },
+  { from: 'USD', to: 'INR' }, { from: 'USD', to: 'KRW' }, { from: 'USD', to: 'THB' },
+  { from: 'USD', to: 'IDR' }, { from: 'USD', to: 'MYR' }, { from: 'USD', to: 'PHP' },
+  { from: 'USD', to: 'CNY' }, { from: 'USD', to: 'ISK' }, { from: 'USD', to: 'BGN' },
+  { from: 'USD', to: 'RON' }, { from: 'USD', to: 'ILS' },
+  // ── Scandinavian crosses ──
+  { from: 'EUR', to: 'SEK' }, { from: 'EUR', to: 'NOK' }, { from: 'EUR', to: 'DKK' },
+  { from: 'NOK', to: 'SEK' },
+  // ── EM crosses ──
+  { from: 'EUR', to: 'TRY' }, { from: 'EUR', to: 'ZAR' }, { from: 'EUR', to: 'PLN' },
+  { from: 'GBP', to: 'ZAR' }, { from: 'AUD', to: 'SGD' },
 ];
 
 function fmtDate(d: Date): string { return d.toISOString().split('T')[0]; }
