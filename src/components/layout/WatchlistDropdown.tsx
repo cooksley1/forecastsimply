@@ -14,7 +14,7 @@ interface Props {
   onRefresh?: () => void;
 }
 
-export default function WatchlistDropdown({ items, onSelect, onRemove, onClear }: Props) {
+export default function WatchlistDropdown({ items, onSelect, onRemove, onClear, lastRefreshed, isRefreshing, onRefresh }: Props) {
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
