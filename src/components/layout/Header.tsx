@@ -113,10 +113,13 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
                 <Trophy className="w-4 h-4" />
               </button>
               <button
-                onClick={handleUpdateCheck}
+                onPointerDown={onPointerDown}
+                onPointerUp={onPointerUp}
+                onPointerLeave={onPointerCancel}
+                onPointerCancel={onPointerCancel}
                 disabled={checkingUpdate}
-                className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                title={checkingUpdate ? 'Checking for updates...' : 'Check for updates'}
+                className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed select-none"
+                title={checkingUpdate ? 'Checking for updates...' : 'Tap to check · Hold to force refresh'}
               >
                 <RefreshCw className={`w-4 h-4 ${checkingUpdate ? 'animate-spin' : ''}`} />
               </button>
