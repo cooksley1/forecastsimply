@@ -174,8 +174,11 @@ export default function AdminAnalysisTab() {
     saveSuffixes(excludedSuffixes.filter(x => x !== s));
   };
 
-  const triggerAnalysis = async (assetType: 'stocks' | 'crypto' | 'etfs' | 'forex', timeframeOverride?: number) => {
+  const [selectedExchange, setSelectedExchange] = useState('ASX');
+
+  const triggerAnalysis = async (assetType: 'stocks' | 'crypto' | 'etfs' | 'forex', timeframeOverride?: number, exchangeOverride?: string) => {
     const tf = timeframeOverride ?? selectedTimeframe;
+    const ex = exchangeOverride ?? selectedExchange;
     setRunning(assetType);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -190,14 +193,14 @@ export default function AdminAnalysisTab() {
             Authorization: `Bearer ${session.access_token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ asset_type: assetType, offset: 0, timeframe: tf }),
+          body: JSON.stringify({ asset_type: assetType, exchange: ex, offset: 0, timeframe: tf }),
         }
       );
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Failed');
 
       toast.success(
-        `${assetType} ${tf}d — ${result.processed || 0} assets. ${result.has_more ? 'Auto-chaining…' : 'Complete!'}`
+        `${assetType}${assetType === 'stocks' ? `/${ex}` : ''} ${tf}d — ${result.processed || 0} assets. ${result.has_more ? 'Auto-chaining…' : 'Complete!'}`
       );
       // Auto-refresh stats
       setTimeout(fetchStats, 2000);
