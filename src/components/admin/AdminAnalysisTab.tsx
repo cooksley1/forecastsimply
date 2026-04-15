@@ -239,7 +239,7 @@ export default function AdminAnalysisTab() {
 
       // Send the first combo with the rest as a queue — the backend handles chaining
       const first = allCombos[0];
-      const queue = allCombos.slice(1).map(c => ({ type: c.type, tf: c.tf }));
+      const queue = allCombos.slice(1).map(c => ({ type: c.type, tf: c.tf, exchange: c.exchange }));
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/run-daily-analysis`,
@@ -252,9 +252,11 @@ export default function AdminAnalysisTab() {
           },
           body: JSON.stringify({
             asset_type: first.type,
+            exchange: first.exchange || 'ASX',
             offset: 0,
             timeframe: first.tf,
             queue,
+          }),
           }),
         }
       );
