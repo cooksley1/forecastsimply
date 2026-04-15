@@ -115,13 +115,14 @@ export function applyQualityFilters(
   });
 }
 
-export type AssetClass = 'crypto' | 'stocks' | 'etfs';
+export type AssetClass = 'crypto' | 'stocks' | 'etfs' | 'forex';
 export type Timeframe = '1M' | '3M' | '6M' | '1Y';
 
 export const ASSET_OPTIONS: { id: AssetClass; label: string; icon: string }[] = [
   { id: 'crypto', label: 'Crypto', icon: '₿' },
   { id: 'stocks', label: 'Stocks', icon: '📈' },
   { id: 'etfs', label: 'ETFs', icon: '📊' },
+  { id: 'forex', label: 'Forex', icon: '💱' },
 ];
 
 export const TIMEFRAME_OPTIONS: { id: Timeframe; label: string; days: number }[] = [
@@ -136,6 +137,7 @@ export const MARKET_BENCHMARKS: Record<string, { assetId: string; label: string 
   crypto: { assetId: 'bitcoin', label: 'BTC' },
   stocks: { assetId: 'SPY', label: 'SPY' },
   etfs:   { assetId: 'SPY', label: 'SPY' },
+  forex:  { assetId: 'EURUSD=X', label: 'EUR/USD' },
 };
 
 export const APP_URL = 'https://forecastsimply.lovable.app';
