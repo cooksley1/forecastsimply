@@ -1234,12 +1234,13 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             asset_type: next.type,
+            exchange: next.exchange || 'ASX',
             offset: 0,
             timeframe: next.tf,
             queue: remaining,
           }),
         });
-        console.log(`[daily-analysis] Queue chain → ${next.type}/${next.tf}d status=${chainRes.status}`);
+        console.log(`[daily-analysis] Queue chain → ${next.type}/${next.exchange || 'ASX'}/${next.tf}d status=${chainRes.status}`);
       } catch (err: any) {
         console.warn('[daily-analysis] Queue chain failed:', err.message);
       }
