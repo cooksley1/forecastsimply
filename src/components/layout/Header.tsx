@@ -39,6 +39,8 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
   const hasKey = !!getStoredApiKey();
   const logo = theme === 'dark' ? logoStackedDark : logoStackedLight;
 
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleUpdateCheck = async () => {
     if (checkingUpdate) return;
 
@@ -52,6 +54,34 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
     }
 
     setCheckingUpdate(false);
+  };
+
+  const handleForceRefresh = async () => {
+    setCheckingUpdate(true);
+    toast('Force refreshing…', { icon: '🔄' });
+    await forceHardRefresh();
+  };
+
+  const onPointerDown = () => {
+    longPressTimer.current = setTimeout(() => {
+      longPressTimer.current = null;
+      handleForceRefresh();
+    }, 800);
+  };
+
+  const onPointerUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+      handleUpdateCheck();
+    }
+  };
+
+  const onPointerCancel = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   };
 
   return (
