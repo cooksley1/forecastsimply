@@ -221,14 +221,19 @@ export default function AdminAnalysisTab() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      // Build queue: forex first (fastest), then crypto, etfs, then stocks (slowest)
+      // Build queue: forex first (fastest), then crypto, etfs, then stocks for ALL exchanges (ASX, NYSE, NASDAQ)
       // Each type runs all 4 timeframes before moving to the next
-      const types: string[] = ['forex', 'crypto', 'etfs', 'stocks'];
+      const types: { type: string; exchange?: string }[] = [
+        { type: 'forex' }, { type: 'crypto' }, { type: 'etfs' },
+        { type: 'stocks', exchange: 'ASX' },
+        { type: 'stocks', exchange: 'NYSE' },
+        { type: 'stocks', exchange: 'NASDAQ' },
+      ];
       const timeframes = [30, 90, 180, 365];
-      const allCombos: { type: string; tf: number }[] = [];
-      for (const type of types) {
+      const allCombos: { type: string; tf: number; exchange?: string }[] = [];
+      for (const t of types) {
         for (const tf of timeframes) {
-          allCombos.push({ type, tf });
+          allCombos.push({ type: t.type, tf, exchange: t.exchange });
         }
       }
 
