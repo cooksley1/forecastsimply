@@ -59,18 +59,20 @@ Deno.serve(async (req) => {
       } else {
         // Stocks/ETFs via yahoo-proxy
         try {
-          const res = await fetch(`${supabaseUrl}/functions/v1/yahoo-proxy`, {
-            method: "POST",
+          const proxyUrl = `${supabaseUrl}/functions/v1/yahoo-proxy?symbol=${encodeURIComponent(pick.symbol)}&range=5d&interval=1d`;
+          const res = await fetch(proxyUrl, {
             headers: {
-              "Content-Type": "application/json",
               Authorization: `Bearer ${serviceKey}`,
             },
-            body: JSON.stringify({ symbol: pick.symbol, range: "5d", interval: "1d" }),
           });
 
           if (res.ok) {
             const data = await res.json();
-            const closes: number[] = data.closes || [];
+            // Yahoo Finance v8 response format
+            const closes: number[] =
+              data?.chart?.result?.[0]?.indicators?.quote?.[0]?.close?.filter((v: any) => v != null) ||
+              data?.closes ||
+              [];
             if (closes.length > 0) {
               currentPrice = closes[closes.length - 1];
             }
@@ -122,12 +124,11 @@ Deno.serve(async (req) => {
       if (data) results.push(data);
       if (error) console.error(`Snapshot insert error for ${pick.symbol}:`, error);
 
-      // Check if month is over (last day of month or past it)
-      const nextMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      // Check if the pick's timeframe horizon has elapsed
+      const horizonEnd = new Date(monthStart.getTime() + pick.timeframe_days * 24 * 60 * 60 * 1000);
+      const todayDate = new Date(today);
 
-      if (tomorrow >= nextMonth) {
+      if (todayDate >= horizonEnd) {
         // Complete this pick
         const finalReturn = ((currentPrice - pick.entry_price) / pick.entry_price) * 100;
         const outcome = finalReturn > 0 ? "profitable" : "unprofitable";
