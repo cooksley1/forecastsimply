@@ -740,8 +740,45 @@ const CURATED_ETFS: Record<string, { sym: string; name: string }[]> = {
     { sym: 'BITO', name: 'ProShares Bitcoin Strategy' }, { sym: 'TQQQ', name: 'ProShares UltraPro QQQ' },
   ],
   NASDAQ: [
-    { sym: 'QQQ', name: 'Invesco QQQ Trust' }, { sym: 'TQQQ', name: 'ProShares UltraPro QQQ' },
-    { sym: 'SQQQ', name: 'ProShares UltraPro Short QQQ' }, { sym: 'QQQM', name: 'Invesco NASDAQ 100 ETF' },
+    // Core index
+    { sym: 'QQQ', name: 'Invesco QQQ Trust' }, { sym: 'QQQM', name: 'Invesco NASDAQ 100 ETF' },
+    { sym: 'ONEQ', name: 'Fidelity NASDAQ Composite' },
+    // Leveraged / inverse
+    { sym: 'TQQQ', name: 'ProShares UltraPro QQQ' }, { sym: 'SQQQ', name: 'ProShares UltraPro Short QQQ' },
+    { sym: 'QLD', name: 'ProShares Ultra QQQ' }, { sym: 'PSQ', name: 'ProShares Short QQQ' },
+    // Thematic / sector
+    { sym: 'ARKK', name: 'ARK Innovation ETF' }, { sym: 'ARKG', name: 'ARK Genomic Revolution ETF' },
+    { sym: 'ARKW', name: 'ARK Next Generation Internet ETF' }, { sym: 'ARKF', name: 'ARK Fintech Innovation ETF' },
+    { sym: 'ARKQ', name: 'ARK Autonomous Tech & Robotics ETF' },
+    { sym: 'IBIT', name: 'iShares Bitcoin Trust' }, { sym: 'BITO', name: 'ProShares Bitcoin Strategy' },
+    { sym: 'MSTR', name: 'MicroStrategy (Bitcoin proxy)' },
+    // Semiconductor / tech
+    { sym: 'SMH', name: 'VanEck Semiconductor ETF' }, { sym: 'SOXX', name: 'iShares Semiconductor ETF' },
+    { sym: 'XSD', name: 'SPDR S&P Semiconductor ETF' }, { sym: 'SOXL', name: 'Direxion Daily Semiconductor Bull 3X' },
+    { sym: 'SOXS', name: 'Direxion Daily Semiconductor Bear 3X' },
+    // AI / robotics / cloud
+    { sym: 'BOTZ', name: 'Global X Robotics & AI ETF' }, { sym: 'AIQ', name: 'Global X AI & Technology ETF' },
+    { sym: 'ROBT', name: 'First Trust Nasdaq AI and Robotics ETF' }, { sym: 'WCLD', name: 'WisdomTree Cloud Computing ETF' },
+    { sym: 'SKYY', name: 'First Trust Cloud Computing ETF' },
+    // Clean energy / EV
+    { sym: 'QCLN', name: 'First Trust NASDAQ Clean Edge Green Energy' }, { sym: 'DRIV', name: 'Global X Autonomous & Electric Vehicles ETF' },
+    { sym: 'LIT', name: 'Global X Lithium & Battery Tech ETF' },
+    // Biotech / healthcare
+    { sym: 'IBB', name: 'iShares Biotechnology ETF' }, { sym: 'XBI', name: 'SPDR S&P Biotech ETF' },
+    { sym: 'LABU', name: 'Direxion Daily S&P Biotech Bull 3X' },
+    // Cybersecurity
+    { sym: 'CIBR', name: 'First Trust NASDAQ Cybersecurity ETF' }, { sym: 'BUG', name: 'Global X Cybersecurity ETF' },
+    // Dividend / income
+    { sym: 'QYLD', name: 'Global X NASDAQ 100 Covered Call ETF' }, { sym: 'JEPQ', name: 'JPMorgan NASDAQ Equity Premium Income ETF' },
+    // Growth / momentum
+    { sym: 'QQQJ', name: 'Invesco NASDAQ Next Gen 100 ETF' }, { sym: 'QQEW', name: 'First Trust NASDAQ-100 Equal Weighted' },
+    { sym: 'QTEC', name: 'First Trust NASDAQ-100 Technology Sector' },
+    // Fixed income / alternatives
+    { sym: 'TLT', name: 'iShares 20+ Year Treasury Bond ETF' }, { sym: 'SHY', name: 'iShares 1-3 Year Treasury Bond ETF' },
+    { sym: 'HYG', name: 'iShares iBoxx High Yield Corp Bond ETF' },
+    // Commodities
+    { sym: 'GLD', name: 'SPDR Gold Shares' }, { sym: 'SLV', name: 'iShares Silver Trust' },
+    { sym: 'USO', name: 'United States Oil Fund' },
   ],
 };
 
