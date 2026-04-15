@@ -380,6 +380,23 @@ export default function AdminAnalysisTab() {
           ))}
         </div>
 
+        {/* Exchange selector for stocks */}
+        <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1">
+          {['ASX', 'NYSE', 'NASDAQ'].map(ex => (
+            <button
+              key={ex}
+              onClick={() => setSelectedExchange(ex)}
+              className={`px-3 py-1.5 rounded text-xs font-mono font-medium transition-all ${
+                selectedExchange === ex
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {ex}
+            </button>
+          ))}
+        </div>
+
         <Button
           onClick={() => triggerAnalysis('stocks')}
           disabled={!!running}
@@ -388,10 +405,10 @@ export default function AdminAnalysisTab() {
           {running === 'stocks' ? (
             <>
               <span className="inline-block w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-              Running Stocks ({selectedTimeframe}d)…
+              Running Stocks/{selectedExchange} ({selectedTimeframe}d)…
             </>
           ) : (
-            <>📈 Run Stocks ({selectedTimeframe}d)</>
+            <>📈 Run Stocks/{selectedExchange} ({selectedTimeframe}d)</>
           )}
         </Button>
 
