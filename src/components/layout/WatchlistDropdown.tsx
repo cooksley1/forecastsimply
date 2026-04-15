@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Target, ChevronDown, ChevronUp } from 'lucide-react';
+import { Target, RefreshCw } from 'lucide-react';
 import type { WatchlistItem } from '@/types/assets';
 import SimulationTracker from '@/components/analysis/SimulationTracker';
 
@@ -9,6 +9,9 @@ interface Props {
   onSelect: (item: WatchlistItem) => void;
   onRemove: (id: string) => void;
   onClear: () => void;
+  lastRefreshed?: Date | null;
+  isRefreshing?: boolean;
+  onRefresh?: () => void;
 }
 
 export default function WatchlistDropdown({ items, onSelect, onRemove, onClear }: Props) {
