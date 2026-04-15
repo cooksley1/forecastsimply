@@ -124,12 +124,11 @@ Deno.serve(async (req) => {
       if (data) results.push(data);
       if (error) console.error(`Snapshot insert error for ${pick.symbol}:`, error);
 
-      // Check if month is over (last day of month or past it)
-      const nextMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      // Check if the pick's timeframe horizon has elapsed
+      const horizonEnd = new Date(monthStart.getTime() + pick.timeframe_days * 24 * 60 * 60 * 1000);
+      const todayDate = new Date(today);
 
-      if (tomorrow >= nextMonth) {
+      if (todayDate >= horizonEnd) {
         // Complete this pick
         const finalReturn = ((currentPrice - pick.entry_price) / pick.entry_price) * 100;
         const outcome = finalReturn > 0 ? "profitable" : "unprofitable";
