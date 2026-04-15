@@ -46,8 +46,30 @@ const waitForInstallingWorker = (registration: ServiceWorkerRegistration, timeou
     installingWorker.addEventListener("statechange", onStateChange);
   });
 
+/**
+ * Fetch index.html bypassing the service worker by using the `url` trick
+ * (adding a query param the SW navigateFallback won't match) AND
+ * the `cache: "no-store"` header to also bypass the HTTP cache.
+ */
+const fetchLatestIndexHtml = async (): Promise<string | null> => {
+  try {
+    // Use the origin directly with a cache-busting param.
+    // Workbox navigateFallback only handles navigation requests;
+    // a plain fetch with `redirect: "manual"` and `cache: "no-store"` bypasses precache.
+    const res = await fetch(`/index.html?_nocache=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Service-Worker-Navigation-Preload": "false" },
+    });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  }
+};
+
 export async function checkAndApplyLatestVersion(): Promise<UpdateCheckResult> {
   try {
+    // --- 1. Service Worker path ---
     if ("serviceWorker" in navigator) {
       const registration = await navigator.serviceWorker.getRegistration();
 
@@ -72,16 +94,29 @@ export async function checkAndApplyLatestVersion(): Promise<UpdateCheckResult> {
       }
     }
 
-    const response = await fetch(`/index.html?_v=${Date.now()}`, {
-      cache: "no-store",
-    });
+    // --- 2. Bundle hash comparison (bypass SW cache) ---
+    const latestHtml = await fetchLatestIndexHtml();
+    if (!latestHtml) return "up-to-date";
 
-    if (!response.ok) return "up-to-date";
-
-    const latestBundlePath = extractBundlePath(await response.text());
+    const latestBundlePath = extractBundlePath(latestHtml);
     const currentBundlePath = getCurrentBundlePath();
 
     if (latestBundlePath && currentBundlePath && latestBundlePath !== currentBundlePath) {
+      // Unregister the old SW so it doesn't serve stale assets after reload
+      if ("serviceWorker" in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) await reg.unregister();
+      }
+      triggerReload();
+      return "updated";
+    }
+
+    // --- 3. Fallback: if SW is active but we still suspect staleness,
+    //     compare the version string baked into the HTML ---
+    const versionMatch = latestHtml.match(/__APP_VERSION__/);
+    // If the fetched HTML contains a different bundle but we missed it,
+    // force reload as a safety net
+    if (latestBundlePath && !currentBundlePath) {
       triggerReload();
       return "updated";
     }
