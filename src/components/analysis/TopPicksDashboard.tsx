@@ -152,15 +152,15 @@ export default function TopPicksDashboard({ onSelect }: Props) {
 
   // Merge all picks across asset classes for the "All" tab
   const allPicks: HorizonPicks = {
-    short: [...cryptoPicks.short, ...stockPicks.short, ...etfPicks.short]
+    short: [...cryptoPicks.short, ...stockPicks.short, ...etfPicks.short, ...forexPicks.short]
       .sort((a, b) => b.compositeScore - a.compositeScore).slice(0, 3),
-    mid: [...cryptoPicks.mid, ...stockPicks.mid, ...etfPicks.mid]
+    mid: [...cryptoPicks.mid, ...stockPicks.mid, ...etfPicks.mid, ...forexPicks.mid]
       .sort((a, b) => b.compositeScore - a.compositeScore).slice(0, 3),
-    long: [...cryptoPicks.long, ...stockPicks.long, ...etfPicks.long]
+    long: [...cryptoPicks.long, ...stockPicks.long, ...etfPicks.long, ...forexPicks.long]
       .sort((a, b) => b.compositeScore - a.compositeScore).slice(0, 3),
   };
 
-  const activePicks = activeTab === 'all' ? allPicks : activeTab === 'crypto' ? cryptoPicks : activeTab === 'stocks' ? stockPicks : etfPicks;
+  const activePicks = activeTab === 'all' ? allPicks : activeTab === 'crypto' ? cryptoPicks : activeTab === 'stocks' ? stockPicks : activeTab === 'forex' ? forexPicks : etfPicks;
   const hasAnyPicks = activePicks.short.length > 0 || activePicks.mid.length > 0 || activePicks.long.length > 0;
 
   return (
