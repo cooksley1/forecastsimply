@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, Clock, Calendar, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
-import { getTopTickers, coinloreSymbolToGeckoId } from '@/services/api/coinlore';
-import type { CoinLoreTicker } from '@/services/api/coinlore';
-import { fetchEquityHistory } from '@/services/fetcher';
-import { processTA } from '@/analysis/processTA';
+import { TrendingUp, Clock, Calendar, ChevronDown, ChevronUp, ArrowRight, RefreshCw } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { computeCompositeScore, type RiskProfile } from './best-pick/types';
 import type { AssetType } from '@/types/assets';
 
 interface Pick {
@@ -18,6 +16,7 @@ interface Pick {
   target: number;
   reasoning: string;
   assetType: AssetType;
+  compositeScore: number;
 }
 
 interface HorizonPicks {
@@ -30,46 +29,53 @@ interface Props {
   onSelect: (id: string, type: AssetType) => void;
 }
 
-const STOCK_UNIVERSE = [
-  { sym: 'AAPL', name: 'Apple' },
-  { sym: 'MSFT', name: 'Microsoft' },
-  { sym: 'NVDA', name: 'NVIDIA' },
-  { sym: 'GOOGL', name: 'Alphabet' },
-  { sym: 'AMZN', name: 'Amazon' },
-  { sym: 'TSLA', name: 'Tesla' },
-  { sym: 'META', name: 'Meta' },
-  { sym: 'JPM', name: 'JPMorgan' },
-];
-
-const ETF_UNIVERSE = [
-  { sym: 'SPY', name: 'S&P 500' },
-  { sym: 'QQQ', name: 'Nasdaq 100' },
-  { sym: 'VTI', name: 'Total Market' },
-  { sym: 'ARKK', name: 'ARK Innovation' },
-  { sym: 'VOO', name: 'Vanguard S&P' },
-  { sym: 'IWM', name: 'Russell 2000' },
-];
-
-function scorePick(ta: ReturnType<typeof processTA>, horizon: 'short' | 'mid' | 'long'): number {
-  const { signal, recommendations } = ta;
-  const rec = recommendations.find(r => r.horizon === horizon);
-  if (!rec) return signal.score;
-  // Blend signal score with recommendation confidence
-  const directionBonus = rec.color === 'green' ? 2 : rec.color === 'red' ? -2 : 0;
-  return signal.score + directionBonus + (rec.confidence - 50) / 25;
-}
-
-function getHorizonReasoning(ta: ReturnType<typeof processTA>, horizon: 'short' | 'mid' | 'long'): string {
-  const rec = ta.recommendations.find(r => r.horizon === horizon);
-  if (rec) return rec.reasoning;
-  return `${ta.signal.label} signal with ${ta.signal.confidence}% confidence.`;
-}
-
 const HORIZON_META = {
-  short: { label: 'Short-Term', sublabel: '1–7 days', icon: Clock, color: 'text-warning' },
-  mid: { label: 'Mid-Term', sublabel: '1–3 months', icon: TrendingUp, color: 'text-primary' },
-  long: { label: 'Long-Term', sublabel: '6–12+ months', icon: Calendar, color: 'text-positive' },
+  short: { label: 'Short-Term', sublabel: '1 month', icon: Clock, color: 'text-warning', days: 30 },
+  mid: { label: 'Mid-Term', sublabel: '3 months', icon: TrendingUp, color: 'text-primary', days: 90 },
+  long: { label: 'Long-Term', sublabel: '6–12 months', icon: Calendar, color: 'text-positive', days: 180 },
 };
+
+function buildReasoning(row: any): string {
+  const parts: string[] = [];
+  const score = row.signal_score ?? 0;
+  const fc = row.forecast_return_pct ?? 0;
+  const conf = row.confidence ?? 50;
+  const phase = row.market_phase;
+
+  if (score >= 8) parts.push('Very strong buy signal across indicators');
+  else if (score >= 4) parts.push('Positive buy signal with technical confirmation');
+  else parts.push('Moderate technical outlook');
+
+  if (fc > 15) parts.push(`high forecast upside (${fc.toFixed(1)}%)`);
+  else if (fc > 5) parts.push(`healthy forecast return (${fc.toFixed(1)}%)`);
+
+  if (conf >= 70) parts.push(`${conf}% confidence`);
+
+  if (phase === 'accumulation') parts.push('accumulation phase detected');
+  else if (phase === 'markup') parts.push('in markup/uptrend phase');
+
+  return parts.join(' · ') + '.';
+}
+
+function mapRow(row: any, assetType: AssetType, riskProfile: RiskProfile): Pick {
+  return {
+    id: row.asset_id,
+    name: row.name,
+    symbol: row.symbol,
+    price: Number(row.price) || 0,
+    change: Number(row.change_pct) || 0,
+    score: row.signal_score ?? 0,
+    signal: row.signal_label || 'Hold',
+    confidence: row.confidence ?? 50,
+    target: Number(row.target_price) || 0,
+    reasoning: buildReasoning(row),
+    assetType,
+    compositeScore: computeCompositeScore(
+      { signal_score: row.signal_score ?? 0, forecast_return_pct: Number(row.forecast_return_pct) || 0, confidence: row.confidence ?? 50 },
+      riskProfile,
+    ),
+  };
+}
 
 export default function TopPicksDashboard({ onSelect }: Props) {
   const [cryptoPicks, setCryptoPicks] = useState<HorizonPicks>({ short: [], mid: [], long: [] });
@@ -79,154 +85,60 @@ export default function TopPicksDashboard({ onSelect }: Props) {
   const [activeTab, setActiveTab] = useState<'all' | 'crypto' | 'stocks' | 'etfs'>('all');
   const [expanded, setExpanded] = useState(false);
 
+  const riskProfile: RiskProfile = 'moderate';
+
+  const fetchPicksForType = useCallback(async (
+    assetType: AssetType,
+    horizonDays: number,
+  ): Promise<Pick[]> => {
+    // Fetch top candidates by signal_score — get a large pool to score properly
+    const { data, error } = await supabase
+      .from('daily_analysis_cache')
+      .select('asset_id, symbol, name, price, change_pct, signal_score, signal_label, confidence, market_phase, target_price, stop_loss, forecast_return_pct')
+      .eq('asset_type', assetType)
+      .eq('timeframe_days', horizonDays)
+      .gte('signal_score', 1)
+      .order('signal_score', { ascending: false })
+      .limit(200);
+
+    if (error || !data) return [];
+
+    // Compute composite score and sort by it
+    return data
+      .map(row => mapRow(row, assetType, riskProfile))
+      .sort((a, b) => b.compositeScore - a.compositeScore);
+  }, [riskProfile]);
+
   const analyseAndRank = useCallback(async () => {
     setLoading(true);
 
-    // Crypto — use CoinLore with Breakout Finder's pre-screen scoring for consistency
     try {
-      const tickers = await getTopTickers(20);
-      const cryptoResults: Pick[] = tickers.slice(0, 12).map((t: CoinLoreTicker) => {
-        const c24 = parseFloat(t.percent_change_24h) || 0;
-        const c7d = parseFloat(t.percent_change_7d) || 0;
-        const c1h = parseFloat(t.percent_change_1h) || 0;
+      // Fetch all asset types × all horizons in parallel
+      const [
+        cryptoShort, cryptoMid, cryptoLong,
+        stocksShort, stocksMid, stocksLong,
+        etfsShort, etfsMid, etfsLong,
+      ] = await Promise.all([
+        fetchPicksForType('crypto', 30),
+        fetchPicksForType('crypto', 90),
+        fetchPicksForType('crypto', 180),
+        fetchPicksForType('stocks', 30),
+        fetchPicksForType('stocks', 90),
+        fetchPicksForType('stocks', 180),
+        fetchPicksForType('etfs', 30),
+        fetchPicksForType('etfs', 90),
+        fetchPicksForType('etfs', 180),
+      ]);
 
-        // Same pre-screen scoring as Breakout Finder & TopPicks
-        let preScore = 0;
-        if (c24 > 0 && c24 < 8) preScore += 20;
-        if (c7d > 0 && c7d < 15) preScore += 15;
-        if (c1h > 0 && c1h < 3) preScore += 10;
-        if (c24 > -2) preScore += 5;
-        if (c7d > -5) preScore += 5;
-        if (t.volume24 > 50_000_000) preScore += 10;
-
-        // Derive signal from score (aligned with TopPicks verdicts)
-        const signal = preScore >= 45 ? 'Buy' : (c7d < -10 || c24 < -5) ? 'Sell' : preScore >= 25 ? 'Hold' : 'Sell';
-        const confidence = Math.min(85, 30 + preScore);
-        return {
-          id: coinloreSymbolToGeckoId(t.symbol, t.name),
-          name: t.name,
-          symbol: t.symbol.toUpperCase(),
-          price: parseFloat(t.price_usd) || 0,
-          change: c24,
-          score: preScore,
-          signal,
-          confidence: Math.round(confidence),
-          target: parseFloat(t.price_usd) * (1 + preScore / 200),
-          reasoning: preScore >= 45
-            ? 'Strong setup — positive momentum across timeframes with healthy volume.'
-            : (c7d < -10 || c24 < -5)
-            ? 'Heavy selling pressure. Wait for stabilisation.'
-            : preScore >= 25
-            ? 'Consolidating — some positive signals but not full conviction yet.'
-            : 'Weak metrics — momentum or volume lacking.',
-          assetType: 'crypto' as AssetType,
-        };
-      });
-
-      // Sort and pick top 3 per horizon
-      const shortSorted = [...cryptoResults].sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
-      const midSorted = [...cryptoResults].sort((a, b) => b.score - a.score);
-      const longSorted = [...cryptoResults].sort((a, b) => {
-        const aScore = (parseFloat(tickers.find(t => t.symbol === a.symbol.toUpperCase())?.percent_change_7d || '0'));
-        const bScore = (parseFloat(tickers.find(t => t.symbol === b.symbol.toUpperCase())?.percent_change_7d || '0'));
-        return bScore - aScore;
-      });
-
-      setCryptoPicks({
-        short: shortSorted.filter(p => p.change > 0).slice(0, 3),
-        mid: midSorted.filter(p => p.score > 0).slice(0, 3),
-        long: longSorted.filter(p => p.score > 0).slice(0, 3),
-      });
-    } catch { /* silent */ }
-
-    // Stocks — batch analyse top picks
-    try {
-      const stockResults: Pick[] = [];
-      for (let i = 0; i < STOCK_UNIVERSE.length; i += 3) {
-        const batch = STOCK_UNIVERSE.slice(i, i + 3);
-        const results = await Promise.all(batch.map(async (s) => {
-          try {
-            const result = await fetchEquityHistory(s.sym, 90);
-            const ta = processTA(result.data.closes, result.data.timestamps, result.data.volumes, 30, 'stocks', ['ensemble'], 3);
-            const lastPrice = result.data.closes[result.data.closes.length - 1];
-            const prevPrice = result.data.closes[result.data.closes.length - 2] || lastPrice;
-            return {
-              id: s.sym,
-              name: s.name,
-              symbol: s.sym,
-              price: lastPrice,
-              change: ((lastPrice - prevPrice) / prevPrice) * 100,
-              score: ta.signal.score,
-              signal: ta.signal.label,
-              confidence: ta.signal.confidence,
-              target: ta.forecastTarget,
-              reasoning: getHorizonReasoning(ta, 'short'),
-              assetType: 'stocks' as AssetType,
-              _ta: ta,
-            };
-          } catch { return null; }
-        }));
-        stockResults.push(...results.filter((r): r is NonNullable<typeof r> => r !== null));
-      }
-
-      const stocksWithTA = stockResults as any[];
-      setStockPicks({
-        short: [...stocksWithTA].sort((a, b) => {
-          const aS = a._ta ? scorePick(a._ta, 'short') : a.score;
-          const bS = b._ta ? scorePick(b._ta, 'short') : b.score;
-          return bS - aS;
-        }).slice(0, 3).map(({ _ta, ...rest }: any) => rest as Pick),
-        mid: [...stocksWithTA].sort((a, b) => {
-          const aS = a._ta ? scorePick(a._ta, 'mid') : a.score;
-          const bS = b._ta ? scorePick(b._ta, 'mid') : b.score;
-          return bS - aS;
-        }).slice(0, 3).map(({ _ta, ...rest }: any) => rest as Pick),
-        long: [...stocksWithTA].sort((a, b) => {
-          const aS = a._ta ? scorePick(a._ta, 'long') : a.score;
-          const bS = b._ta ? scorePick(b._ta, 'long') : b.score;
-          return bS - aS;
-        }).slice(0, 3).map(({ _ta, ...rest }: any) => rest as Pick),
-      });
-    } catch { /* silent */ }
-
-    // ETFs
-    try {
-      const etfResults: Pick[] = [];
-      for (let i = 0; i < ETF_UNIVERSE.length; i += 3) {
-        const batch = ETF_UNIVERSE.slice(i, i + 3);
-        const results = await Promise.all(batch.map(async (s) => {
-          try {
-            const result = await fetchEquityHistory(s.sym, 90);
-            const ta = processTA(result.data.closes, result.data.timestamps, result.data.volumes, 30, 'etfs', ['ensemble'], 3);
-            const lastPrice = result.data.closes[result.data.closes.length - 1];
-            const prevPrice = result.data.closes[result.data.closes.length - 2] || lastPrice;
-            return {
-              id: s.sym,
-              name: s.name,
-              symbol: s.sym,
-              price: lastPrice,
-              change: ((lastPrice - prevPrice) / prevPrice) * 100,
-              score: ta.signal.score,
-              signal: ta.signal.label,
-              confidence: ta.signal.confidence,
-              target: ta.forecastTarget,
-              reasoning: getHorizonReasoning(ta, 'mid'),
-              assetType: 'etfs' as AssetType,
-            };
-          } catch { return null; }
-        }));
-        etfResults.push(...results.filter((r): r is NonNullable<typeof r> => r !== null));
-      }
-
-      setEtfPicks({
-        short: [...etfResults].sort((a, b) => b.score - a.score).slice(0, 3),
-        mid: [...etfResults].sort((a, b) => b.score - a.score).slice(0, 3),
-        long: [...etfResults].sort((a, b) => b.confidence - a.confidence).slice(0, 3),
-      });
-    } catch { /* silent */ }
+      setCryptoPicks({ short: cryptoShort.slice(0, 3), mid: cryptoMid.slice(0, 3), long: cryptoLong.slice(0, 3) });
+      setStockPicks({ short: stocksShort.slice(0, 3), mid: stocksMid.slice(0, 3), long: stocksLong.slice(0, 3) });
+      setEtfPicks({ short: etfsShort.slice(0, 3), mid: etfsMid.slice(0, 3), long: etfsLong.slice(0, 3) });
+    } catch {
+      // silent
+    }
 
     setLoading(false);
-  }, []);
+  }, [fetchPicksForType]);
 
   useEffect(() => {
     analyseAndRank();
@@ -235,11 +147,11 @@ export default function TopPicksDashboard({ onSelect }: Props) {
   // Merge all picks across asset classes for the "All" tab
   const allPicks: HorizonPicks = {
     short: [...cryptoPicks.short, ...stockPicks.short, ...etfPicks.short]
-      .sort((a, b) => b.score - a.score).slice(0, 3),
+      .sort((a, b) => b.compositeScore - a.compositeScore).slice(0, 3),
     mid: [...cryptoPicks.mid, ...stockPicks.mid, ...etfPicks.mid]
-      .sort((a, b) => b.score - a.score).slice(0, 3),
+      .sort((a, b) => b.compositeScore - a.compositeScore).slice(0, 3),
     long: [...cryptoPicks.long, ...stockPicks.long, ...etfPicks.long]
-      .sort((a, b) => b.score - a.score).slice(0, 3),
+      .sort((a, b) => b.compositeScore - a.compositeScore).slice(0, 3),
   };
 
   const activePicks = activeTab === 'all' ? allPicks : activeTab === 'crypto' ? cryptoPicks : activeTab === 'stocks' ? stockPicks : etfPicks;
@@ -255,7 +167,7 @@ export default function TopPicksDashboard({ onSelect }: Props) {
         <div className="flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-semibold text-foreground">Top Picks by Horizon</h3>
-          <span className="text-[10px] text-muted-foreground font-mono">LIVE</span>
+          <span className="text-[10px] text-muted-foreground font-mono">FULL SCAN</span>
         </div>
         {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
       </button>
@@ -280,12 +192,13 @@ export default function TopPicksDashboard({ onSelect }: Props) {
           </div>
 
           {loading ? (
-            <div className="py-8 text-center">
-              <p className="text-xs text-muted-foreground animate-pulse font-mono">Scanning markets and ranking opportunities...</p>
+            <div className="py-8 text-center space-y-2">
+              <RefreshCw className="w-5 h-5 text-primary animate-spin mx-auto" />
+              <p className="text-xs text-muted-foreground animate-pulse font-mono">Scanning all cached assets and ranking…</p>
             </div>
           ) : !hasAnyPicks ? (
             <div className="py-6 text-center">
-              <p className="text-xs text-muted-foreground">No strong signals found right now. Check back later.</p>
+              <p className="text-xs text-muted-foreground">No strong signals found right now. The daily analysis cache may still be populating — check back later.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -305,7 +218,7 @@ export default function TopPicksDashboard({ onSelect }: Props) {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       {picks.map((pick, i) => (
                         <button
-                          key={pick.id}
+                          key={`${pick.id}-${horizon}`}
                           onClick={() => onSelect(pick.id, pick.assetType)}
                           className="group text-left p-3 rounded-lg border border-border bg-background/50 hover:border-primary/40 transition-all space-y-1.5"
                         >
@@ -324,15 +237,20 @@ export default function TopPicksDashboard({ onSelect }: Props) {
                                 </div>
                               </div>
                             </div>
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                              pick.signal === 'Strong Buy' || pick.signal === 'Buy'
-                                ? 'bg-positive/15 text-positive'
-                                : pick.signal === 'Strong Sell' || pick.signal === 'Sell'
-                                ? 'bg-negative/15 text-negative'
-                                : 'bg-warning/15 text-warning'
-                            }`}>
-                              {pick.signal}
-                            </span>
+                            <div className="flex flex-col items-end gap-0.5">
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                                pick.signal === 'Strong Buy' || pick.signal === 'Buy'
+                                  ? 'bg-positive/15 text-positive'
+                                  : pick.signal === 'Strong Sell' || pick.signal === 'Sell'
+                                  ? 'bg-negative/15 text-negative'
+                                  : 'bg-warning/15 text-warning'
+                              }`}>
+                                {pick.signal}
+                              </span>
+                              <span className="text-[8px] font-mono text-muted-foreground">
+                                CS: {pick.compositeScore}
+                              </span>
+                            </div>
                           </div>
 
                           <div className="flex items-center justify-between">
@@ -364,7 +282,7 @@ export default function TopPicksDashboard({ onSelect }: Props) {
           )}
 
           <p className="text-[9px] text-muted-foreground/60 italic text-center pt-1">
-            Rankings based on live market data and technical analysis. Not financial advice.
+            Rankings based on composite scoring of all cached assets (signal strength + forecast return + confidence). Not financial advice.
           </p>
         </div>
       )}

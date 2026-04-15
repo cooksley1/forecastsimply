@@ -87,7 +87,9 @@ export default function BestPickFinder({ onViewAsset }: Props) {
         }
       }
 
-      // ── 2. Fetch candidate pool ──
+      // ── 2. Fetch candidate pool (broad scan — up to 500 assets) ──
+      // Fetch ALL positive-signal assets, not just top 30, so composite scoring
+      // can genuinely surface the best picks from the full universe.
       const { data, error: dbError } = await supabase
         .from('daily_analysis_cache')
         .select('*')
@@ -95,7 +97,7 @@ export default function BestPickFinder({ onViewAsset }: Props) {
         .eq('timeframe_days', days)
         .gte('signal_score', 1)
         .order('signal_score', { ascending: false })
-        .limit(30);
+        .limit(500);
 
       if (dbError) throw dbError;
 
