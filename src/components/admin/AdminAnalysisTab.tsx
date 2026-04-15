@@ -257,7 +257,6 @@ export default function AdminAnalysisTab() {
             timeframe: first.tf,
             queue,
           }),
-          }),
         }
       );
       const result = await res.json();
