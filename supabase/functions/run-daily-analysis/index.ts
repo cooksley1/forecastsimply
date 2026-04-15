@@ -1066,7 +1066,7 @@ Deno.serve(async (req) => {
   const batchSize = parseInt(url.searchParams.get('batch_size') || bodyParams.batch_size || String(BATCH_SIZE));
   const timeframeDays = parseInt(url.searchParams.get('timeframe') || bodyParams.timeframe || '90');
   // Queue for sequential orchestration: remaining combos to run after this one completes
-  const queue: { type: string; tf: number }[] = bodyParams.queue || [];
+  const queue: { type: string; tf: number; exchange?: string }[] = bodyParams.queue || [];
 
   const startTime = Date.now();
   const results = { processed: 0, succeeded: 0, failed: 0, skipped: 0 };
