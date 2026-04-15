@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import type { WatchlistItem } from '@/types/assets';
-import { supabase } from '@/integrations/supabase/client';
+
 
 const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
