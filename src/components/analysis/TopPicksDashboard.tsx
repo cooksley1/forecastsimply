@@ -182,7 +182,7 @@ export default function TopPicksDashboard({ onSelect }: Props) {
         <div className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-3">
           {/* Category tabs */}
           <div className="flex gap-1 bg-muted/50 rounded-lg p-0.5">
-            {(['all', 'crypto', 'stocks', 'etfs'] as const).map(tab => (
+            {(['all', 'crypto', 'stocks', 'etfs', 'forex'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -192,7 +192,7 @@ export default function TopPicksDashboard({ onSelect }: Props) {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {tab === 'all' ? 'All' : tab === 'crypto' ? 'Crypto' : tab === 'stocks' ? 'Stocks' : 'ETFs'}
+                {tab === 'all' ? 'All' : tab === 'crypto' ? 'Crypto' : tab === 'stocks' ? 'Stocks' : tab === 'forex' ? 'Forex' : 'ETFs'}
               </button>
             ))}
           </div>
