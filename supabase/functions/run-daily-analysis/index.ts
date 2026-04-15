@@ -663,26 +663,59 @@ const ETF_EXCHANGE_CONFIGS: Record<string, ExchangeConfig> = {
 // Curated ETF lists as fallback when screener returns 0
 const CURATED_ETFS: Record<string, { sym: string; name: string }[]> = {
   ASX: [
-    { sym: 'VAS.AX', name: 'Vanguard Australian Shares' }, { sym: 'VGS.AX', name: 'Vanguard MSCI Intl Shares' },
-    { sym: 'A200.AX', name: 'BetaShares ASX 200' }, { sym: 'IOZ.AX', name: 'iShares Core S&P/ASX 200' },
-    { sym: 'NDQ.AX', name: 'BetaShares NASDAQ 100' }, { sym: 'IVV.AX', name: 'iShares S&P 500' },
-    { sym: 'VDHG.AX', name: 'Vanguard Diversified High Growth' }, { sym: 'DHHF.AX', name: 'BetaShares Diversified All Growth' },
+    // Broad market
+    { sym: 'VAS.AX', name: 'Vanguard Australian Shares' }, { sym: 'A200.AX', name: 'BetaShares ASX 200' },
+    { sym: 'IOZ.AX', name: 'iShares Core S&P/ASX 200' }, { sym: 'STW.AX', name: 'SPDR S&P/ASX 200' },
+    { sym: 'MVW.AX', name: 'VanEck Australian Equal Weight' }, { sym: 'QOZ.AX', name: 'BetaShares FTSE RAFI Aus 200' },
+    { sym: 'EX20.AX', name: 'BetaShares ASX 200 Equal Weight' },
+    // International shares
+    { sym: 'VGS.AX', name: 'Vanguard MSCI Intl Shares' }, { sym: 'VGAD.AX', name: 'Vanguard MSCI Intl Hedged' },
+    { sym: 'IVV.AX', name: 'iShares S&P 500' }, { sym: 'IHVV.AX', name: 'iShares S&P 500 Hedged' },
+    { sym: 'NDQ.AX', name: 'BetaShares NASDAQ 100' }, { sym: 'HNDQ.AX', name: 'BetaShares NASDAQ 100 Hedged' },
     { sym: 'VTS.AX', name: 'Vanguard US Total Market' }, { sym: 'VEU.AX', name: 'Vanguard All-World ex-US' },
-    { sym: 'QUAL.AX', name: 'VanEck MSCI Intl Quality' }, { sym: 'ETHI.AX', name: 'BetaShares Global Sustainability' },
-    { sym: 'HACK.AX', name: 'BetaShares Global Cybersecurity' }, { sym: 'Asia.AX', name: 'BetaShares Asia Technology Tigers' },
-    { sym: 'VGAD.AX', name: 'Vanguard MSCI Intl Hedged' }, { sym: 'IHVV.AX', name: 'iShares S&P 500 Hedged' },
-    { sym: 'MVW.AX', name: 'VanEck Australian Equal Weight' }, { sym: 'STW.AX', name: 'SPDR S&P/ASX 200' },
-    { sym: 'QOZ.AX', name: 'BetaShares FTSE RAFI Aus 200' }, { sym: 'VHY.AX', name: 'Vanguard Australian Shares High Yield' },
-    { sym: 'IEM.AX', name: 'iShares MSCI Emerging Markets' }, { sym: 'MOAT.AX', name: 'VanEck Morningstar Wide Moat' },
-    { sym: 'GOLD.AX', name: 'ETFS Physical Gold' }, { sym: 'PMGOLD.AX', name: 'Perth Mint Gold' },
-    { sym: 'AAA.AX', name: 'BetaShares High Interest Cash' }, { sym: 'QPON.AX', name: 'BetaShares Australian Bank Sr Floating Rate Bond' },
-    { sym: 'VAF.AX', name: 'Vanguard Australian Fixed Interest' }, { sym: 'VIF.AX', name: 'Vanguard Intl Fixed Interest' },
-    { sym: 'VISM.AX', name: 'Vanguard MSCI Intl Small Companies' }, { sym: 'MVS.AX', name: 'VanEck Small Companies Masters' },
+    { sym: 'QUAL.AX', name: 'VanEck MSCI Intl Quality' }, { sym: 'MOAT.AX', name: 'VanEck Morningstar Wide Moat' },
+    { sym: 'IEM.AX', name: 'iShares MSCI Emerging Markets' }, { sym: 'VISM.AX', name: 'Vanguard MSCI Intl Small Companies' },
+    { sym: 'WXOZ.AX', name: 'SPDR S&P World ex-Australia' },
+    // Diversified / multi-asset
+    { sym: 'VDHG.AX', name: 'Vanguard Diversified High Growth' }, { sym: 'DHHF.AX', name: 'BetaShares Diversified All Growth' },
+    { sym: 'VDGR.AX', name: 'Vanguard Diversified Growth' }, { sym: 'VDBA.AX', name: 'Vanguard Diversified Balanced' },
+    { sym: 'DBBF.AX', name: 'BetaShares Ethical Diversified Balanced' },
+    // Income / dividends
+    { sym: 'VHY.AX', name: 'Vanguard Australian Shares High Yield' }, { sym: 'SYI.AX', name: 'SPDR MSCI Australia Select High Dividend Yield' },
+    { sym: 'HVST.AX', name: 'BetaShares Diversified Markets Income' }, { sym: 'IHD.AX', name: 'iShares S&P/ASX Dividend Opportunities' },
+    { sym: 'RDIV.AX', name: 'Russell Investments High Dividend Australian Shares' },
+    // Thematic / sector
     { sym: 'SEMI.AX', name: 'BetaShares Global Semiconductors' }, { sym: 'RBTZ.AX', name: 'BetaShares Global Robotics & AI' },
-    { sym: 'FUEL.AX', name: 'BetaShares Global Energy Companies' }, { sym: 'FOOD.AX', name: 'BetaShares Global Agriculture' },
+    { sym: 'HACK.AX', name: 'BetaShares Global Cybersecurity' }, { sym: 'FANG.AX', name: 'BetaShares FANG+' },
     { sym: 'ACDC.AX', name: 'ETFS Battery Tech & Lithium' }, { sym: 'CLNE.AX', name: 'BetaShares Climate Change Innovation' },
-    { sym: 'BNKS.AX', name: 'BetaShares Global Banks' }, { sym: 'DRIV.AX', name: 'BetaShares Electric Vehicles & Future Mobility' },
-    { sym: 'FANG.AX', name: 'BetaShares FANG+' }, { sym: 'GEAR.AX', name: 'BetaShares Geared Australian Equity' },
+    { sym: 'DRIV.AX', name: 'BetaShares Electric Vehicles & Future Mobility' }, { sym: 'FUEL.AX', name: 'BetaShares Global Energy Companies' },
+    { sym: 'FOOD.AX', name: 'BetaShares Global Agriculture' }, { sym: 'BNKS.AX', name: 'BetaShares Global Banks' },
+    { sym: 'ASIA.AX', name: 'BetaShares Asia Technology Tigers' }, { sym: 'ETHI.AX', name: 'BetaShares Global Sustainability' },
+    { sym: 'ERTH.AX', name: 'BetaShares Climate Change Innovation' }, { sym: 'DRUG.AX', name: 'BetaShares Global Healthcare' },
+    { sym: 'CRYP.AX', name: 'BetaShares Crypto Innovators' }, { sym: 'MNRS.AX', name: 'BetaShares Global Gold Miners' },
+    { sym: 'GEAR.AX', name: 'BetaShares Geared Australian Equity' }, { sym: 'BBOZ.AX', name: 'BetaShares Australian Equities Bear Hedge' },
+    { sym: 'BBUS.AX', name: 'BetaShares US Equities Strong Bear Hedge' },
+    // Fixed income / cash
+    { sym: 'AAA.AX', name: 'BetaShares High Interest Cash' }, { sym: 'QPON.AX', name: 'BetaShares Aus Bank Sr Floating Rate Bond' },
+    { sym: 'VAF.AX', name: 'Vanguard Australian Fixed Interest' }, { sym: 'VIF.AX', name: 'Vanguard Intl Fixed Interest' },
+    { sym: 'IAF.AX', name: 'iShares Core Composite Bond' }, { sym: 'CRED.AX', name: 'BetaShares Australian Investment Grade Corp Bond' },
+    { sym: 'HBRD.AX', name: 'BetaShares Active Australian Hybrids' }, { sym: 'FLOT.AX', name: 'VanEck Australian Floating Rate' },
+    // Commodities
+    { sym: 'GOLD.AX', name: 'ETFS Physical Gold' }, { sym: 'PMGOLD.AX', name: 'Perth Mint Gold' },
+    { sym: 'QAU.AX', name: 'BetaShares Gold Bullion' }, { sym: 'OOO.AX', name: 'BetaShares Crude Oil Index' },
+    // Property / REITs
+    { sym: 'VAP.AX', name: 'Vanguard Australian Property Securities' }, { sym: 'MVA.AX', name: 'VanEck Australian Property' },
+    { sym: 'SLF.AX', name: 'SPDR S&P/ASX 200 Listed Property' },
+    // Small / mid cap
+    { sym: 'MVS.AX', name: 'VanEck Small Companies Masters' }, { sym: 'SMLL.AX', name: 'BetaShares Australian Small Companies Select' },
+    { sym: 'ISO.AX', name: 'iShares S&P/ASX Small Ordinaries' },
+    // ESG
+    { sym: 'FAIR.AX', name: 'BetaShares Australian Sustainability Leaders' }, { sym: 'VESG.AX', name: 'Vanguard Ethically Conscious Intl Shares' },
+    // Currency hedged / other
+    { sym: 'QHAL.AX', name: 'VanEck MSCI Intl Quality (Hedged)' },
+    { sym: 'VBLD.AX', name: 'Vanguard Global Infrastructure' },
+    { sym: 'IFRA.AX', name: 'VanEck FTSE Global Infrastructure (Hedged)' },
+    { sym: 'GGUS.AX', name: 'BetaShares Geared US Equity' },
   ],
   NYSE: [
     { sym: 'SPY', name: 'SPDR S&P 500 ETF' }, { sym: 'VOO', name: 'Vanguard S&P 500 ETF' },
