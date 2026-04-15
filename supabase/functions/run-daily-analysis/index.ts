@@ -1121,21 +1121,28 @@ Deno.serve(async (req) => {
     } else if (assetType === 'etfs') {
       // 1. Try Yahoo screener
       let etfList = await fetchStockList(exchange, 'ETF');
-      // 2. Fall back to DB-managed ETF list
-      if (etfList.length === 0) {
-        try {
-          const { data: etfConfig } = await db.from('app_config').select('value').eq('key', `etf_list_${exchange}`).maybeSingle();
-          if (etfConfig?.value && Array.isArray(etfConfig.value)) {
-            etfList = (etfConfig.value as any[]).map((e: any) => ({ sym: e.sym, name: e.name, divYield: 0 }));
-            console.log(`[daily-analysis] Loaded ${etfList.length} ETFs for ${exchange} from DB`);
-          }
-        } catch { /* ignore */ }
+      console.log(`[daily-analysis] Yahoo screener returned ${etfList.length} ETFs for ${exchange}`);
+
+      // 2. Merge with DB-managed ETF list (additive, not fallback)
+      try {
+        const { data: etfConfig } = await db.from('app_config').select('value').eq('key', `etf_list_${exchange}`).maybeSingle();
+        if (etfConfig?.value && Array.isArray(etfConfig.value)) {
+          const dbEtfs = (etfConfig.value as any[]).map((e: any) => ({ sym: e.sym, name: e.name, divYield: 0 }));
+          const existingSyms = new Set(etfList.map(e => e.sym));
+          const newFromDb = dbEtfs.filter(e => !existingSyms.has(e.sym));
+          etfList.push(...newFromDb);
+          console.log(`[daily-analysis] Merged ${newFromDb.length} additional ETFs from DB for ${exchange}`);
+        }
+      } catch { /* ignore */ }
+
+      // 3. Merge with hardcoded curated list (additive, not fallback)
+      if (CURATED_ETFS[exchange]) {
+        const existingSyms = new Set(etfList.map(e => e.sym));
+        const newFromCurated = CURATED_ETFS[exchange].filter(e => !existingSyms.has(e.sym));
+        etfList.push(...newFromCurated.map(e => ({ sym: e.sym, name: e.name, divYield: 0 })));
+        console.log(`[daily-analysis] Merged ${newFromCurated.length} additional curated ETFs for ${exchange} (total: ${etfList.length})`);
       }
-      // 3. Final fallback to hardcoded list
-      if (etfList.length === 0 && CURATED_ETFS[exchange]) {
-        console.log(`[daily-analysis] Using hardcoded fallback ETF list for ${exchange}`);
-        etfList = CURATED_ETFS[exchange].map(e => ({ sym: e.sym, name: e.name, divYield: 0 }));
-      }
+
       assets = etfList.map(s => ({ id: s.sym, sym: s.sym, name: s.name, divYield: s.divYield }));
     } else {
       const stockList = await fetchStockList(exchange, 'EQUITY');
