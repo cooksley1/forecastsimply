@@ -65,6 +65,7 @@ import ReportButton from '@/components/analysis/ReportButton';
 import SmartFeed from '@/components/SmartFeed';
 import LiveTracker from '@/components/analysis/LiveTracker';
 import NewsletterSignup from '@/components/NewsletterSignup';
+import { useWatchlistPriceRefresh } from '@/hooks/useWatchlistPriceRefresh';
 import type { AssetType, AssetInfo, WatchlistItem, SimulationData } from '@/types/assets';
 import type { Recommendation, TradeSetup } from '@/types/analysis';
 import type { TechnicalData } from '@/types/analysis';
