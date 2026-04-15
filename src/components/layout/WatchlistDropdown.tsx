@@ -91,13 +91,37 @@ export default function WatchlistDropdown({ items, onSelect, onRemove, onClear, 
                   {items.length} item{items.length !== 1 ? 's' : ''}
                   {simulations.length > 0 && ` · ${simulations.length} simulation${simulations.length !== 1 ? 's' : ''}`}
                 </span>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onClear(); }}
-                  className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  Clear all
-                </button>
+                <div className="flex items-center gap-2">
+                  {onRefresh && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onRefresh(); }}
+                      disabled={isRefreshing}
+                      className="text-[10px] text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                      title="Refresh prices"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onClear(); }}
+                    className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    Clear all
+                  </button>
+                </div>
               </div>
+              {/* Last refreshed indicator */}
+              {lastRefreshed && (
+                <div className="px-3 py-1 border-b border-border/50 bg-muted/20">
+                  <span className="text-[9px] text-muted-foreground/70 font-mono">
+                    {isRefreshing ? (
+                      <span className="text-primary">Updating prices…</span>
+                    ) : (
+                      <>Prices updated {lastRefreshed.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}</>
+                    )}
+                  </span>
+                </div>
+              )}
               <div className="max-h-96 overflow-y-auto divide-y divide-border/50">
                 {items.map(item => {
                   const addedPrice = item.addedPrice ?? item.price;
