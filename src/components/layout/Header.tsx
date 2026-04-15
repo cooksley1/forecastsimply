@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -10,7 +10,7 @@ import LoginDialog from '@/components/auth/LoginDialog';
 import AccountPanel from '@/components/account/AccountPanel';
 import WatchlistDropdown from '@/components/layout/WatchlistDropdown';
 import { getStoredApiKey } from '@/components/settings/ApiKeySettings';
-import { checkAndApplyLatestVersion } from '@/utils/appUpdate';
+import { checkAndApplyLatestVersion, forceHardRefresh } from '@/utils/appUpdate';
 import type { WatchlistItem } from '@/types/assets';
 import logoStackedDark from '@/assets/logo-stacked.svg';
 import logoStackedLight from '@/assets/logo-stacked-light.svg';
@@ -39,6 +39,8 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
   const hasKey = !!getStoredApiKey();
   const logo = theme === 'dark' ? logoStackedDark : logoStackedLight;
 
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleUpdateCheck = async () => {
     if (checkingUpdate) return;
 
@@ -52,6 +54,34 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
     }
 
     setCheckingUpdate(false);
+  };
+
+  const handleForceRefresh = async () => {
+    setCheckingUpdate(true);
+    toast('Force refreshing…', { icon: '🔄' });
+    await forceHardRefresh();
+  };
+
+  const onPointerDown = () => {
+    longPressTimer.current = setTimeout(() => {
+      longPressTimer.current = null;
+      handleForceRefresh();
+    }, 800);
+  };
+
+  const onPointerUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+      handleUpdateCheck();
+    }
+  };
+
+  const onPointerCancel = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   };
 
   return (
@@ -83,10 +113,13 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
                 <Trophy className="w-4 h-4" />
               </button>
               <button
-                onClick={handleUpdateCheck}
+                onPointerDown={onPointerDown}
+                onPointerUp={onPointerUp}
+                onPointerLeave={onPointerCancel}
+                onPointerCancel={onPointerCancel}
                 disabled={checkingUpdate}
-                className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                title={checkingUpdate ? 'Checking for updates...' : 'Check for updates'}
+                className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed select-none"
+                title={checkingUpdate ? 'Checking for updates...' : 'Tap to check · Hold to force refresh'}
               >
                 <RefreshCw className={`w-4 h-4 ${checkingUpdate ? 'animate-spin' : ''}`} />
               </button>
