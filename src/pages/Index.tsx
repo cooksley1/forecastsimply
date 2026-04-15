@@ -65,6 +65,7 @@ import ReportButton from '@/components/analysis/ReportButton';
 import SmartFeed from '@/components/SmartFeed';
 import LiveTracker from '@/components/analysis/LiveTracker';
 import NewsletterSignup from '@/components/NewsletterSignup';
+import { useWatchlistPriceRefresh } from '@/hooks/useWatchlistPriceRefresh';
 import type { AssetType, AssetInfo, WatchlistItem, SimulationData } from '@/types/assets';
 import type { Recommendation, TradeSetup } from '@/types/analysis';
 import type { TechnicalData } from '@/types/analysis';
@@ -118,7 +119,7 @@ export default function Index() {
     try { return JSON.parse(localStorage.getItem('sf_watchlist') || '[]'); } catch { return []; }
   });
 
-  // Dynamic exchange screener — supports all major exchanges
+  useWatchlistPriceRefresh(watchlist, setWatchlist);
   const [asxSubgroup, setAsxSubgroup] = useState<ScreenerSubgroup>('asx200');
   const useStockScreener = assetType === 'stocks' && SCREENER_SUPPORTED.includes(stockExchange);
   const useEtfScreener = assetType === 'etfs' && SCREENER_SUPPORTED.includes(etfExchange);
