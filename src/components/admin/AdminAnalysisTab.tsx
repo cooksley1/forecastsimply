@@ -174,8 +174,11 @@ export default function AdminAnalysisTab() {
     saveSuffixes(excludedSuffixes.filter(x => x !== s));
   };
 
-  const triggerAnalysis = async (assetType: 'stocks' | 'crypto' | 'etfs' | 'forex', timeframeOverride?: number) => {
+  const [selectedExchange, setSelectedExchange] = useState('ASX');
+
+  const triggerAnalysis = async (assetType: 'stocks' | 'crypto' | 'etfs' | 'forex', timeframeOverride?: number, exchangeOverride?: string) => {
     const tf = timeframeOverride ?? selectedTimeframe;
+    const ex = exchangeOverride ?? selectedExchange;
     setRunning(assetType);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -190,14 +193,14 @@ export default function AdminAnalysisTab() {
             Authorization: `Bearer ${session.access_token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-          body: JSON.stringify({ asset_type: assetType, offset: 0, timeframe: tf }),
+          body: JSON.stringify({ asset_type: assetType, exchange: ex, offset: 0, timeframe: tf }),
         }
       );
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Failed');
 
       toast.success(
-        `${assetType} ${tf}d — ${result.processed || 0} assets. ${result.has_more ? 'Auto-chaining…' : 'Complete!'}`
+        `${assetType}${assetType === 'stocks' ? `/${ex}` : ''} ${tf}d — ${result.processed || 0} assets. ${result.has_more ? 'Auto-chaining…' : 'Complete!'}`
       );
       // Auto-refresh stats
       setTimeout(fetchStats, 2000);
@@ -218,20 +221,25 @@ export default function AdminAnalysisTab() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      // Build queue: forex first (fastest), then crypto, etfs, then stocks (slowest)
+      // Build queue: forex first (fastest), then crypto, etfs, then stocks for ALL exchanges (ASX, NYSE, NASDAQ)
       // Each type runs all 4 timeframes before moving to the next
-      const types: string[] = ['forex', 'crypto', 'etfs', 'stocks'];
+      const types: { type: string; exchange?: string }[] = [
+        { type: 'forex' }, { type: 'crypto' }, { type: 'etfs' },
+        { type: 'stocks', exchange: 'ASX' },
+        { type: 'stocks', exchange: 'NYSE' },
+        { type: 'stocks', exchange: 'NASDAQ' },
+      ];
       const timeframes = [30, 90, 180, 365];
-      const allCombos: { type: string; tf: number }[] = [];
-      for (const type of types) {
+      const allCombos: { type: string; tf: number; exchange?: string }[] = [];
+      for (const t of types) {
         for (const tf of timeframes) {
-          allCombos.push({ type, tf });
+          allCombos.push({ type: t.type, tf, exchange: t.exchange });
         }
       }
 
       // Send the first combo with the rest as a queue — the backend handles chaining
       const first = allCombos[0];
-      const queue = allCombos.slice(1).map(c => ({ type: c.type, tf: c.tf }));
+      const queue = allCombos.slice(1).map(c => ({ type: c.type, tf: c.tf, exchange: c.exchange }));
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/run-daily-analysis`,
@@ -244,6 +252,7 @@ export default function AdminAnalysisTab() {
           },
           body: JSON.stringify({
             asset_type: first.type,
+            exchange: first.exchange || 'ASX',
             offset: 0,
             timeframe: first.tf,
             queue,
@@ -371,6 +380,23 @@ export default function AdminAnalysisTab() {
           ))}
         </div>
 
+        {/* Exchange selector for stocks */}
+        <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1">
+          {['ASX', 'NYSE', 'NASDAQ'].map(ex => (
+            <button
+              key={ex}
+              onClick={() => setSelectedExchange(ex)}
+              className={`px-3 py-1.5 rounded text-xs font-mono font-medium transition-all ${
+                selectedExchange === ex
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {ex}
+            </button>
+          ))}
+        </div>
+
         <Button
           onClick={() => triggerAnalysis('stocks')}
           disabled={!!running}
@@ -379,10 +405,10 @@ export default function AdminAnalysisTab() {
           {running === 'stocks' ? (
             <>
               <span className="inline-block w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-              Running Stocks ({selectedTimeframe}d)…
+              Running Stocks/{selectedExchange} ({selectedTimeframe}d)…
             </>
           ) : (
-            <>📈 Run Stocks ({selectedTimeframe}d)</>
+            <>📈 Run Stocks/{selectedExchange} ({selectedTimeframe}d)</>
           )}
         </Button>
 
@@ -447,7 +473,7 @@ export default function AdminAnalysisTab() {
               Run All ({runAllProgress})
             </>
           ) : (
-            <>🚀 Run All (4 types × 4 timeframes)</>
+            <>🚀 Run All (6 combos × 4 timeframes = 24 runs)</>
           )}
         </Button>
       </div>

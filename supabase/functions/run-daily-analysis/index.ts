@@ -1066,7 +1066,7 @@ Deno.serve(async (req) => {
   const batchSize = parseInt(url.searchParams.get('batch_size') || bodyParams.batch_size || String(BATCH_SIZE));
   const timeframeDays = parseInt(url.searchParams.get('timeframe') || bodyParams.timeframe || '90');
   // Queue for sequential orchestration: remaining combos to run after this one completes
-  const queue: { type: string; tf: number }[] = bodyParams.queue || [];
+  const queue: { type: string; tf: number; exchange?: string }[] = bodyParams.queue || [];
 
   const startTime = Date.now();
   const results = { processed: 0, succeeded: 0, failed: 0, skipped: 0 };
@@ -1234,12 +1234,13 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             asset_type: next.type,
+            exchange: next.exchange || 'ASX',
             offset: 0,
             timeframe: next.tf,
             queue: remaining,
           }),
         });
-        console.log(`[daily-analysis] Queue chain → ${next.type}/${next.tf}d status=${chainRes.status}`);
+        console.log(`[daily-analysis] Queue chain → ${next.type}/${next.exchange || 'ASX'}/${next.tf}d status=${chainRes.status}`);
       } catch (err: any) {
         console.warn('[daily-analysis] Queue chain failed:', err.message);
       }
@@ -1269,7 +1270,7 @@ Deno.serve(async (req) => {
         await fetch(`${supabaseUrl}/functions/v1/run-daily-analysis`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ asset_type: next.type, offset: 0, timeframe: next.tf, queue: remaining }),
+          body: JSON.stringify({ asset_type: next.type, exchange: next.exchange || 'ASX', offset: 0, timeframe: next.tf, queue: remaining }),
         }).catch(() => {});
       }
     } catch { /* ignore recovery errors */ }
