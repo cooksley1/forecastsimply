@@ -58,26 +58,25 @@ export function useWatchlistPriceRefresh(
         } catch { /* silent */ }
       }
 
-      // --- Stocks & ETFs via daily_analysis_cache (already has latest prices) ---
-      const equityItems = watchlist.filter(w => (w.assetType === 'stocks' || w.assetType === 'etfs') && !w.id.includes('__sim_'));
-      if (equityItems.length > 0) {
-        const ids = equityItems.map(e => e.id);
-        const { data: cacheRows } = await supabase
-          .from('daily_analysis_cache')
-          .select('asset_id, price')
-          .in('asset_id', ids)
-          .eq('timeframe_days', 90)
-          .order('analyzed_at', { ascending: false });
-
-        if (cacheRows) {
-          const seen = new Set<string>();
-          for (const row of cacheRows) {
-            if (!seen.has(row.asset_id) && row.price > 0) {
-              seen.add(row.asset_id);
-              priceMap[row.asset_id] = Number(row.price);
+      // --- Stocks & ETFs via yahoo-proxy (live prices) ---
+      const equityItems = watchlist.filter(w => (w.assetType === 'stocks' || w.assetType === 'etfs') && !w.id.includes('__sim_') && !w.id.includes('__setup_'));
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      for (const eq of equityItems) {
+        try {
+          const res = await fetch(
+            `${supabaseUrl}/functions/v1/yahoo-proxy?symbol=${encodeURIComponent(eq.symbol)}&range=5d&interval=1d`,
+            { headers: { Authorization: `Bearer ${supabaseKey}` } },
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const closes: number[] =
+              data?.chart?.result?.[0]?.indicators?.quote?.[0]?.close?.filter((v: any) => v != null) || [];
+            if (closes.length > 0) {
+              priceMap[eq.id] = closes[closes.length - 1];
             }
           }
-        }
+        } catch { /* silent */ }
       }
 
       // Apply updates
