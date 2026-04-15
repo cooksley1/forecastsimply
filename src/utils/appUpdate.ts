@@ -67,6 +67,24 @@ const fetchLatestIndexHtml = async (): Promise<string | null> => {
   }
 };
 
+export async function forceHardRefresh(): Promise<void> {
+  try {
+    if ("serviceWorker" in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) await reg.unregister();
+    }
+    // Clear all caches
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  } catch { /* proceed to reload anyway */ }
+
+  const url = new URL(window.location.href);
+  url.searchParams.set("_force", Date.now().toString());
+  window.location.replace(url.toString());
+}
+
 export async function checkAndApplyLatestVersion(): Promise<UpdateCheckResult> {
   try {
     // --- 1. Service Worker path ---

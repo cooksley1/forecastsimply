@@ -10,7 +10,7 @@ import LoginDialog from '@/components/auth/LoginDialog';
 import AccountPanel from '@/components/account/AccountPanel';
 import WatchlistDropdown from '@/components/layout/WatchlistDropdown';
 import { getStoredApiKey } from '@/components/settings/ApiKeySettings';
-import { checkAndApplyLatestVersion } from '@/utils/appUpdate';
+import { checkAndApplyLatestVersion, forceHardRefresh } from '@/utils/appUpdate';
 import type { WatchlistItem } from '@/types/assets';
 import logoStackedDark from '@/assets/logo-stacked.svg';
 import logoStackedLight from '@/assets/logo-stacked-light.svg';
