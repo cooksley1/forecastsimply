@@ -22,9 +22,12 @@ interface Props {
   onWatchlistClear?: () => void;
   onWatchlistNoteUpdate?: (id: string, note: string) => void;
   onLogoClick?: () => void;
+  watchlistLastRefreshed?: Date | null;
+  watchlistRefreshing?: boolean;
+  onWatchlistRefresh?: () => void;
 }
 
-export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistRemove, onWatchlistClear, onWatchlistNoteUpdate, onLogoClick }: Props) {
+export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistRemove, onWatchlistClear, onWatchlistNoteUpdate, onLogoClick, watchlistLastRefreshed, watchlistRefreshing, onWatchlistRefresh }: Props) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -67,6 +70,9 @@ export default function Header({ watchlist = [], onWatchlistSelect, onWatchlistR
                   onSelect={onWatchlistSelect}
                   onRemove={onWatchlistRemove || (() => {})}
                   onClear={onWatchlistClear || (() => {})}
+                  lastRefreshed={watchlistLastRefreshed}
+                  isRefreshing={watchlistRefreshing}
+                  onRefresh={onWatchlistRefresh}
                 />
               )}
               <button

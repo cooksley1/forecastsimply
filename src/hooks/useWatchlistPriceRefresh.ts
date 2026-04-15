@@ -1,22 +1,25 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { WatchlistItem } from '@/types/assets';
-
 
 const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Periodically fetches live prices for all watchlist items and calls
  * the updater so the dropdown shows accurate P&L.
+ * Returns { lastRefreshed, refreshing, manualRefresh }.
  */
 export function useWatchlistPriceRefresh(
   watchlist: WatchlistItem[],
   setWatchlist: React.Dispatch<React.SetStateAction<WatchlistItem[]>>,
 ) {
-  const refreshing = useRef(false);
+  const busy = useRef(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const refresh = useCallback(async () => {
-    if (refreshing.current || watchlist.length === 0) return;
-    refreshing.current = true;
+    if (busy.current || watchlist.length === 0) return;
+    busy.current = true;
+    setIsRefreshing(true);
 
     try {
       const priceMap: Record<string, number> = {};
@@ -24,7 +27,6 @@ export function useWatchlistPriceRefresh(
       // --- Crypto via CoinLore (batch by ID) ---
       const cryptoItems = watchlist.filter(w => w.assetType === 'crypto' && !w.id.includes('__sim_') && !w.id.includes('__setup_'));
       if (cryptoItems.length > 0) {
-        // CoinLore allows comma-separated IDs
         const ids = cryptoItems.map(c => c.id).join(',');
         try {
           const res = await fetch(`https://api.coinlore.net/api/ticker/?id=${ids}`);
@@ -45,7 +47,6 @@ export function useWatchlistPriceRefresh(
       const forexItems = watchlist.filter(w => w.assetType === 'forex' && !w.id.includes('__sim_'));
       for (const fx of forexItems) {
         try {
-          // symbol is like "AUD/THB"
           const [from, to] = fx.symbol.split('/');
           if (!from || !to) continue;
           const res = await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`);
@@ -80,6 +81,8 @@ export function useWatchlistPriceRefresh(
       }
 
       // Apply updates
+      setLastRefreshed(new Date());
+
       if (Object.keys(priceMap).length === 0) return;
 
       setWatchlist(prev => {
@@ -104,7 +107,8 @@ export function useWatchlistPriceRefresh(
     } catch {
       // silent
     } finally {
-      refreshing.current = false;
+      busy.current = false;
+      setIsRefreshing(false);
     }
   }, [watchlist, setWatchlist]);
 
@@ -114,4 +118,6 @@ export function useWatchlistPriceRefresh(
     const id = setInterval(refresh, REFRESH_INTERVAL);
     return () => clearInterval(id);
   }, [refresh]);
+
+  return { lastRefreshed, isRefreshing, manualRefresh: refresh };
 }
