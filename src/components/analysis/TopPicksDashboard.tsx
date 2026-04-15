@@ -81,8 +81,9 @@ export default function TopPicksDashboard({ onSelect }: Props) {
   const [cryptoPicks, setCryptoPicks] = useState<HorizonPicks>({ short: [], mid: [], long: [] });
   const [stockPicks, setStockPicks] = useState<HorizonPicks>({ short: [], mid: [], long: [] });
   const [etfPicks, setEtfPicks] = useState<HorizonPicks>({ short: [], mid: [], long: [] });
+  const [forexPicks, setForexPicks] = useState<HorizonPicks>({ short: [], mid: [], long: [] });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'all' | 'crypto' | 'stocks' | 'etfs'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'crypto' | 'stocks' | 'etfs' | 'forex'>('all');
   const [expanded, setExpanded] = useState(false);
 
   const riskProfile: RiskProfile = 'moderate';
@@ -118,6 +119,7 @@ export default function TopPicksDashboard({ onSelect }: Props) {
         cryptoShort, cryptoMid, cryptoLong,
         stocksShort, stocksMid, stocksLong,
         etfsShort, etfsMid, etfsLong,
+        forexShort, forexMid, forexLong,
       ] = await Promise.all([
         fetchPicksForType('crypto', 30),
         fetchPicksForType('crypto', 90),
@@ -128,11 +130,15 @@ export default function TopPicksDashboard({ onSelect }: Props) {
         fetchPicksForType('etfs', 30),
         fetchPicksForType('etfs', 90),
         fetchPicksForType('etfs', 180),
+        fetchPicksForType('forex', 30),
+        fetchPicksForType('forex', 90),
+        fetchPicksForType('forex', 180),
       ]);
 
       setCryptoPicks({ short: cryptoShort.slice(0, 3), mid: cryptoMid.slice(0, 3), long: cryptoLong.slice(0, 3) });
       setStockPicks({ short: stocksShort.slice(0, 3), mid: stocksMid.slice(0, 3), long: stocksLong.slice(0, 3) });
       setEtfPicks({ short: etfsShort.slice(0, 3), mid: etfsMid.slice(0, 3), long: etfsLong.slice(0, 3) });
+      setForexPicks({ short: forexShort.slice(0, 3), mid: forexMid.slice(0, 3), long: forexLong.slice(0, 3) });
     } catch {
       // silent
     }
