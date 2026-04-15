@@ -113,7 +113,6 @@ export default function BestPickFinder({ onViewAsset }: Props) {
 
       const data = allData;
 
-      if (dbError) throw dbError;
 
       if (!data || data.length === 0) {
         setError('No strong picks found for this combination. Try a different timeframe or asset class.');
