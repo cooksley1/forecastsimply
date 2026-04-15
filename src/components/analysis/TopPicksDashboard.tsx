@@ -237,7 +237,7 @@ export default function TopPicksDashboard({ onSelect }: Props) {
                                   <span className="text-[10px] text-muted-foreground font-mono">{pick.symbol}</span>
                                   {activeTab === 'all' && (
                                     <span className="text-[8px] font-mono uppercase px-1 py-px rounded bg-muted text-muted-foreground">
-                                      {pick.assetType === 'crypto' ? 'Crypto' : pick.assetType === 'stocks' ? 'Stock' : 'ETF'}
+                                      {pick.assetType === 'crypto' ? 'Crypto' : pick.assetType === 'stocks' ? 'Stock' : pick.assetType === 'forex' ? 'Forex' : 'ETF'}
                                     </span>
                                   )}
                                 </div>
