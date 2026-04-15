@@ -92,20 +92,28 @@ export default function TopPicksDashboard({ onSelect }: Props) {
     assetType: AssetType,
     horizonDays: number,
   ): Promise<Pick[]> => {
-    // Fetch top candidates by signal_score — get a large pool to score properly
-    const { data, error } = await supabase
-      .from('daily_analysis_cache')
-      .select('asset_id, symbol, name, price, change_pct, signal_score, signal_label, confidence, market_phase, target_price, stop_loss, forecast_return_pct')
-      .eq('asset_type', assetType)
-      .eq('timeframe_days', horizonDays)
-      .gte('signal_score', 1)
-      .order('signal_score', { ascending: false })
-      .limit(200);
+    // Paginate the full cache to ensure we rank ALL assets, not a truncated subset
+    let allData: any[] = [];
+    let offset = 0;
+    const PAGE = 1000;
+    while (true) {
+      const { data: page, error } = await supabase
+        .from('daily_analysis_cache')
+        .select('asset_id, symbol, name, price, change_pct, signal_score, signal_label, confidence, market_phase, target_price, stop_loss, forecast_return_pct')
+        .eq('asset_type', assetType)
+        .eq('timeframe_days', horizonDays)
+        .gte('signal_score', 1)
+        .order('signal_score', { ascending: false })
+        .range(offset, offset + PAGE - 1);
 
-    if (error || !data) return [];
+      if (error || !page || page.length === 0) break;
+      allData = allData.concat(page);
+      if (page.length < PAGE) break;
+      offset += PAGE;
+    }
 
     // Compute composite score and sort by it
-    return data
+    return allData
       .map(row => mapRow(row, assetType, riskProfile))
       .sort((a, b) => b.compositeScore - a.compositeScore);
   }, [riskProfile]);
