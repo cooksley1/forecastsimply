@@ -68,7 +68,11 @@ Deno.serve(async (req) => {
 
           if (res.ok) {
             const data = await res.json();
-            const closes: number[] = data.closes || [];
+            // Yahoo Finance v8 response format
+            const closes: number[] =
+              data?.chart?.result?.[0]?.indicators?.quote?.[0]?.close?.filter((v: any) => v != null) ||
+              data?.closes ||
+              [];
             if (closes.length > 0) {
               currentPrice = closes[closes.length - 1];
             }
