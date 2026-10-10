@@ -26,6 +26,7 @@ import NotFound from "./pages/NotFound";
 import CookieBanner from "./components/CookieBanner";
 import PWAInstallBanner from "./components/PWAInstallBanner";
 import UpdatePrompt from "./components/UpdatePrompt";
+import StaleDataBanner from "./components/StaleDataBanner";
 import { toast } from "sonner";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
             <TooltipProvider>
               <Toaster />
               <Sonner />
+              <StaleDataBanner />
               <BrowserRouter>
                 <ScrollToTop />
                 <Routes>
